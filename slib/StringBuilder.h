@@ -5,7 +5,6 @@
 #ifndef __SLIB_STRINGBUILDER_H__
 #define __SLIB_STRINGBUILDER_H__
 
-#include "slib/libstdinclude.h"
 #include "slib/exception/NullPointerException.h"
 
 #include <string>

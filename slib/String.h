@@ -5,7 +5,6 @@
 #ifndef __SLIB_STRING_H__
 #define __SLIB_STRING_H__
 
-#include "libstdinclude.h"
 #include "slib/exception/Exception.h"
 #include "slib/List.h"
 
@@ -90,7 +89,7 @@ public:
 
 	static bool startsWithIgnoreCase(const std::string& str, const std::string& prefix) {
 		const char *buffer = str.c_str();
-		return (strnicmp(buffer, prefix.c_str(), prefix.size()) == 0);
+		return (strncasecmp(buffer, prefix.c_str(), prefix.size()) == 0);
 	}
 
 	static bool startsWith(const std::string& str, const std::string &prefix, ptrdiff_t offset) {
@@ -112,7 +111,7 @@ public:
 		if (uOffset > len - prefix.size())
 			return false;
 		const char *buffer = str.c_str();
-		return (strnicmp(buffer + uOffset, prefix.c_str(), prefix.size()) == 0);
+		return (strncasecmp(buffer + uOffset, prefix.c_str(), prefix.size()) == 0);
 	}
 
 	static bool endsWith(const std::string& str, char suffix) {

@@ -5,8 +5,6 @@
 #ifndef __SLIB_UTIL_SYSTEM_H__
 #define __SLIB_UTIL_SYSTEM_H__
 
-#include "slib/libstdinclude.h"
-
 #include <stdio.h>
 #if __STDC_NO_ATOMICS__ != 1
 #include <atomic>

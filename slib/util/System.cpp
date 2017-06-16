@@ -4,6 +4,8 @@
 
 #include "slib/util/System.h"
 
+#include <sys/time.h>
+
 namespace slib {
 
 int64_t System::currentTimeMillis() {

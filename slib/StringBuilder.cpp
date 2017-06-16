@@ -5,6 +5,9 @@
 #include "slib/StringBuilder.h"
 #include "slib/String.h"
 
+#include <stdarg.h>
+#include <inttypes.h>
+
 #include <sstream>
 #include <string>
 #include <cmath>
@@ -168,7 +171,7 @@ bool StringBuilder::equalsIgnoreCase(const StringBuilder& other) const {
 	if (_buffer == other._buffer)
 		return true;
 	if (_len == other._len)
-		return !stricmp((char*)_buffer, (char*)other._buffer);
+		return !strcasecmp((char*)_buffer, (char*)other._buffer);
 	return false;
 }
 

@@ -4,6 +4,9 @@ project (slib)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+FILE(GLOB_RECURSE slibHeaders "slib/*.h")
+add_custom_target(headers SOURCES ${slibHeaders})
+
 set(SLIB_SOURCES slib/concurrent/Semaphore.cpp
                  slib/concurrent/Thread.cpp
                  slib/exception/Exception.cpp
@@ -22,4 +25,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fPIC")
 
 add_library(slib STATIC ${SLIB_SOURCES})
 
+install (TARGETS slib DESTINATION lib)
 
+install (DIRECTORY slib/
+         DESTINATION include/slib
+         FILES_MATCHING PATTERN "*.h")
+
+add_custom_target(uninstall
+    COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_INSTALL_PREFIX}/lib/libslib.a
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_INSTALL_PREFIX}/include/slib)

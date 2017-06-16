@@ -46,7 +46,7 @@ public:
 	: _value(other._value)
 	, _isNull(other._isNull) {
 	}
-	
+
 	virtual int hashCode() const {
 		return _value;
 	}
@@ -58,7 +58,7 @@ public:
 	}
 
 	virtual bool equals(const Integer& other) const {
-		if (_isNull) 
+		if (_isNull)
 			return (other._isNull);
 		if (other._isNull)
 			return _isNull;
@@ -168,11 +168,11 @@ public:
      * Returns a hash code for this <code>Long</code>. The result is
      * the exclusive OR of the two halves of the primitive
      * <code>int64_t</code> value held by this <code>Long</code>
-     * object. That is, the hashcode is the value of the expression:
-     * <blockquote><pre>
-     * (int)(_value()^((unsigned)_value()&gt;&gt;32))
-     * </pre></blockquote>
-     *
+	 * object. That is, the hashcode is the value of the expression:
+	 * <blockquote><pre>
+	 * (int)(_value()^((unsigned)_value()&gt;&gt;32))
+	 * </pre></blockquote>
+	 *
      * @return  a hash code value for this object.
      */
 	virtual int hashCode() const {
@@ -186,7 +186,7 @@ public:
 	}
 
 	virtual bool equals(const Long& other) const {
-		if (_isNull) 
+		if (_isNull)
 			return (other._isNull);
 		if (other._isNull)
 			return _isNull;

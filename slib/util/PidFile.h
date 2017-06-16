@@ -5,7 +5,6 @@
 #ifndef __SLIB_UTIL_PIDFILE_H__
 #define __SLIB_UTIL_PIDFILE_H__
 
-#include "slib/libstdinclude.h"
 #include "slib/exception/Exception.h"
 #include "slib/util/Config.h"
 

@@ -147,7 +147,7 @@ static const char* logTypes[] = {"DISABLED", "CONSOLE", "FILE", "SIZE_ROTATE", "
 
 LogType getLogType(const std::string& str) {
 	for (int i = 0; logTypes[i] != nullptr; i++)
-		if (!stricmp(str.c_str(), logTypes[i]))
+		if (!strcasecmp(str.c_str(), logTypes[i]))
 			return (LogType)i;
 	return LTYPE_NONE;
 }
@@ -156,7 +156,7 @@ static const char* logLevels[] = {"DISABLED", "FATAL", "ERROR", "WARN", "NOTICE"
 
 Log::Level getLogLevel(const std::string& str) {
 	for (int i = 0; logLevels[i] != nullptr; i++)
-		if (!stricmp(str.c_str(), logLevels[i]))
+		if (!strcasecmp(str.c_str(), logLevels[i]))
 			return (Log::Level)i;
 	return Log::Level::None;
 }
@@ -238,7 +238,7 @@ static const char* consoleDestNames[] = {"STDOUT", "STDERR", nullptr};
 
 ConsoleDest getConsoleDest(const std::string& str) {
 	for (int i = 0; consoleDestNames[i] != nullptr; i++)
-		if (!stricmp(str.c_str(), consoleDestNames[i]))
+		if (!strcasecmp(str.c_str(), consoleDestNames[i]))
 			return (ConsoleDest)i;
 	return CDEST_NONE;
 }

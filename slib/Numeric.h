@@ -5,7 +5,6 @@
 #ifndef __SLIB_NUMERIC_H__
 #define __SLIB_NUMERIC_H__
 
-#include "slib/libstdinclude.h"
 #include "slib/exception/NumericExceptions.h"
 
 #include "fmt/format.h"
@@ -14,6 +13,7 @@
 #include <sstream>
 
 #include <math.h>
+#include <limits.h>
 
 #define __min(a,b)  (((a) < (b)) ? (a) : (b))
 
@@ -467,7 +467,7 @@ public:
 	static bool parseBoolean(const char *str) {
 		if (str == nullptr)
 			return false;
-		return (!stricmp(str, "true"));
+		return (!strcasecmp(str, "true"));
 	}
 	
 	static bool parseBoolean(const std::string& str) {

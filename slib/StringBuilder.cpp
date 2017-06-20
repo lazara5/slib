@@ -25,6 +25,7 @@ static const int _STR_EXTRA_ALLOC = 0;
 static const float _STR_GROWTH_FACTOR = 1.5;
 
 StringBuilder::StringBuilder() {
+	_hash = 0;
 	_buffer = (unsigned char*)malloc(16);
 	if (!_buffer)
 		throw OutOfMemoryError(_HERE_);
@@ -34,6 +35,7 @@ StringBuilder::StringBuilder() {
 }
 
 StringBuilder::StringBuilder(const char *str, ptrdiff_t len /* = -1 */) {
+	_hash = 0;
 	if (str == nullptr) {
 		if (len == -1) {
 			_buffer = nullptr;
@@ -61,6 +63,7 @@ StringBuilder::StringBuilder(const char *str, ptrdiff_t len /* = -1 */) {
 }
 
 StringBuilder::StringBuilder(const char *str, size_t offset, ptrdiff_t count) {
+	_hash = 0;
 	_buffer = (unsigned char*) malloc(count + _STR_EXTRA_ALLOC + 1);
 	if (!_buffer)
 		throw OutOfMemoryError(_HERE_);
@@ -83,16 +86,19 @@ StringBuilder::StringBuilder(const StringBuilder &other) {
 
 	_size = other._size;
 	_len = other._len;
+	_hash = other._hash;
 }
 
 StringBuilder::StringBuilder(StringBuilder &&other) {
 	_buffer = other._buffer;
 	_size = other._size;
 	_len = other._len;
+	_hash = other._hash;
 
 	other._buffer = nullptr;
 	other._size = 0;
 	other._len = 0;
+	other._hash = 0;
 }
 
 StringBuilder::StringBuilder(const std::string& other)
@@ -105,6 +111,7 @@ StringBuilder::~StringBuilder() {
 }
 
 void StringBuilder::build(const char *format, ...) {
+	_hash = 0;
 	va_list ap;
 	va_start(ap, format);
 
@@ -366,6 +373,18 @@ bool StringBuilder::endsWith(const StringBuilder &suffix) const {
 	return (startsWith(suffix, _len - suffix.length()));
 }
 
+int StringBuilder::hashCode() const {
+	if (_buffer == nullptr)
+		return 0;
+	int h = _hash;
+	if (h == 0 && _len > 0) {
+		for (size_t i = 0; i < _len; i++)
+			h = 31 * h + _buffer[i];
+		_hash = h;
+	}
+	return h;
+}
+
 StringBuilder& StringBuilder::getNull() {
 	return NULLSTRINGBUILDER;
 }
@@ -375,6 +394,7 @@ void StringBuilder::alloc(size_t newLen) {
 }
 
 void StringBuilder::setLength(size_t newLen) {
+	_hash = 0;
 	if (_buffer != nullptr) {
 		if (newLen > _size - 1)
 			newLen = _size - 1;
@@ -410,12 +430,13 @@ StringBuilder& StringBuilder::operator=(const StringBuilder& other) {
 	if (other._buffer == nullptr) {
 		if (_buffer)
 			free(_buffer);
-		_buffer = nullptr; _len = 0; _size = 0;
+		_buffer = nullptr; _len = 0; _size = 0; _hash = 0;
 	} else {
 		grow(other._size);
 		memcpy(_buffer, other._buffer, other._size);
 		_size = other._size;
 		_len = other._len;
+		_hash = other._hash;
 	}
 	return *this;	// This will allow assignments to be chained
 }
@@ -428,15 +449,18 @@ StringBuilder& StringBuilder::operator=(StringBuilder &&other) {
 
 	_size = other._size;
 	_len = other._len;
+	_hash = other._hash;
 	_buffer = other._buffer;
 
 	other._buffer = nullptr;
 	other._size = 0;
 	other._len = 0;
+	other._hash = 0;
 	return *this;
 }
 
 void StringBuilder::assign(const char *src, size_t len) {
+	_hash = 0;
 	grow(len + 1);
 	memcpy(_buffer, src, len);
 	_len = len;
@@ -444,6 +468,7 @@ void StringBuilder::assign(const char *src, size_t len) {
 }
 
 void StringBuilder::assignInternal(const char *src, size_t len) {
+	_hash = 0;
 	grow(len + 1);
 	memmove(_buffer, src, len);
 	_len = len;
@@ -451,6 +476,7 @@ void StringBuilder::assignInternal(const char *src, size_t len) {
 }
 
 void StringBuilder::clear() {
+	_hash = 0;
 	if (_buffer) {
 		_buffer[0] = 0;
 		_len = 0;
@@ -458,6 +484,7 @@ void StringBuilder::clear() {
 }
 
 void StringBuilder::truncate(size_t len) {
+	_hash = 0;
 	if (_buffer) {
 		if (len < _len) {
 			_buffer[_len] = 0;
@@ -466,11 +493,22 @@ void StringBuilder::truncate(size_t len) {
 	}
 }
 
+char *StringBuilder::releaseBufferOwnership() {
+	unsigned char *buffer = _buffer;
+	_buffer = nullptr;
+	_size = 0;
+	_len = 0;
+	_hash = 0;
+
+	return (char*) buffer;
+}
+
 // append char array
 
 StringBuilder& StringBuilder::add(const char *src, ptrdiff_t len /* = -1 */) {
 	if (src == nullptr)
 		return *this;
+	_hash = 0;
 	if (len < 0)
 		len = strlen(src);
 	if (_len + len + 1 > _size)
@@ -494,6 +532,7 @@ const StringBuilder StringBuilder::operator +(const char* other) const {
 StringBuilder& StringBuilder::add(const StringBuilder& src) {
 	if (src.isNull())
 		return *this;
+	_hash = 0;
 	ptrdiff_t len = src.length();
 	if (_len + len + 1 > _size)
 		grow(_len + len + 1);
@@ -501,6 +540,32 @@ StringBuilder& StringBuilder::add(const StringBuilder& src) {
 	_len += len;
 	_buffer[_len] = 0;
 	
+	return *this;
+}
+
+StringBuilder& StringBuilder::add(const ASCIICaseInsensitiveString& src) {
+	if (src.isNull())
+		return *this;
+	_hash = 0;
+	ptrdiff_t len = src.length();
+	if (_len + len + 1 > _size)
+		grow(_len + len + 1);
+	memcpy(_buffer + _len, src.c_str(), len + 1);
+	_len += len;
+	_buffer[_len] = 0;
+
+	return *this;
+}
+
+StringBuilder& StringBuilder::add(const std::string& src) {
+	_hash = 0;
+	ptrdiff_t len = (ptrdiff_t)src.length();
+	if (_len + len + 1 > _size)
+		grow(_len + len + 1);
+	memcpy(_buffer + _len, src.c_str(), len + 1);
+	_len += len;
+	_buffer[_len] = 0;
+
 	return *this;
 }
 
@@ -533,6 +598,7 @@ const StringBuilder StringBuilder::operator+(char other) const {
 // append int
 
 StringBuilder& StringBuilder::add(int i) {
+	_hash = 0;
 	char buffer[32];
 	int n = snprintf(buffer, 31, "%d", i);
 	buffer[31] = 0;
@@ -555,6 +621,7 @@ const StringBuilder StringBuilder::operator+(int other) const {
 // append int64
 
 StringBuilder& StringBuilder::add(int64_t i) {
+	_hash = 0;
 	char buffer[32];
 	int n = snprintf(buffer, 31, "%" PRId64, i);
 	buffer[31] = 0;
@@ -577,6 +644,7 @@ const StringBuilder StringBuilder::operator+(int64_t other) const {
 // append double
 
 StringBuilder& StringBuilder::add(double d) {
+	_hash = 0;
 	char buffer[64];
 	int n = snprintf(buffer, 63, "%g", d);
 	buffer[63] = 0;
@@ -608,6 +676,7 @@ void StringBuilder::internalAppend(const char *format, va_list ap) {
 
 	int toAppend = vsnprintf(nullptr, 0, format, ap);
 	if (toAppend > 0) {
+		_hash = 0;
 		if (_len + toAppend + 1 > _size)
 			grow(_len + toAppend + 1);
 

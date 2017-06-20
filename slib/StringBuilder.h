@@ -5,6 +5,7 @@
 #ifndef __SLIB_STRINGBUILDER_H__
 #define __SLIB_STRINGBUILDER_H__
 
+#include "slib/String.h"
 #include "slib/exception/NullPointerException.h"
 
 #include <string>
@@ -23,6 +24,7 @@ private:
 protected:
 	unsigned char *_buffer;
 	size_t _len, _size;
+	mutable volatile int32_t _hash;
 
 	void grow(size_t newLen);
 	void internalAppend(const char *format, va_list ap);	
@@ -92,24 +94,27 @@ public:
 	void clear();
 	void truncate(size_t len);
 
-	char *releaseBufferOwnership() {
-		unsigned char *buffer = _buffer;
-		_buffer = nullptr;
-		_size = 0;
-		_len = 0;
-
-		return (char*) buffer;
-	}
+	char *releaseBufferOwnership();
 
 	// appenders
 	StringBuilder& add(const char *src, std::ptrdiff_t len = -1);
-	StringBuilder &add(const StringBuilder &src);
+	StringBuilder& add(const StringBuilder &src);
+	StringBuilder& add(const ASCIICaseInsensitiveString &src);
+	StringBuilder& add(const std::string& src);
+
+	StringBuilder& add(const std::shared_ptr<std::string>& src) {
+		if (src)
+			add(*src);
+		return *this;
+	}
+
 	StringBuilder& addLine(const char *src, std::ptrdiff_t len = -1);
 	StringBuilder& add(int i);
 	StringBuilder& add(int64_t i);
 	StringBuilder& add(double d);
 
 	StringBuilder& add(char c) {
+		_hash = 0;
 		if (_len + 1 >= _size) 
 			grow(_len + 2);
 		_buffer[_len] = c;
@@ -378,6 +383,16 @@ public:
 	StringBuilder toLowerCase() const;
 	StringBuilder toUpperCase() const;
 
+	/**
+	 * Returns a hash code for this string. The hash code for a StringBuilder object is
+	 * computed as <i>s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1]</i>
+	 * using signed int arithmetic, where <i>s[i]</i> is the <i>i</i>th character in the string,
+	 * and <i>n</i> is the length of the string.
+	 * The hash value of an empty string is zero.
+	 * @return a hash code value for this object.
+	 */
+	virtual int hashCode() const;
+
 	/** 
 	 * Creates a <i>'NULL'</i> reference to a StringBuilder.
 	 * @return a <i>'NULL'</i> reference to a StringBuilder.
@@ -464,5 +479,14 @@ public:
 extern NullStringBuilder NULLSTRINGBUILDER;
 
 } // namespace
+
+namespace std {
+	// for using StringBuilder as key in unordered_map
+	template<> struct hash<slib::StringBuilder> {
+		std::size_t operator()(const slib::StringBuilder& s) const {
+			return (size_t)s.hashCode();
+		}
+	};
+}
 
 #endif

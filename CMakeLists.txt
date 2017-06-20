@@ -7,7 +7,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 FILE(GLOB_RECURSE slibHeaders "slib/*.h")
 add_custom_target(headers SOURCES ${slibHeaders})
 
-set(SLIB_SOURCES slib/concurrent/Semaphore.cpp
+set(SLIB_SOURCES slib/String.cpp
+                 slib/concurrent/Semaphore.cpp
                  slib/concurrent/Thread.cpp
                  slib/exception/Exception.cpp
                  slib/util/CmdLine.cpp

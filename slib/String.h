@@ -286,6 +286,130 @@ public:
 	}
 };
 
+/**
+ * Immutable ASCII string with case-insensitive comparison and hash code
+ */
+class ASCIICaseInsensitiveString {
+private:
+	static const unsigned char _toLower[];
+protected:
+	unsigned char *_buffer;
+	size_t _len;
+	mutable volatile int32_t _hash;
+public:
+	ASCIICaseInsensitiveString();
+	ASCIICaseInsensitiveString(const char *str, std::ptrdiff_t len = -1);
+
+	ASCIICaseInsensitiveString(std::tuple<const char *, std::ptrdiff_t> t)
+	:ASCIICaseInsensitiveString(std::get<0>(t), std::get<1>(t)) {}
+
+	ASCIICaseInsensitiveString(const char *str, size_t offset, std::ptrdiff_t count);
+
+	ASCIICaseInsensitiveString(std::tuple<const char *, size_t, std::ptrdiff_t> t)
+	:ASCIICaseInsensitiveString(std::get<0>(t), std::get<1>(t), std::get<2>(t)) {}
+
+	ASCIICaseInsensitiveString(const ASCIICaseInsensitiveString &other);
+	ASCIICaseInsensitiveString(const std::string& other);
+
+	~ASCIICaseInsensitiveString();
+
+	size_t length() const {
+		return _len;
+	}
+
+	bool isEmpty() const {
+		return (isNull() || _len == 0);
+	}
+
+	std::tuple<const char*, std::ptrdiff_t> tuple() const {
+		return std::make_tuple(c_str(), length());
+	}
+
+	bool operator==(const ASCIICaseInsensitiveString& other) const;
+	bool operator==(const String& other) const;
+
+	ASCIICaseInsensitiveString& operator=(const ASCIICaseInsensitiveString&) = delete;
+
+	// move assignment
+	ASCIICaseInsensitiveString& operator=(ASCIICaseInsensitiveString &&other) = delete;
+
+	// bool operator
+	explicit operator bool() const {
+		return !isNull();
+	}
+
+	// for Java compatibility
+
+	/**
+	 * Compares this String to the specified String object. Returns <i>true</i>
+	 * only if the argument is a String object that contains the same sequence
+	 * of characters as this String or if both this and the other String
+	 * object are <i>'NULL'</i> references.
+	 * @param other The String object to compare this String against
+	 * @return <i>true</i> if the given object represents a String object
+	 *		equivalent to this String, <i>false</i> otherwise.
+	 */
+	virtual bool equals(const ASCIICaseInsensitiveString& other) const;
+
+	/**
+	 * Compares this String to another String, ignoring case.
+	 * Two strings are considered equal ignoring case if they are of the same length and
+	 * corresponding characters in the two strings are equal ignoring case.
+	 * Uses stricmp() internally.
+	 *
+	 * @param other The String to compare this String against
+	 *
+	 * @return  <i><b>true</b></i> if the argument represents an equivalent String ignoring case;
+	 *		<i><b>false</b></i> otherwise.
+	 *
+	 * @see equals(const String&)
+	 */
+	bool equalsIgnoreCase(const ASCIICaseInsensitiveString& other) const;
+
+	/**
+	 * Returns a hash code for this string. The hash code for a String object is computed as
+	 * <i>s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1]</i>
+	 * using signed int arithmetic, where <i>s[i]</i> is the <i>i</i>th character in the string,
+	 * <i>n</i> is the length of the string and <i>^</i> indicates exponentiation.
+	 * The hash value of an empty string is zero.
+	 * @return  a hash code value for this object.
+	 */
+	virtual int hashCode() const;
+
+	/**
+	 * Creates a <i>'NULL'</i> reference to a String.
+	 * @return a <i>'NULL'</i> reference to a String.
+	 */
+	static ASCIICaseInsensitiveString& getNull();
+
+	/**
+	 * Checks if this String objects represents a <i>'NULL'</i> reference.
+	 * @return <i>true</i> if the String represents a <i>'NULL'</i> reference.
+	 */
+	bool isNull() const {
+		return (_buffer == nullptr);
+	}
+
+	/**
+	 * Get constant C string (null-terminated)
+	 * @return pointer to constant C string
+	 */
+	const char *c_str() const {
+		return (const char*)_buffer;
+	}
+};
+
+extern ASCIICaseInsensitiveString NULLASCIICISTRING;
+
 } // namespace
+
+namespace std {
+	// for using ASCIICaseInsensitiveString as key in unordered_map
+	template<> struct hash<slib::ASCIICaseInsensitiveString> {
+		std::size_t operator()(const slib::ASCIICaseInsensitiveString& s) const {
+			return (size_t)s.hashCode();
+		}
+	};
+}
 
 #endif

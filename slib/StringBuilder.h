@@ -14,9 +14,9 @@
 
 namespace slib {
 
-/** 
+/**
  * Mutable string container (roughly equivalent with a Java <b>%String</b> + <b>%StringBuilder</b>, i.e. <b>NOT</b>
- * thread-safe when used in a mutable fashion !!!) 
+ * thread-safe when used in a mutable fashion !!!)
  */
 class StringBuilder {
 private:
@@ -27,7 +27,7 @@ protected:
 	mutable volatile int32_t _hash;
 
 	void grow(size_t newLen);
-	void internalAppend(const char *format, va_list ap);	
+	void internalAppend(const char *format, va_list ap);
 
 	static std::ptrdiff_t lastIndexOf(const char *source, std::ptrdiff_t sourceOffset, size_t sourceCount,
 									  const char *target, std::ptrdiff_t targetOffset, size_t targetCount,
@@ -170,7 +170,7 @@ public:
 
 	// for Java compatibility
 
-	/** 
+	/**
 	 * Compares this String to the specified String object. Returns <i>true</i> 
 	 * only if the argument is a String object that contains the same sequence 
 	 * of characters as this String or if both this and the other String 
@@ -403,16 +403,16 @@ public:
 	 * Checks if this String objects represents a <i>'NULL'</i> reference.
 	 * @return <i>true</i> if the String represents a <i>'NULL'</i> reference.
 	 */
-	bool isNull() const { 
-		return (_buffer == nullptr); 
+	bool isNull() const {
+		return (_buffer == nullptr);
 	}
 
 	/**
 	 * Get constant C string (null-terminated)
 	 * @return pointer to constant C string
 	 */
-	const char *c_str() const { 
-		return (const char*)_buffer; 
+	const char *c_str() const {
+		return (const char*)_buffer;
 	}
 
 	/**

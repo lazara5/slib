@@ -94,9 +94,11 @@ bool Thread::stopRequested(long timeout, bool *signalled /*=nullptr*/) {
 
 void *Thread::threadProc(void *p) {
 	Thread & t = *(Thread*)p;
-	int res = t.run();
 #ifdef _DEBUG
+	int res = t.run();
 	fprintf(stderr, "Thread %lu exited with code %d\n", t._threadId, res);
+#else
+	t.run();
 #endif
 	return nullptr;
 }

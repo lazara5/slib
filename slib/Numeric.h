@@ -348,9 +348,7 @@ protected:
 	}
 
 	static uint64_t doubleToLongBits(double value) {
-#if __SMART_PLATFORM == __SMART_LINUX
 		if (isnan(value))
-#endif
 			return 0x7ff8000000000000LL;
 		else {
 			uint64_t res = 0;
@@ -417,7 +415,7 @@ public:
 			throw NumberFormatException(_HERE_, "Extra characters at end of input");
 		else if ((HUGE_VAL == res || -HUGE_VAL == res) && ERANGE == errno) 
 			throw NumericOverflowException(_HERE_, "Out of range");
-  
+
 		return res;
 	}
 
@@ -455,21 +453,21 @@ public:
 		_isNull = other._isNull;
 		return *this;	// This will allow assignments to be chained
 	}
-	
+
 	bool operator==(const Boolean& other) const {
 		return equals(other);
 	}
-	
+
 	static Boolean getNull() { return Boolean(false, true); }
-	
+
 	bool isNull() const { return _isNull; }
-	
+
 	static bool parseBoolean(const char *str) {
 		if (str == nullptr)
 			return false;
 		return (!strcasecmp(str, "true"));
 	}
-	
+
 	static bool parseBoolean(const std::string& str) {
 		return parseBoolean(str.c_str());
 	}

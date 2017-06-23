@@ -79,8 +79,8 @@ StringBuilder::StringBuilder(const StringBuilder &other) {
 		_buffer = nullptr;
 	} else {
 		_buffer = (unsigned char*) malloc(other._size);
-        if (!_buffer)
-            throw OutOfMemoryError(_HERE_);
+		if (!_buffer)
+			throw OutOfMemoryError(_HERE_);
 		memcpy(_buffer, other._buffer, other._size);
 	}
 
@@ -418,8 +418,8 @@ void StringBuilder::grow(size_t newLen) {
 	} else
 		_buffer = (unsigned char*) malloc(newSize);
 
-    if (!_buffer)
-        throw OutOfMemoryError(_HERE_);
+	if (!_buffer)
+		throw OutOfMemoryError(_HERE_);
 
 	_size = newSize;
 }

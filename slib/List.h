@@ -24,13 +24,13 @@ public:
 	/**
 	 * Inserts the specified element at the specified position in this list
 	 * (optional operation). Shifts the element currently at that position
-	 * (if any) and any subsequent elements to the right.
+	 * and any subsequent elements to the right.
 	 *
 	 * @param index  index at which to insert the specified element
 	 * @param e  element to be inserted ito this list
 	 * @throws UnsupportedOperationException if the <b>add</b> operation
 	 *         is not supported by this list
-	 * @thtows IndexOutOfBoundsException if the index is out of range
+	 * @throws IndexOutOfBoundsException if the index is out of range
 	 *         (index < 0 || index > size())
 	 */
 	virtual void add(int index, const E& e) {

@@ -7,6 +7,8 @@ Application bootstrapping and general utility library. It handles:
   * Basic threading and concurrency
   * File manipulation
 
+Currently Linux only.
+
 Please note this is not currently intended as a general-purpose library. Only what was needed so far is implemented. There is no warranty for merchantability or fitness for a particular purpose.
 
 ## Dependencies

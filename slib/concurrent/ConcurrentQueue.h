@@ -49,11 +49,22 @@ public:
 			throw slib::Exception(_HERE_, fmt::format("eventfd write failed, errno = {}", slib::StringUtils::formatErrno()).c_str());
 	}
 
+	template <class... Args>
+	void emplace(Args&&... args) {
+		{
+			std::lock_guard<std::mutex> aLock(_lock);
+			_queue.emplace(std::forward<Args>(args)...);
+		}
+		uint64_t data = 1;
+		if (write(_dataCounter, &data, sizeof(uint64_t)) != sizeof(uint64_t))
+			throw slib::Exception(_HERE_, fmt::format("eventfd write failed, errno = {}", slib::StringUtils::formatErrno()).c_str());
+	}
+
 	T pop() {
 		uint64_t data;
 		if (read(_dataCounter, &data, sizeof(int64_t)) != sizeof(uint64_t))
 			throw slib::Exception(_HERE_, fmt::format("eventfd read failed, errno = {}", slib::StringUtils::formatErrno()).c_str());
-		
+
 		std::lock_guard<std::mutex> aLock(_lock);
 		T object = _queue.front();
 		_queue.pop();
@@ -69,28 +80,39 @@ public:
 template <class T>
 class FdMPMCQueue {
 private:
-	std::mutex lock;
-	int dataCounter = -1;
-	std::queue<T> queue;
+	std::mutex _lock;
+	int _dataCounter = -1;
+	std::queue<T> _queue;
 public:
 	FdMPMCQueue() {
-		dataCounter = eventfd(0, EFD_SEMAPHORE | EFD_NONBLOCK);
-		if (dataCounter == -1)
+		_dataCounter = eventfd(0, EFD_SEMAPHORE | EFD_NONBLOCK);
+		if (_dataCounter == -1)
 			throw slib::Exception(_HERE_, fmt::format("eventfd() failed, errno = {}", slib::StringUtils::formatErrno()).c_str());
 	}
 
 	virtual ~FdMPMCQueue() {
-		if (dataCounter >= 0)
-			close(dataCounter);
+		if (_dataCounter >= 0)
+			close(_dataCounter);
 	}
 
 	void push(const T& object) {
 		{
-			std::lock_guard<std::mutex> aLock(lock);
-			queue.push(object);
+			std::lock_guard<std::mutex> aLock(_lock);
+			_queue.push(object);
 		}
 		uint64_t data = 1;
-		if (write(dataCounter, &data, sizeof(uint64_t)) != sizeof(uint64_t))
+		if (write(_dataCounter, &data, sizeof(uint64_t)) != sizeof(uint64_t))
+			throw slib::Exception(_HERE_, fmt::format("eventfd write failed, errno = {}", slib::StringUtils::formatErrno()).c_str());
+	}
+
+	template <class... Args>
+	void emplace(Args&&... args) {
+		{
+			std::lock_guard<std::mutex> aLock(_lock);
+			_queue.emplace(std::forward<Args>(args)...);
+		}
+		uint64_t data = 1;
+		if (write(_dataCounter, &data, sizeof(uint64_t)) != sizeof(uint64_t))
 			throw slib::Exception(_HERE_, fmt::format("eventfd write failed, errno = {}", slib::StringUtils::formatErrno()).c_str());
 	}
 
@@ -98,20 +120,20 @@ public:
 		std::experimental::optional<T> value;
 
 		uint64_t data;
-		if (read(dataCounter, &data, sizeof(int64_t)) != sizeof(uint64_t)) {
+		if (read(_dataCounter, &data, sizeof(int64_t)) != sizeof(uint64_t)) {
 			if (errno == EAGAIN)
 				return value;
 			throw slib::Exception(_HERE_, fmt::format("eventfd read failed, errno = {}", slib::StringUtils::formatErrno()).c_str());
 		}
 
-		std::lock_guard<std::mutex> aLock(lock);
-		value = queue.front();
-		queue.pop();
+		std::lock_guard<std::mutex> aLock(_lock);
+		value = _queue.front();
+		_queue.pop();
 		return value;
 	}
 
 	int getFd() {
-		return dataCounter;
+		return _dataCounter;
 	}
 };
 
@@ -119,45 +141,45 @@ public:
 template <class T>
 class MPMCQueue {
 private:
-	std::mutex lock;
-	slib::Semaphore dataCounter;
-	std::queue<T> queue;
+	std::mutex _lock;
+	slib::Semaphore _dataCounter;
+	std::queue<T> _queue;
 public:
 	MPMCQueue()
-	:dataCounter(0) {}
+	:_dataCounter(0) {}
 
 	void push(const T& object) {
 		{
-			std::lock_guard<std::mutex> aLock(lock);
-			queue.push(object);
+			std::lock_guard<std::mutex> aLock(_lock);
+			_queue.push(object);
 		}
-		dataCounter.release();
+		_dataCounter.release();
 	}
 
 	template <class... Args>
 	void emplace(Args&&... args) {
 		{
-			std::lock_guard<std::mutex> aLock(lock);
-			queue.emplace(std::forward<Args>(args)...);
+			std::lock_guard<std::mutex> aLock(_lock);
+			_queue.emplace(std::forward<Args>(args)...);
 		}
-		dataCounter.release();
+		_dataCounter.release();
 	}
 
 	std::experimental::optional<T> pop(int timeout = -1) {
 		std::experimental::optional<T> value;
 
-		bool acquired = dataCounter.acquire(timeout);
+		bool acquired = _dataCounter.acquire(timeout);
 		if (!acquired)
 			return value;
 
-		std::lock_guard<std::mutex> aLock(lock);
-		value = queue.front();
-		queue.pop();
+		std::lock_guard<std::mutex> aLock(_lock);
+		value = _queue.front();
+		_queue.pop();
 		return value;
 	}
 
 	int getFd() {
-		return dataCounter;
+		return _dataCounter;
 	}
 };
 

@@ -77,6 +77,15 @@ public:
 		return false;
 	}
 
+	static bool equalsIgnoreCase(const std::string& str, const std::string& other) {
+		const char *buffer = str.c_str();
+		size_t len = str.size();
+
+		if (len == other.length())
+			return !strcasecmp(buffer, other.c_str());
+		return false;
+	}
+
 	static bool startsWith(const std::string& str, char prefix) {
 		const char *buffer = str.c_str();
 		return buffer[0] == prefix;

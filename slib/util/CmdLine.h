@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __SLIB_UTIL_CMDLINE_H__
-#define __SLIB_UTIL_CMDLINE_H__
+#ifndef H_SLIB_UTIL_CMDLINE_H
+#define H_SLIB_UTIL_CMDLINE_H
 
 #include <tclap/CmdLine.h>
 
@@ -26,6 +26,7 @@ private:
 	TCLAP::SwitchArg _consoleArg;
 public:
 	CmdLine(const char *description);
+	virtual ~CmdLine() {}
 
 	virtual void parse(int argc, char **argv);
 
@@ -52,4 +53,4 @@ public:
 
 } // namespace
 
-#endif
+#endif // H_SLIB_UTIL_CMDLINE_H

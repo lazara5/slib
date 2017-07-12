@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __SLIB_CONCURRENT_CONCURRENT_QUEUE_H__
-#define __SLIB_CONCURRENT_CONCURRENT_QUEUE_H__
+#ifndef H_SLIB_CONCURRENT_CONCURRENT_QUEUE_H
+#define H_SLIB_CONCURRENT_CONCURRENT_QUEUE_H
 
 #include <sys/eventfd.h>
 #include <unistd.h>
@@ -185,4 +185,4 @@ public:
 
 } // namespace
 
-#endif
+#endif // H_SLIB_CONCURRENT_CONCURRENT_QUEUE_H

@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __SLIB_CONCURRENT_THREAD_H__
-#define __SLIB_CONCURRENT_THREAD_H__
+#ifndef H_SLIB_CONCURRENT_THREAD_H
+#define H_SLIB_CONCURRENT_THREAD_H
 
 #include "slib/exception/Exception.h"
 #include "slib/util/System.h"
@@ -29,6 +29,7 @@ private:
 
 	pthread_t _threadId;
 	sem_t _semStop;	// for signalling the stop flag has been set
+protected:
 	AtomicFlag _flagStop;
 private:
 	/** internal procedure, calls run() */
@@ -69,6 +70,11 @@ public:
 	virtual pthread_t getId() {
 		return _threadId;
 	}
+
+	virtual void sleep(long millis) {
+		stopRequested(millis);
+	}
+
 protected:
 	/** @return true if stop() has been called for this thread. If a timeout has been specified, it waits. */
 	virtual bool stopRequested(long timeout = 0, bool *signalled = nullptr);
@@ -76,5 +82,5 @@ protected:
 
 } // namespace
 
-#endif
+#endif // H_SLIB_CONCURRENT_THREAD_H
 

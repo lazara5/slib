@@ -10,6 +10,7 @@ add_custom_target(headers SOURCES ${slibHeaders})
 set(SLIB_SOURCES slib/String.cpp
                  slib/concurrent/Semaphore.cpp
                  slib/concurrent/Thread.cpp
+                 slib/concurrent/FdThread.cpp
                  slib/exception/Exception.cpp
                  slib/util/CmdLine.cpp
                  slib/util/Config.cpp

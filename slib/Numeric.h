@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __SLIB_NUMERIC_H__
-#define __SLIB_NUMERIC_H__
+#ifndef H_SLIB_NUMERIC_H
+#define H_SLIB_NUMERIC_H
 
 #include "slib/exception/NumericExceptions.h"
 
@@ -15,7 +15,7 @@
 #include <math.h>
 #include <limits.h>
 
-#define __min(a,b)  (((a) < (b)) ? (a) : (b))
+#define slib_min(a,b)  (((a) < (b)) ? (a) : (b))
 
 namespace slib {
 
@@ -47,7 +47,7 @@ public:
 	, _isNull(other._isNull) {
 	}
 
-	virtual int hashCode() const {
+	int hashCode() const {
 		return _value;
 	}
 
@@ -57,7 +57,7 @@ public:
 		return *this;	// This will allow assignments to be chained
 	}
 
-	virtual bool equals(const Integer& other) const {
+	bool equals(const Integer& other) const {
 		if (_isNull)
 			return (other._isNull);
 		if (other._isNull)
@@ -175,7 +175,7 @@ public:
 	 *
      * @return  a hash code value for this object.
      */
-	virtual int hashCode() const {
+	int hashCode() const {
 		return (int)(_value ^ (((uint64_t)_value) >> 32));
 	} 
 
@@ -185,7 +185,7 @@ public:
 		return *this;	// This will allow assignments to be chained
 	}
 
-	virtual bool equals(const Long& other) const {
+	bool equals(const Long& other) const {
 		if (_isNull)
 			return (other._isNull);
 		if (other._isNull)
@@ -245,7 +245,7 @@ protected:
 	, _isNull(makeNull) {
 	}
 public:
-	static const int64_t MAX_VALUE = UINT64_MAX;
+	static const uint64_t MAX_VALUE = UINT64_MAX;
 
 	ULong(uint64_t value)
 	:_value(value)
@@ -263,7 +263,7 @@ public:
      *
      * @return  a hash code value for this object.
      */
-	virtual int hashCode() const {
+	int hashCode() const {
 		return (int)(_value ^ (_value >> 32));
 	}
 
@@ -273,7 +273,7 @@ public:
 		return *this;	// This will allow assignments to be chained
 	}
 
-	virtual bool equals(const ULong& other) const {
+	bool equals(const ULong& other) const {
 		if (_isNull) 
 			return (other._isNull);
 		if (other._isNull)
@@ -334,6 +334,17 @@ public:
 	static uint64_t parseULong(const std::string& str, uint64_t defaultValue) {
 		return parseULong(str.c_str(), defaultValue);
 	}
+
+	struct hash {								///< hash based on mix from Murmur3
+		size_t operator()(const uint64_t& key) const {
+			uint64_t k = key ^ (key >> 33);
+			k *= 0xff51afd7ed558ccd;
+			k ^= k >> 33;
+			k *= 0xc4ceb9fe1a85ec53;
+			k ^= k >> 33;
+			return (size_t) k;
+		}
+	};
 };
 
 /** Double value */
@@ -352,7 +363,7 @@ protected:
 			return 0x7ff8000000000000LL;
 		else {
 			uint64_t res = 0;
-			int len = __min(sizeof(double), sizeof(uint64_t));
+			int len = slib_min(sizeof(double), sizeof(uint64_t));
 			memcpy(&res, &value, len);
 			return res;
 		}
@@ -374,7 +385,7 @@ public:
      *
      * @return a hash code value for this object.
      */
-	virtual int hashCode() const {
+	int hashCode() const {
 		uint64_t bits = doubleToLongBits(_value);
 		return (int)(bits ^ (bits >> 32));
 	}
@@ -385,7 +396,7 @@ public:
 		return *this;	// This will allow assignments to be chained
 	}
 
-	virtual bool equals(const Double& other) const {
+	bool equals(const Double& other) const {
 		if (_isNull) 
 			return (other._isNull);
 		if (other._isNull)
@@ -440,7 +451,7 @@ public:
 	,_isNull(false) {
 	}
 	
-	virtual bool equals(const Boolean& other) const {
+	bool equals(const Boolean& other) const {
 		if (_isNull) 
 			return (other._isNull);
 		if (other._isNull)
@@ -484,5 +495,5 @@ namespace std {
 	};
 }
 
-#endif
+#endif // H_SLIB_NUMERIC_H
 

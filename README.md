@@ -7,7 +7,7 @@ Application bootstrapping and general utility library. It handles:
   * Basic threading and concurrency
   * File manipulation
 
-Currently Linux only.
+Currently Linux only. Requires a compiler with C++11 support.
 
 Please note this is not currently intended as a general-purpose library. Only what was needed so far is implemented. There is no warranty for merchantability or fitness for a particular purpose.
 
@@ -17,4 +17,5 @@ Please note this is not currently intended as a general-purpose library. Only wh
   * [spdlog](https://github.com/gabime/spdlog)
   * [tclap](http://tclap.sourceforge.net/)
   * [libbsd](https://libbsd.freedesktop.org/wiki/)
+  * [std::experimental::optional](https://github.com/akrzemi1/Optional)
 

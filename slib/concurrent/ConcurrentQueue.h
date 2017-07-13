@@ -10,6 +10,7 @@
 
 #include <queue>
 #include <mutex>
+#include <memory>
 
 #include "fmt/format.h"
 #include "optional/optional.hpp"
@@ -177,9 +178,36 @@ public:
 		_queue.pop();
 		return value;
 	}
+};
 
-	int getFd() {
-		return _dataCounter;
+/** Multi-producer multi-consumer concurrent queue of shared_ptr implemented via a semaphore */
+template <class T>
+class ShMPMCQueue {
+private:
+	std::mutex _lock;
+	slib::Semaphore _dataCounter;
+	std::queue<std::shared_ptr<T> > _queue;
+public:
+	ShMPMCQueue()
+	:_dataCounter(0) {}
+
+	void push(const std::shared_ptr<T>& object) {
+		{
+			std::lock_guard<std::mutex> aLock(_lock);
+			_queue.push(object);
+		}
+		_dataCounter.release();
+	}
+
+	std::shared_ptr<T> pop(int timeout = -1) {
+		bool acquired = _dataCounter.acquire(timeout);
+		if (!acquired)
+			return nullptr;
+
+		std::lock_guard<std::mutex> aLock(_lock);
+		std::shared_ptr<T> value = _queue.front();
+		_queue.pop();
+		return value;
 	}
 };
 

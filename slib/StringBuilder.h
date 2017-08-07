@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __SLIB_STRINGBUILDER_H__
-#define __SLIB_STRINGBUILDER_H__
+#ifndef H_SLIB_STRINGBUILDER_H
+#define H_SLIB_STRINGBUILDER_H
 
 #include "slib/String.h"
 #include "slib/exception/NullPointerException.h"
@@ -444,35 +444,35 @@ public:
 	NullStringBuilder()
 	:StringBuilder(nullptr) {}
 
-	void alloc(size_t newLen) { throw NullStringBuilderException(); }
-	void setLength(size_t newLen) { throw NullStringBuilderException(); }
+	[[ noreturn ]] void alloc(size_t) { throw NullStringBuilderException(); }
+	[[ noreturn ]] void setLength(size_t) { throw NullStringBuilderException(); }
 	StringBuilder& operator=(const StringBuilder&) { throw NullStringBuilderException(); }
-	StringBuilder& operator=(StringBuilder &&other) { throw NullStringBuilderException(); }
-	void assign(const char *src, size_t len) { throw NullStringBuilderException(); }
-	void assignInternal(const char *src, size_t len) { throw NullStringBuilderException(); }
-	void clear() { throw NullStringBuilderException(); }
-	void truncate(size_t len) { throw NullStringBuilderException(); }
-	StringBuilder& add(const char *src, std::ptrdiff_t len = -1) { throw NullStringBuilderException(); }
-	StringBuilder& add(const StringBuilder& src) { throw NullStringBuilderException(); }
-	StringBuilder& addLine(const char *src, std::ptrdiff_t len = -1) { throw NullStringBuilderException(); }
-	StringBuilder& add(char c) { throw NullStringBuilderException(); }
-	StringBuilder& add(int i) { throw NullStringBuilderException(); }
-	StringBuilder& add(int64_t i) { throw NullStringBuilderException(); }
-	StringBuilder& add(double d) { throw NullStringBuilderException(); }
-	StringBuilder& addFmt(const char *format, ...) { throw NullStringBuilderException(); }
-	StringBuilder& addFmtVL(const char *format, va_list ap) { throw NullStringBuilderException(); }
-	StringBuilder& addFmtLine(const char *format, ...) { throw NullStringBuilderException(); }
-	StringBuilder& operator+=(const StringBuilder& op) { throw NullStringBuilderException(); }
-	StringBuilder& operator+=(const char* op) { throw NullStringBuilderException(); }
-	StringBuilder& operator+=(char op) { throw NullStringBuilderException(); }
-	StringBuilder& operator+=(int op) { throw NullStringBuilderException(); }
-	StringBuilder& operator+=(int64_t op) { throw NullStringBuilderException(); }
-	StringBuilder& operator+=(double op) { throw NullStringBuilderException(); }
+	StringBuilder& operator=(StringBuilder &&) { throw NullStringBuilderException(); }
+	[[ noreturn ]] void assign(const char *, size_t) { throw NullStringBuilderException(); }
+	[[ noreturn ]] void assignInternal(const char *, size_t) { throw NullStringBuilderException(); }
+	[[ noreturn ]] void clear() { throw NullStringBuilderException(); }
+	[[ noreturn ]] void truncate(size_t) { throw NullStringBuilderException(); }
+	[[ noreturn ]] StringBuilder& add(const char, std::ptrdiff_t = -1) { throw NullStringBuilderException(); }
+	[[ noreturn ]] StringBuilder& add(const StringBuilder&) { throw NullStringBuilderException(); }
+	[[ noreturn ]] StringBuilder& addLine(const char *, std::ptrdiff_t = -1) { throw NullStringBuilderException(); }
+	[[ noreturn ]] StringBuilder& add(char) { throw NullStringBuilderException(); }
+	[[ noreturn ]] StringBuilder& add(int) { throw NullStringBuilderException(); }
+	[[ noreturn ]] StringBuilder& add(int64_t) { throw NullStringBuilderException(); }
+	[[ noreturn ]] StringBuilder& add(double) { throw NullStringBuilderException(); }
+	[[ noreturn ]] StringBuilder& addFmt(const char *, ...) { throw NullStringBuilderException(); }
+	[[ noreturn ]] StringBuilder& addFmtVL(const char *, va_list) { throw NullStringBuilderException(); }
+	[[ noreturn ]] StringBuilder& addFmtLine(const char *, ...) { throw NullStringBuilderException(); }
+	StringBuilder& operator+=(const StringBuilder&) { throw NullStringBuilderException(); }
+	StringBuilder& operator+=(const char*) { throw NullStringBuilderException(); }
+	StringBuilder& operator+=(char) { throw NullStringBuilderException(); }
+	StringBuilder& operator+=(int) { throw NullStringBuilderException(); }
+	StringBuilder& operator+=(int64_t) { throw NullStringBuilderException(); }
+	StringBuilder& operator+=(double) { throw NullStringBuilderException(); }
 	StringBuilder& operator<<(const StringBuilder&) { throw NullStringBuilderException(); }
-	StringBuilder& operator<<(char c) { throw NullStringBuilderException(); }
-	StringBuilder& operator<<(int i) { throw NullStringBuilderException(); }
-	StringBuilder& operator<<(int64_t i) { throw NullStringBuilderException(); }
-	StringBuilder& operator<<(double d) { throw NullStringBuilderException(); }
+	StringBuilder& operator<<(char) { throw NullStringBuilderException(); }
+	StringBuilder& operator<<(int) { throw NullStringBuilderException(); }
+	StringBuilder& operator<<(int64_t) { throw NullStringBuilderException(); }
+	StringBuilder& operator<<(double) { throw NullStringBuilderException(); }
 	char *str() { throw NullStringBuilderException(); }
 };
 
@@ -489,4 +489,4 @@ namespace std {
 	};
 }
 
-#endif
+#endif // H_SLIB_STRINGBUILDER_H

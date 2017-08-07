@@ -363,7 +363,7 @@ protected:
 			return 0x7ff8000000000000LL;
 		else {
 			uint64_t res = 0;
-			int len = slib_min(sizeof(double), sizeof(uint64_t));
+			size_t len = slib_min(sizeof(double), sizeof(uint64_t));
 			memcpy(&res, &value, len);
 			return res;
 		}

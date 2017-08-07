@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __SLIB_STRING_H__
-#define __SLIB_STRING_H__
+#ifndef H_SLIB_STRING_H
+#define H_SLIB_STRING_H
 
 #include "slib/exception/Exception.h"
 #include "slib/List.h"
@@ -320,7 +320,7 @@ public:
 	ASCIICaseInsensitiveString(const ASCIICaseInsensitiveString &other);
 	ASCIICaseInsensitiveString(const std::string& other);
 
-	~ASCIICaseInsensitiveString();
+	virtual ~ASCIICaseInsensitiveString();
 
 	size_t length() const {
 		return _len;
@@ -421,4 +421,4 @@ namespace std {
 	};
 }
 
-#endif
+#endif // H_SLIB_STRING_H

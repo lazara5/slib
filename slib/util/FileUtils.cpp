@@ -54,7 +54,7 @@ mode_t parseModeSpec(const std::string& modeSpec) {
 		if (modeLen > 9) {
 			if (isMode(modeStr[9], 't')) mode |= S_ISVTX;
 		}
-	} catch (IllegalArgumentException const& e) {
+	} catch (IllegalArgumentException const&) {
 		throw (int)EINVAL;
 	}
 
@@ -121,26 +121,26 @@ std::string FileUtils::getPath(const std::string& fileName) {
 	std::ptrdiff_t lastSep = String::lastIndexOf(fileName, '/');
 	if (lastSep < 0)
 		return fileName;
-	return String::substring(fileName, 0, lastSep);
+	return String::substring(fileName, 0, (size_t)lastSep);
 }
 
-int indexOfLastSep(const std::string& fileName) {
+ptrdiff_t indexOfLastSep(const std::string& fileName) {
 	return String::lastIndexOf(fileName, '/');
 }
 
-int indexOfExtSep(const std::string& fileName) {
-	int extPos = String::lastIndexOf(fileName, '.');
-	int lastSep = indexOfLastSep(fileName);
+ptrdiff_t indexOfExtSep(const std::string& fileName) {
+	ptrdiff_t extPos = String::lastIndexOf(fileName, '.');
+	ptrdiff_t lastSep = indexOfLastSep(fileName);
 	if (lastSep > extPos)
 		return -1;
 	return extPos;
 }
 
-std::string FileUtils::getExtension(const std::string fileName) {
-	int index = indexOfExtSep(fileName);
+std::string FileUtils::getExtension(const std::string& fileName) {
+	ptrdiff_t index = indexOfExtSep(fileName);
 	if (index < 0)
 		return "";
-	return String::substring(fileName, index + 1);
+	return String::substring(fileName, (size_t)index + 1);
 }
 
 bool isSep(char ch) {
@@ -179,8 +179,8 @@ bool isSep(char ch) {
  * @param fileName  the filename to find the prefix in
  * @return the length of the prefix, -1 if invalid
  */
-int getPrefixLength(const std::string fileName) {
-	int len = fileName.size();
+ptrdiff_t getPrefixLength(const std::string& fileName) {
+	size_t len = fileName.size();
 	if (len == 0)
 		return 0;
 	
@@ -192,10 +192,10 @@ int getPrefixLength(const std::string fileName) {
 		return isSep(c0) ? 1 : 0;
 	} else {
 		if (c0 == '~') {
-			int posUnix = String::indexOf(fileName, UNIX_SEPARATOR, 1);
-			int posWin = String::indexOf(fileName, WINDOWS_SEPARATOR, 1);
+			ptrdiff_t posUnix = String::indexOf(fileName, UNIX_SEPARATOR, 1);
+			ptrdiff_t posWin = String::indexOf(fileName, WINDOWS_SEPARATOR, 1);
 			if (posUnix < 0 && posWin < 0)
-				return len + 1;  // return a length greater than the input
+				return (ptrdiff_t)len + 1;  // return a length greater than the input
 
 			posUnix = posUnix < 0 ? posWin : posUnix;
 			posWin = posWin < 0 ? posUnix : posWin;
@@ -204,7 +204,7 @@ int getPrefixLength(const std::string fileName) {
 
 		char c1 = fileName[1];
 		if (c1 == ':') {
-			c0 = toupper(c0);
+			c0 = (char)toupper(c0);
 			if (c0 >= 'A' && c0 <= 'Z') {
 				if (len == 2 || isSep(fileName[2]) == false)
 					return 2;
@@ -213,8 +213,8 @@ int getPrefixLength(const std::string fileName) {
 				return 1;
 			return -1;
 		} else if (isSep(c0) && isSep(c1)) {
-			int posUnix = String::indexOf(fileName, UNIX_SEPARATOR, 2);
-			int posWin = String::indexOf(fileName, WINDOWS_SEPARATOR, 2);
+			ptrdiff_t posUnix = String::indexOf(fileName, UNIX_SEPARATOR, 2);
+			ptrdiff_t posWin = String::indexOf(fileName, WINDOWS_SEPARATOR, 2);
 			if ((posUnix == -1 && posWin == -1) || posUnix == 2 || posWin == 2)
 				return -1;
 			posUnix = posUnix < 0 ? posWin : posUnix;
@@ -225,14 +225,15 @@ int getPrefixLength(const std::string fileName) {
 	}
 }
 
-std::string FileUtils::doNormalize(const std::string fileName, char sep, bool keepSep) {
-	int size = fileName.size();
+std::string FileUtils::doNormalize(const std::string& fileName, char sep, bool keepSep) {
+	size_t size = fileName.size();
 	if (size == 0)
 		return fileName;
 
-	int prefix = getPrefixLength(fileName);
-	if (prefix < 0)
+	ptrdiff_t prefixLen = getPrefixLength(fileName);
+	if (prefixLen < 0)
 		throw InvalidPathException(_HERE_, fmt::format("Invalid path: '{}'", fileName).c_str());
+	size_t prefix = (size_t)prefixLen;
 
 	std::vector<char> array(size + 2);
 	memcpy(array.data(), fileName.c_str(), fileName.size() * sizeof(char));
@@ -252,27 +253,27 @@ std::string FileUtils::doNormalize(const std::string fileName, char sep, bool ke
 	}
 
 	// //
-	for (int i = prefix + 1; i < size; i++) {
+	for (size_t i = prefix + 1; i < size; i++) {
 		if (array[i] == sep && array[i - 1] == sep) {
-			array.erase(array.begin() + i - 1);
+			array.erase(array.begin() + (ptrdiff_t)i - 1);
 			size--;
 			i--;
 		}
 	}
 
 	// ./
-	for (int i = prefix + 1; i < size; i++) {
+	for (size_t i = prefix + 1; i < size; i++) {
 		if (array[i] == sep && array[i - 1] == '.' && (i == prefix + 1 || array[i - 2] == sep)) {
 			if (i == size - 1)
 				lastIsDir = true;
-			array.erase(array.begin() + i - 1, array.begin() + i + 1);
+			array.erase(array.begin() + (ptrdiff_t)i - 1, array.begin() + (ptrdiff_t)i + 1);
 			size -= 2;
 			i--;
 		}
 	}
 
 	// ../
-	for (int i = prefix + 2; i < size; i++) {
+	for (size_t i = prefix + 2; i < size; i++) {
 		if (array[i] == sep && array[i - 1] == '.' && array[i - 2] == '.' && (i == prefix + 2 || array[i - 3] == sep)) {
 			if (i == prefix + 2)
 				throw InvalidPathException(_HERE_, fmt::format("Invalid path after normalization: '{}'", fileName).c_str());
@@ -280,13 +281,13 @@ std::string FileUtils::doNormalize(const std::string fileName, char sep, bool ke
 			if (i == size - 1)
 				lastIsDir = true;
 
-			int j;
+			size_t j;
 			bool continueOuter = false;
 
 			for (j = i - 4 ; j >= prefix; j--) {
 				if (array[j] == sep) {
 					// remove b/../ from a/b/../c
-					array.erase(array.begin() + j + 1, array.begin() + i + 1);
+					array.erase(array.begin() + (ptrdiff_t)j + 1, array.begin() + (ptrdiff_t)i + 1);
 					size -= i - j;
 					i = j + 1;
 					continueOuter = true;
@@ -298,7 +299,7 @@ std::string FileUtils::doNormalize(const std::string fileName, char sep, bool ke
 				continue;
 
 			// remove a/../ from a/../c
-			array.erase(array.begin() + prefix, array.begin() + i + 1);
+			array.erase(array.begin() + (ptrdiff_t)prefix, array.begin() + (ptrdiff_t)i + 1);
 			size -= i + 1 - prefix;
 			i = prefix + 1;
 		}
@@ -308,16 +309,16 @@ std::string FileUtils::doNormalize(const std::string fileName, char sep, bool ke
 		return "";
 
 	if (size <= prefix) {  // should never be less than prefix
-		return std::string(array.begin(), array.begin() + size);
+		return std::string(array.begin(), array.begin() + (ptrdiff_t)size);
 	}
 
 	if (lastIsDir && keepSep)
-		return std::string(array.begin(), array.begin() + size); // keep trailing separator
+		return std::string(array.begin(), array.begin() + (ptrdiff_t)size); // keep trailing separator
 
-	return std::string(array.begin(), array.begin() + size - 1); // drop trailing separator
+	return std::string(array.begin(), array.begin() + (ptrdiff_t)size - 1); // drop trailing separator
 }
 
-std::string FileUtils::normalize(const std::string fileName) {
+std::string FileUtils::normalize(const std::string& fileName) {
 	return doNormalize(fileName, SYSTEM_SEPARATOR, true);
 }
 

@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __SLIB_UTIL_CONFIG_H__
-#define __SLIB_UTIL_CONFIG_H__
+#ifndef H_SLIB_UTIL_CONFIG_H
+#define H_SLIB_UTIL_CONFIG_H
 
 #include "slib/util/Log.h"
 #include "slib/util/StringUtils.h"
@@ -71,7 +71,7 @@ public:
 	std::string getValue(const std::string& name, const std::string& defaultValue) const {
 		try {
 			return getValue(name);
-		} catch (MissingValueException const& e) {
+		} catch (MissingValueException const&) {
 			return defaultValue;
 		}
 	}
@@ -79,20 +79,42 @@ public:
 	/** @throws MissingValueException
 	  * @throws NumberFormatException
 	  */
-	template <uint32_t MIN = slib::Integer::MIN_VALUE, uint32_t MAX = slib::Integer::MAX_VALUE>
-	int getIntValue(const std::string& name) const {
+	template <int32_t MIN = slib::Integer::MIN_VALUE, int32_t MAX = slib::Integer::MAX_VALUE>
+	int32_t getIntValue(const std::string& name) const {
 		try {
-			return rangeCheck<uint32_t, MIN, MAX>(_HERE_, Integer::parseInt(getValue(name)));
+			return rangeCheck<int32_t, MIN, MAX>(_HERE_, Integer::parseInt(getValue(name)));
 		} catch (NumberFormatException const& e) {
 			throw NumberFormatException(_HERE_, fmt::format("Invalid integer value: {} ({})", name, e.getMessage()).c_str());
 		}
 	}
 
 	/** @throws NumberFormatException */
-	template <uint32_t MIN = slib::Integer::MIN_VALUE, uint32_t MAX = slib::Integer::MAX_VALUE>
-	int getIntValue(const std::string& name, int defaultValue) const {
+	template <int32_t MIN = slib::Integer::MIN_VALUE, int32_t MAX = slib::Integer::MAX_VALUE>
+	int32_t getIntValue(const std::string& name, int32_t defaultValue) const {
 		try {
 			return getIntValue<MIN, MAX>(name);
+		} catch (MissingValueException const&) {
+			return defaultValue;
+		}
+	}
+
+	/** @throws MissingValueException
+	  * @throws NumberFormatException
+	  */
+	template <uint32_t MIN = 0, uint32_t MAX = slib::UInt::MAX_VALUE>
+	uint32_t getUIntValue(const std::string& name) const {
+		try {
+			return rangeCheck<uint32_t, MIN, MAX>(_HERE_, UInt::parseUInt(getValue(name)));
+		} catch (NumberFormatException const& e) {
+			throw NumberFormatException(_HERE_, fmt::format("Invalid integer value: {} ({})", name, e.getMessage()).c_str());
+		}
+	}
+
+	/** @throws NumberFormatException */
+	template <uint32_t MIN = 0, uint32_t MAX = slib::UInt::MAX_VALUE>
+	uint32_t getUIntValue(const std::string& name, uint32_t defaultValue) const {
+		try {
+			return getUIntValue<MIN, MAX>(name);
 		} catch (MissingValueException const&) {
 			return defaultValue;
 		}
@@ -106,7 +128,7 @@ public:
 	bool getBoolValue(const std::string& name, bool defaultValue) const {
 		try {
 			return getBoolValue(name);
-		} catch (MissingValueException const& e) {
+		} catch (MissingValueException const&) {
 			return defaultValue;
 		}
 	}
@@ -120,4 +142,4 @@ public:
 
 } // namespace
 
-#endif
+#endif // H_SLIB_UTIL_CONFIG_H

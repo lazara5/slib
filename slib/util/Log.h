@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __SLIB_UTIL_LOG_H__
-#define __SLIB_UTIL_LOG_H__
+#ifndef H_SLIB_UTIL_LOG_H
+#define H_SLIB_UTIL_LOG_H
 
 #include "slib/util/Config.h"
 #include "slib/Iterator.h"
@@ -170,9 +170,14 @@ public:
 		logvf(Level::Error, spdlog::level::err, format, ap);
 	}
 
-	void fatalf(const char *format, ...)
-		__attribute__((format (printf, 2, 3)));
-	void fatal(const char *message);
+	template <typename... Args>
+	void fatalf(const char *format, const Args&... args) {
+		log(Level::Fatal, spdlog::level::critical, format, args...);
+	}
+
+	void fatal(const char *message) {
+		log(Level::Fatal, spdlog::level::critical, message);
+	}
 
 	void debug(const char *message) {
 		log(Level::Debug, spdlog::level::debug, message);
@@ -183,9 +188,14 @@ public:
 		log(Level::Debug, spdlog::level::debug, format, args...);
 	}
 
-	void tracef(const char *format, ...)
-		__attribute__((format (printf, 2, 3)));
-	void trace(const char *message);
+	template <typename... Args>
+	void tracef(const char *format, const Args&... args) {
+		log(Level::Trace, spdlog::level::trace, format, args...);
+	}
+
+	void trace(const char *message) {
+		log(Level::Trace, spdlog::level::trace, message);
+	}
 
 	static void shutdown() {
 		// Under VisualStudio, this must be called before main finishes to workaround a known VS issue
@@ -195,4 +205,4 @@ public:
 
 } // namespace
 
-#endif
+#endif // H_SLIB_UTIL_LOG_H

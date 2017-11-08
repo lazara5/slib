@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef _SLIB_UTIL_STRINGUTILS_H_
-#define _SLIB_UTIL_STRINGUTILS_H_
+#ifndef H_SLIB_UTIL_STRINGUTILS_H
+#define H_SLIB_UTIL_STRINGUTILS_H
 
 #include "slib/exception/Exception.h"
 #include "slib/util/PropertyProvider.h"
@@ -97,4 +97,4 @@ public:
 
 } // namespace
 
-#endif
+#endif // H_SLIB_UTIL_STRINGUTILS_H

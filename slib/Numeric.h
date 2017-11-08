@@ -29,8 +29,8 @@ protected:
 	:_value(value)
 	,_isNull(makeNull) {}
 public:
-	static const int MIN_VALUE = INT32_MIN;
-	static const int MAX_VALUE = INT32_MAX;
+	static const int32_t MIN_VALUE = INT32_MIN;
+	static const int32_t MAX_VALUE = INT32_MAX;
 
 	Integer()
 	:_value(0)
@@ -136,6 +136,123 @@ public:
 	 *         represented by the argument in hexadecimal (base 16).
 	 */
 	static std::string toHexString(int32_t i) {
+		return fmt::format("{:x}", i);
+	}
+};
+
+/** 32-bit unsigned integer */
+class UInt {
+private:
+	uint32_t _value;
+	bool _isNull;
+protected:
+	UInt(uint32_t value, bool makeNull)
+	:_value(value)
+	,_isNull(makeNull) {}
+public:
+	static const uint32_t MIN_VALUE = 0;
+	static const uint32_t MAX_VALUE = UINT32_MAX;
+
+	UInt()
+	:_value(0)
+	,_isNull(false) {
+	}
+
+	UInt(uint32_t value)
+	:_value(value)
+	,_isNull(false) {
+	}
+
+	UInt(const UInt& other)
+	: _value(other._value)
+	, _isNull(other._isNull) {
+	}
+
+	int hashCode() const {
+		return (int)_value;
+	}
+
+	UInt& operator =(const UInt& other) {
+		_value = other._value;
+		_isNull = other._isNull;
+		return *this;	// This will allow assignments to be chained
+	}
+
+	bool equals(const UInt& other) const {
+		if (_isNull)
+			return (other._isNull);
+		if (other._isNull)
+			return _isNull;
+		return (_value == other._value);
+	}
+
+	bool operator ==(const UInt& other) const {
+		return equals(other);
+	}
+
+	uint32_t uintValue() const {
+		return _value;
+	}
+
+	static UInt getNull() { return UInt(0, true); }
+
+	bool isNull() const { return _isNull; }
+
+	static uint32_t parseUInt(const char *str, int radix) {
+		if (str == nullptr)
+			throw NumberFormatException(_HERE_, "null");
+
+		char *end;
+		errno = 0;
+		const unsigned long res = strtoul(str, &end, radix);
+
+		if (end == str)
+			throw NumberFormatException(_HERE_, "Not a decimal number");
+		else if (0 != *end)
+			throw NumberFormatException(_HERE_, "Extra characters at end of input");
+		else if (ULONG_MAX == res && ERANGE == errno)
+			throw NumericOverflowException(_HERE_, "Out of range");
+
+		return (uint32_t)res;
+	}
+
+	static uint32_t parseUInt(const char *str) {
+		return parseUInt(str, 10);
+	}
+
+	static uint32_t parseUInt(const std::string& s) {
+		return parseUInt(s.c_str(), 10);
+	}
+
+	static uint32_t parseUInt(const std::string& s, int radix) {
+		return parseUInt(s.c_str(), radix);
+	}
+
+	static std::string toString(uint32_t i) {
+		std::stringstream stream;
+		stream << i;
+		return stream.str();
+	}
+
+	/**
+	 * Returns a string representation of the integer argument as an
+	 * unsigned integer in base&nbsp;16.
+	 * <p>
+	 * The unsigned integer value is the argument plus 2<sup>32</sup>
+	 * if the argument is negative; otherwise, it is equal to the
+	 * argument. This value is converted to a string of digits
+	 * in hexadecimal (base&nbsp;16) with no extra leading
+	 * 0s. If the unsigned magnitude is zero, it is
+	 * represented by a single zero character <code>'0'</code>.
+	 * Otherwise, the first character of the representation of the
+	 * unsigned magnitude will not be the zero character.
+	 * The hexadecimal digits are lowercase.
+	 *
+	 * @param i  an integer to be converted to a string.
+	 * @return the string representation of the unsigned integer value
+	 *         represented by the argument in hexadecimal (base 16).
+	 */
+	static std::string toHexString(uint32_t i) {
 		return fmt::format("{:x}", i);
 	}
 };

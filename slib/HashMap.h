@@ -5,6 +5,8 @@
 #ifndef H_SLIB_HASHMAP_H
 #define H_SLIB_HASHMAP_H
 
+#include <functional>
+
 #include "slib/Map.h"
 #include "slib/Numeric.h"
 #include "slib/exception/IllegalStateException.h"

@@ -476,7 +476,7 @@ protected:
 	}
 
 	static uint64_t doubleToLongBits(double value) {
-		if (isnan(value))
+		if (std::isnan(value))
 			return 0x7ff8000000000000LL;
 		else {
 			uint64_t res = 0;

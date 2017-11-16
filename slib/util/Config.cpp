@@ -37,6 +37,15 @@ bool dmp(void *data, const std::string& k, const std::string& v) {
 	return true;
 }
 
+std::string Config::locateConfigFile(const std::string& fileName) const {
+	ArrayList<std::string> confList;
+	confList.add("/etc");
+	confList.add(FileUtils::buildPath(_rootDir, "conf"));
+	onBeforeSearch(confList);
+
+	return searchConfigFile(confList, fileName);
+}
+
 /** @throws InitException */
 void Config::init() {
 	char pathBuf[1024] = "";
@@ -64,12 +73,7 @@ void Config::init() {
 
 	_rootDir = pathBuf;
 
-	ArrayList<std::string> confList;
-	confList.add("/etc");
-	confList.add(FileUtils::buildPath(_rootDir, "conf"));
-	onBeforeSearch(confList);
-
-	std::string configDir = searchConfigFile(confList, _confFileName);
+	std::string configDir = locateConfigFile(_confFileName);
 	if (configDir.length() < 1)
 		throw InitException(_HERE_, fmt::format("Could not locate config file '{}'", _confFileName).c_str());
 

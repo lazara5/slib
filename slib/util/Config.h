@@ -56,7 +56,9 @@ public:
 	/** @throws InitException */
 	virtual void init();
 
-	virtual void onBeforeSearch(List<std::string> &pathList) {}
+	virtual std::string locateConfigFile(const std::string& fileName) const;
+
+	virtual void onBeforeSearch(List<std::string> &pathList) const {}
 
 	static void shutdown();
 	void forEach(bool (*callback)(void*, const std::string&, const std::string&), void *userData) const {

@@ -1,7 +1,7 @@
 # slib
 Application bootstrapping and general utility library. It handles:
 
-  * Aplication configuration
+  * Application configuration
   * Logging (on top of spdlog)
   * String and number manipulation (with Java-like API)
   * Basic threading and concurrency

@@ -4,6 +4,7 @@ Application bootstrapping and general utility library. It handles:
   * Application configuration
   * Logging (on top of spdlog)
   * String and number manipulation (with Java-like API)
+  * Basic data structures (with mixed Java/C++-like API)
   * Basic threading and concurrency
   * File manipulation
 

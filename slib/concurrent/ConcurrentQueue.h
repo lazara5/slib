@@ -138,6 +138,54 @@ public:
 	}
 };
 
+/** Multi-producer multi-consumer concurrent queue of shared_ptr implemented via eventfd */
+template <class T>
+class ShFdMPMCQueue {
+private:
+	std::mutex _lock;
+	int _dataCounter = -1;
+	std::queue<std::shared_ptr<T> > _queue;
+public:
+	ShFdMPMCQueue() {
+		_dataCounter = eventfd(0, EFD_SEMAPHORE | EFD_NONBLOCK);
+		if (_dataCounter == -1)
+			throw slib::Exception(_HERE_, fmt::format("eventfd() failed, errno = {}", slib::StringUtils::formatErrno()).c_str());
+	}
+
+	virtual ~ShFdMPMCQueue() {
+		if (_dataCounter >= 0)
+			close(_dataCounter);
+	}
+
+	void push(const std::shared_ptr<T>& object) {
+		{
+			std::lock_guard<std::mutex> aLock(_lock);
+			_queue.push(object);
+		}
+		uint64_t data = 1;
+		if (write(_dataCounter, &data, sizeof(uint64_t)) != sizeof(uint64_t))
+			throw slib::Exception(_HERE_, fmt::format("eventfd write failed, errno = {}", slib::StringUtils::formatErrno()).c_str());
+	}
+
+	std::shared_ptr<T> pop() {
+		uint64_t data;
+		if (read(_dataCounter, &data, sizeof(int64_t)) != sizeof(uint64_t)) {
+			if (errno == EAGAIN)
+				return nullptr;
+			throw slib::Exception(_HERE_, fmt::format("eventfd read failed, errno = {}", slib::StringUtils::formatErrno()).c_str());
+		}
+
+		std::lock_guard<std::mutex> aLock(_lock);
+		std::shared_ptr<T> value = _queue.front();
+		_queue.pop();
+		return value;
+	}
+
+	int getFd() {
+		return _dataCounter;
+	}
+};
+
 /** Multi-producer multi-consumer concurrent queue implemented via a semaphore */
 template <class T>
 class MPMCQueue {

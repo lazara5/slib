@@ -8,7 +8,7 @@ Application bootstrapping and general utility library. It handles:
   * Basic threading and concurrency
   * File manipulation
 
-Currently Linux only. Requires a compiler with C++11 support.
+Currently Linux only. Requires a compiler with C++14 support.
 
 Please note this is not currently intended as a general-purpose library. Only what was needed so far is implemented. There is no warranty for merchantability or fitness for a particular purpose.
 
@@ -19,4 +19,5 @@ Please note this is not currently intended as a general-purpose library. Only wh
   * [tclap](http://tclap.sourceforge.net/)
   * [libbsd](https://libbsd.freedesktop.org/wiki/)
   * [std::experimental::optional](https://github.com/akrzemi1/Optional)
+  * [rapidjson](http://rapidjson.org/) - optional, for JsonUtils only
 

@@ -23,7 +23,7 @@ set(SLIB_SOURCES slib/String.cpp
                  slib/util/System.cpp
                  slib/StringBuilder.cpp)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++14 -fPIC")
 
 add_library(slib STATIC ${SLIB_SOURCES})
 

@@ -19,8 +19,15 @@
 
 namespace slib {
 
+class Number {
+public:
+	virtual ~Number() {}
+
+	virtual double doubleValue() const = 0;
+};
+
 /** 32-bit signed integer */
-class Integer {
+class Integer : public Number {
 private:
 	int32_t _value;
 	bool _isNull;
@@ -71,6 +78,10 @@ public:
 
 	int32_t intValue() const {
 		return _value;
+	}
+
+	virtual double doubleValue() const {
+		return (double)_value;
 	}
 
 	static Integer getNull() { return Integer(0, true); }
@@ -141,7 +152,7 @@ public:
 };
 
 /** 32-bit unsigned integer */
-class UInt {
+class UInt : public Number {
 private:
 	uint32_t _value;
 	bool _isNull;
@@ -192,6 +203,10 @@ public:
 
 	uint32_t uintValue() const {
 		return _value;
+	}
+
+	virtual double doubleValue() const {
+		return (double)_value;
 	}
 
 	static UInt getNull() { return UInt(0, true); }
@@ -258,7 +273,7 @@ public:
 };
 
 /** 64-bit signed integer */
-class Long {
+class Long : public Number {
 private:
 	int64_t _value;
 	bool _isNull;
@@ -318,6 +333,10 @@ public:
 		return _value;
 	}
 
+	virtual double doubleValue() const {
+		return (double)_value;
+	}
+
 	static Long getNull() { return Long(0, true); }
 
 	bool isNull() const { return _isNull; }
@@ -352,7 +371,7 @@ public:
 };
 
 /** 64-bit unsigned integer */
-class ULong {
+class ULong : public Number {
 private:
 	uint64_t _value;
 	bool _isNull;
@@ -414,6 +433,10 @@ public:
 		return _value;
 	}
 
+	virtual double doubleValue() const {
+		return (double)_value;
+	}
+
 	static ULong getNull() { return ULong(0, true); }
 
 	bool isNull() const { return _isNull; }
@@ -465,7 +488,7 @@ public:
 };
 
 /** Double value */
-class Double {
+class Double : public Number {
 private:
 	double _value;
 	bool _isNull;
@@ -523,6 +546,10 @@ public:
 
 	bool operator==(const Double& other) const {
 		return equals(other);
+	}
+
+	virtual double doubleValue() const {
+		return (double)_value;
 	}
 
 	static Double getNull() { return Double(0, true); }

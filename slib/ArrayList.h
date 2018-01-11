@@ -12,6 +12,8 @@
 
 #include "fmt/format.h"
 
+#include <vector>
+
 namespace slib {
 
 template <class E>
@@ -20,156 +22,109 @@ using AbstractList<E>::_modCount;
 public:
 	static const int DEFAULT_CAPACITY = 10;
 private:
-	E **_elementData;
-	int _arraySize;
-	int _size;
+	std::vector<std::shared_ptr<E> > _elements;
 private:
 	static const int MAX_ARRAY_SIZE = Integer::MAX_VALUE - 1;
 
-	/**
-	 * Increases the capacity to ensure that we can hold at least the
-	 * number of elements specified by the minimum capacity argument.
-	 *
-	 * @param minCapacity the desired minimum capacity
-	 */
-	void grow(int minCapacity) {
-		int crtCapacity = _arraySize;
-		int newCapacity = crtCapacity + (crtCapacity >> 1);
-		if (newCapacity - minCapacity < 0)
-			newCapacity = minCapacity;
-		if (newCapacity - MAX_ARRAY_SIZE > 0)
-			newCapacity = MAX_ARRAY_SIZE;
-
-		E **newArray = (E**)malloc(newCapacity * sizeof(E*));
-        if (!newArray)
-            throw OutOfMemoryError(_HERE_);
-		memcpy(newArray, _elementData, crtCapacity * sizeof(E*));
-		free(_elementData);
-		_elementData = newArray;
-		_arraySize = newCapacity;
-	}
-
-	void ensureCapacity(int minCapacity) {
-		_modCount++;
-		
-		if (_elementData == nullptr)
-			minCapacity = (DEFAULT_CAPACITY > minCapacity) ? DEFAULT_CAPACITY : minCapacity;
-
-		if (minCapacity - _arraySize > 0)
-			grow(minCapacity);
-	}
-
 	/** Checks if the given index is in range. If not, throws IndexOutOfBoundsException */
 	void accessRangeCheck(int index) const {
-		if (index < 0 || index >= _size)
-			throw IndexOutOfBoundsException(_HERE_, fmt::format("Index: {:d}, Size: {:d}", index, _size).c_str());
+		if (index < 0 || index >= size())
+			throw IndexOutOfBoundsException(_HERE_, fmt::format("Index: {:d}, Size: {:d}", index, size()).c_str());
 	}
 
 	/** Special version of rangeCheck used by add() */
 	void addRangeCheck(int index) const {
-		if (index > _size || index < 0)
-			throw IndexOutOfBoundsException(_HERE_, fmt::format("Index: {:d}, Size: {:d}", index, _size).c_str());
+		if (index > size() || index < 0)
+			throw IndexOutOfBoundsException(_HERE_, fmt::format("Index: {:d}, Size: {:d}", index, size()).c_str());
 	}
 
-	/**
-	 * Skips bounds checking and does not
-	 * return the value removed.
-	 */
-	void internalRemove(int index) {
+	/** Skips bounds checking */
+	std::shared_ptr<E> internalRemove(int index) {
 		_modCount++;
-		delete _elementData[index];
-		int numMoved = _size - index - 1;
-		if (numMoved > 0) {
-			memmove(_elementData + index, _elementData + index + 1, numMoved * sizeof(E*));
-		}
-		_elementData[--_size] = NULL; 
+		std::shared_ptr<E> removed = _elements[index];
+		_elements.erase(_elements.begin() + index);
+		return removed;
 	}
 public:
-	ArrayList(int initialCapacity) {
+	ArrayList(int initialCapacity)
+	try: _elements() {
 		if (initialCapacity < 0)
-			throw IllegalArgumentException(_HERE_, fmt::format("Illegal Capacity: {:d}", initialCapacity).c_str());
-		_elementData = (E**)malloc(initialCapacity * sizeof(E*));
-		if (!_elementData)
-			throw OutOfMemoryError(_HERE_);
-		_arraySize = initialCapacity;
-		_size = 0;
+			throw IllegalArgumentException(_HERE_, fmt::format("Illegal capacity: {:d}", initialCapacity).c_str());
+		_elements.reserve(initialCapacity);
+	} catch (std::bad_alloc const &) {
+		throw OutOfMemoryError(_HERE_);
 	}
 
-	ArrayList() {
-		_elementData = NULL;
-		_arraySize = 0;
-		_size = 0;
-	}
+	ArrayList()
+	: ArrayList(DEFAULT_CAPACITY) {}
 
 	virtual void clear() {
 		_modCount++;
 
-		for (int i = 0; i <_size; i++) {
-			E *e = _elementData[i];
-			if (e != NULL)
-				delete e;
-			_elementData[i] = NULL;
-		}
-		_size = 0;
+		_elements.clear();
 	}
 
 	virtual ~ArrayList() {
-		if (_elementData != NULL) {
-			clear();
-			free(_elementData);
-		}
-		_elementData = NULL;
 	}
 
 	/**
-     * Returns the number of elements in this list.
-     * @return the number of elements in this list
-     */
+	 * Returns the number of elements in this list.
+	 * @return the number of elements in this list
+	 */
 	int size() const {
-		return _size;
+		return _elements.size();
 	}
 
 	bool isEmpty() const {
-		return _size == 0;
+		return _elements.empty();
 	}
 
 	/**
-     * Appends the specified element to the end of this list.
-     *
-     * @param e element to be appended to this list
-     * @return <i>true</i>
-     */
-	bool add(const E& e) {
-		ensureCapacity(_size + 1); // Increments _modCount!
-		E *elem = new E(e);
-		_elementData[_size++] = elem;
-		return true;
-	}
-	
-	void add(int index, const E& e) {
-		addRangeCheck(index);
-		
-		ensureCapacity(_size + 1); // Increments _modCount!
-		memmove(_elementData + index + 1, _elementData + index, (_size - index) * sizeof(E*));
-		E *elem = new E(e);
-		_elementData[index] = elem;
-		_size++;
+	 * Appends the specified element to the end of this list.
+	 *
+	 * @param e element to be appended to this list
+	 */
+	void add(const E& e) {
+		_modCount++;
+		try {
+			_elements.push_back(std::make_shared<E>(e));
+		} catch (std::bad_alloc const &) {
+			throw OutOfMemoryError(_HERE_);
+		}
 	}
 
-	bool remove(const E& o) {
-		for (int index = 0; index < _size; index++) {
-			if (o == (*_elementData[index])) {
-				internalRemove(index);
-				return true;
+	void add(const std::shared_ptr<E> e) {
+		_modCount++;
+		try {
+			_elements.push_back(e);
+		} catch (std::bad_alloc const &) {
+			throw OutOfMemoryError(_HERE_);
+		}
+	}
+
+	void add(int index, const E& e) {
+		addRangeCheck(index);
+		_modCount++;
+		try {
+			_elements.insert(_elements.begin() + index, std::make_shared<E>(e));
+		} catch (std::bad_alloc const &) {
+			throw OutOfMemoryError(_HERE_);
+		}
+	}
+
+	std::shared_ptr<E> remove(const E& o) {
+		for (int index = 0; index < size(); index++) {
+			if (_elements[index] && (o == (*_elements[index]))) {
+				return internalRemove(index);
 			}
 		}
 
-		return false;
+		return std::shared_ptr<E>();
 	}
-	
+
 	int indexOf(const E& o) {
-		for (int index = 0; index < _size; index++) {
-			if (o == (*_elementData[index]))
+		for (int index = 0; index < size(); index++) {
+			if (_elements[index] && (o == (*_elements[index])))
 				return index;
 		}
 
@@ -178,23 +133,19 @@ public:
 
 	// Positional Access Operations
 
-	E& get(int index) const {
+	std::shared_ptr<E> get(int index) const {
 		accessRangeCheck(index);
-		return *_elementData[index];
+		return _elements[index];
 	}
 
-	E remove(int index) {
+	std::shared_ptr<E> remove(int index) {
 		accessRangeCheck(index);
-
-		E oldValue = *_elementData[index];
-		internalRemove(index);
-
-		return oldValue;
+		return internalRemove(index);
 	}
 
 private:
 	// iterator
-	class ConstArrayListIterator : public ConstIterator<E>::ConstIteratorImpl {
+	class ConstArrayListIterator : public ConstIterator<std::shared_ptr<E> >::ConstIteratorImpl {
 	private:
 		const ArrayList *_list;
 	protected:
@@ -222,26 +173,24 @@ private:
 		}
 
 		virtual bool hasNext() {
-			return _cursor != _list->_size;
+			return _cursor != _list->size();
 		}
 
-		virtual const E& next() {
+		virtual const std::shared_ptr<E>& next() {
 			checkForComodification(_HERE_);
 			int i = _cursor;
-			if (i >= _list->_size)
+			if (i >= _list->size())
 				throw NoSuchElementException(_HERE_);
-			if (i >= _list->_arraySize)
-				throw ConcurrentModificationException(_HERE_);
 			_cursor = i + 1;
-			return *(_list->_elementData[_lastRet = i]);
+			return _list->_elements[_lastRet = i];
 		}
 
-		virtual typename ConstIterator<E>::ConstIteratorImpl *clone() {
+		virtual typename ConstIterator<std::shared_ptr<E> >::ConstIteratorImpl *clone() {
 			return new ConstArrayListIterator(this);
 		}
 	};
 
-	class ArrayListIterator : public Iterator<E>::IteratorImpl, public ConstArrayListIterator {
+	class ArrayListIterator : public Iterator<std::shared_ptr<E> >::IteratorImpl, public ConstArrayListIterator {
 	private:
 		ArrayList *_ncList;
 	protected:
@@ -259,7 +208,7 @@ private:
 			return ConstArrayListIterator::hasNext();
 		}
 
-		virtual const E& next() {
+		virtual const std::shared_ptr<E>& next() {
 			return ConstArrayListIterator::next();
 		}
 
@@ -278,7 +227,7 @@ private:
 			}
 		}
 
-		virtual typename Iterator<E>::IteratorImpl *clone() {
+		virtual typename Iterator<std::shared_ptr<E> >::IteratorImpl *clone() {
 			return new ArrayListIterator(this);
 		}
 	};
@@ -291,12 +240,12 @@ public:
      *
      * @return an iterator over the elements in this list in proper sequence
      */
-	virtual ConstIterator<E> constIterator() const {
-		return ConstIterator<E>(new ConstArrayListIterator(this, 0));
+	virtual ConstIterator<std::shared_ptr<E> > constIterator() const {
+		return ConstIterator<std::shared_ptr<E> >(new ConstArrayListIterator(this, 0));
 	}
 
-	virtual Iterator<E> iterator() {
-		return Iterator<E>(new ArrayListIterator(this, 0));
+	virtual Iterator<std::shared_ptr<E> > iterator() {
+		return Iterator<std::shared_ptr<E> >(new ArrayListIterator(this, 0));
 	}
 };
 

@@ -8,6 +8,8 @@
 #include "slib/Iterator.h"
 #include "slib/exception/UnsupportedOperationException.h"
 
+#include <memory>
+
 namespace slib {
 
 template <class E>
@@ -19,7 +21,8 @@ public:
 
 	virtual bool isEmpty() const = 0;
 
-	virtual bool add(const E& e) = 0;
+	virtual void add(const E& e) = 0;
+	virtual void add(const std::shared_ptr<E> e) = 0;
 
 	/**
 	 * Inserts the specified element at the specified position in this list
@@ -37,15 +40,15 @@ public:
 		throw UnsupportedOperationException(_HERE_);
 	}
 
-	virtual bool remove(const E& o) = 0;
+	virtual std::shared_ptr<E> remove(const E& o) = 0;
 	
 	virtual int indexOf(const E& o) = 0;
 
 	virtual void clear() = 0;
 
-	virtual E& get(int index) const = 0;
+	virtual std::shared_ptr<E> get(int index) const = 0;
 public:
-	virtual ConstIterator<E> constIterator() const = 0;
+	virtual ConstIterator<std::shared_ptr<E> > constIterator() const = 0;
 };
 
 } // namespace

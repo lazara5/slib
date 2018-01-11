@@ -21,9 +21,9 @@ Config::Config(const std::string& confFileName, const std::string& appName)
 }
 
 std::string searchConfigFile(List<std::string> const& configDirs, const std::string& configFile) {
-	ConstIterator<std::string> i = configDirs.constIterator();
+	ConstIterator<std::shared_ptr<std::string> > i = configDirs.constIterator();
 	while (i.hasNext()) {
-		std::string const& dir = i.next();
+		std::string const& dir = *i.next();
 		std::string fileName = FileUtils::buildPath(dir, configFile);
 		if (!access(fileName.c_str(), 0))
 			return dir;

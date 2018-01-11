@@ -110,32 +110,32 @@ char *Log::fmtb(char *staticBuffer, size_t bufferLen, const char *format, va_lis
 	return buffer;
 }
 
-const std::string getNextParam(ConstIterator<std::string> &params) {
+const std::string getNextParam(ConstIterator<std::shared_ptr<std::string> > &params) {
 	if (params.hasNext())
-		return String::trim(params.next());
+		return String::trim(*params.next());
 	throw InitException(_HERE_, "Missing log parameter");
 }
 
-const std::string getNextParam(ConstIterator<std::string> &params, const std::string& defaultValue) {
+const std::string getNextParam(ConstIterator<std::shared_ptr<std::string> > &params, const std::string& defaultValue) {
 	if (params.hasNext())
-		return String::trim(params.next());
+		return String::trim(*params.next());
 	else
 		return defaultValue;
 }
 
-const int getNextIntParam(ConstIterator<std::string> &params, int defaultValue) {
+int getNextIntParam(ConstIterator<std::shared_ptr<std::string> > &params, int defaultValue) {
 	if (params.hasNext()) {
-		const std::string& strValue = String::trim(params.next());
+		const std::string& strValue = String::trim(*params.next());
 		try {
 			return Integer::parseInt(strValue);
-		} catch (NumberFormatException const& e) {
+		} catch (NumberFormatException const&) {
 			throw InitException(_HERE_, fmt::format("Invalid int parameter: {}", strValue).c_str());
 		}
 	} else
 		return defaultValue;
 }
 
-const bool getNextBoolParam(ConstIterator<std::string> &params, bool defaultValue) {
+bool getNextBoolParam(ConstIterator<std::string> &params, bool defaultValue) {
 	if (params.hasNext()) {
 		const std::string& strValue = String::trim(params.next());
 		return Boolean::parseBoolean(strValue);
@@ -161,7 +161,7 @@ Log::Level getLogLevel(const std::string& str) {
 	return Log::Level::None;
 }
 
-void Log::init(const Config& cfg, ConstIterator<std::string> params) {
+void Log::init(const Config& cfg, ConstIterator<std::shared_ptr<std::string> > params) {
 	const std::string levelName = getNextParam(params);
 	Level level = getLogLevel(levelName);
 	
@@ -243,7 +243,7 @@ ConsoleDest getConsoleDest(const std::string& str) {
 	return CDEST_NONE;
 }
 
-std::shared_ptr<spdlog::logger> Log::initConsole(const Config& cfg, ConstIterator<std::string> &params) {
+std::shared_ptr<spdlog::logger> Log::initConsole(const Config& cfg, ConstIterator<std::shared_ptr<std::string> > &params) {
 	const std::string destName = getNextParam(params, "STDOUT");
 	ConsoleDest consoleDest = getConsoleDest(destName);
 
@@ -262,7 +262,7 @@ std::shared_ptr<spdlog::logger> Log::initConsole(const Config& cfg, ConstIterato
 	}
 }
 
-std::shared_ptr<spdlog::logger> Log::initRotating(const Config& cfg, ConstIterator<std::string> &params) {
+std::shared_ptr<spdlog::logger> Log::initRotating(const Config& cfg, ConstIterator<std::shared_ptr<std::string> > &params) {
 	const std::string fileName = getNextParam(params);
 	int maxFileSize = getNextIntParam(params, 1024 * 1024);
 	int maxFiles = getNextIntParam(params, 10);
@@ -275,7 +275,7 @@ std::shared_ptr<spdlog::logger> Log::initRotating(const Config& cfg, ConstIterat
 	}
 }
 
-std::shared_ptr<spdlog::logger> Log::initSyslog(const Config& cfg, ConstIterator<std::string> &params) {
+std::shared_ptr<spdlog::logger> Log::initSyslog(const Config& cfg, ConstIterator<std::shared_ptr<std::string> > &params) {
 	int facility = getNextIntParam(params, LOG_USER);
 
 	return spdlog::create<syslogSink>(_name.c_str(), 0, facility);

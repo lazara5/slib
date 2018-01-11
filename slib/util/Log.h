@@ -47,9 +47,9 @@ protected:
 	std::string _format;
 	Level _level;
 protected:
-	std::shared_ptr<spdlog::logger> initConsole(const Config& cfg, ConstIterator<std::string> &params);
-	std::shared_ptr<spdlog::logger> initRotating(const Config& cfg, ConstIterator<std::string> &params);
-	std::shared_ptr<spdlog::logger> initSyslog(const Config& cfg, ConstIterator<std::string> &params);
+	std::shared_ptr<spdlog::logger> initConsole(const Config& cfg, ConstIterator<std::shared_ptr<std::string> > &params);
+	std::shared_ptr<spdlog::logger> initRotating(const Config& cfg, ConstIterator<std::shared_ptr<std::string> > &params);
+	std::shared_ptr<spdlog::logger> initSyslog(const Config& cfg, ConstIterator<std::shared_ptr<std::string> > &params);
 
 	static char *fmtb(char *staticBuffer, size_t bufferLen, const char *format, va_list ap);
 protected:
@@ -88,7 +88,7 @@ public:
 		startup(level, fmt::format(format, args...).c_str());
 	}
 
-	void init(const Config& cfg, ConstIterator<std::string> params);
+	void init(const Config& cfg, ConstIterator<std::shared_ptr<std::string> > params);
 	void init(const Config& cfg, const std::string& name, const std::string& defaultValue = "");
 
 	bool enabled(Level level) {

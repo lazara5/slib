@@ -15,7 +15,7 @@ namespace slib {
 
 #define HASH_DEFAULT_LOAD_FACTOR (0.75f)
 
-/** Hash table based object that maps keys to values. */
+/** Hash table based object that maps keys to values */
 template <class K, class V>
 class HashMap : public Map<K, V> {
 public:
@@ -42,7 +42,7 @@ public:
 			_next = n;
 		}
 
-		/** inplace constructor */
+		/** in-place constructor */
 		Entry(Entry *n, int h, K& k, std::shared_ptr<V> v)
 		:_key(std::move(k))
 		,_value(v)
@@ -62,7 +62,7 @@ public:
 			return (std::hash<K>()(_key) ^ (_value ? 0 : std::hash<V>(*_value)));
 		}
 
-		virtual void onRemove(HashMap *m) {}
+		virtual void onRemove(HashMap *) {}
 
 		virtual ~Entry() {}
 	};

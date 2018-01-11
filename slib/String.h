@@ -271,10 +271,7 @@ public:
 		}
 	}*/
 
-	static void simpleSplit(const std::string& str, List<std::string> &results, const char delim, int limit = 65535) {
-		const char *buffer = str.c_str();
-		size_t len = str.size();
-
+	/*static void simpleSplit(const char *buffer, size_t len, List<std::string> &results, const char delim, int limit = 65535) {
 		if (len == 0)
 			return;
 
@@ -292,6 +289,33 @@ public:
 				results.add(std::string(ptr, nextDelim - ptr));
 			ptr = nextDelim + 1;
 		} while (nextDelim != nullptr);
+	}*/
+
+	static void simpleSplit(const char *buffer, size_t len, List<std::string> &results, const char delim, int limit = 65535) {
+		if (len == 0)
+			return;
+
+		const char *nextDelim;
+		const char *ptr = buffer;
+		do {
+			if (--limit == 0) {
+				results.add(std::make_shared<std::string>(ptr, len));
+				return;
+			}
+			nextDelim = (const char *)memchr(ptr, delim, len);
+			if (nextDelim)
+				len -= (size_t)(nextDelim - ptr + 1);
+			if (nextDelim == nullptr) {
+				results.add(std::make_shared<std::string>(ptr, len));
+			} else {
+				results.add(std::make_shared<std::string>(ptr, (size_t)(nextDelim - ptr)));
+			}
+			ptr = nextDelim + 1;
+		} while (nextDelim != nullptr);
+	}
+
+	static void simpleSplit(const std::string& str, List<std::string> &results, const char delim, int limit = 65535) {
+		simpleSplit(str.c_str(), str.size(), results, delim, limit);
 	}
 };
 

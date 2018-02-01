@@ -6,7 +6,7 @@
 #define H_SLIB_UTIL_STRINGUTILS_H
 
 #include "slib/exception/Exception.h"
-#include "slib/util/PropertyProvider.h"
+#include "slib/util/PropertySource.h"
 #include "slib/StringBuilder.h"
 
 #include "fmt/format.h"
@@ -23,15 +23,15 @@ private:
 	typedef std::unordered_map<std::string, std::string> StringMap;
 	typedef StringMap::const_iterator StringMapConstIter;
 
-	typedef std::unordered_map<std::string, PropertyProvider*> ProviderMap;
-	typedef ProviderMap::const_iterator ProviderMapConstIter;
+	typedef std::unordered_map<std::string, PropertySource*> SourceMap;
+	typedef SourceMap::const_iterator SourceMapConstIter;
 
 	typedef std::function<void(std::string const&, std::string const&)> ConfigSink;
 	typedef std::unordered_map<std::string, ConfigSink> SinkMap;
 	typedef SinkMap::const_iterator SinkMapConstIter;
 private:
 	StringMap _vars;
-	ProviderMap _providers;
+	SourceMap _sources;
 	SinkMap _sinks;
 public:
 	void set(const std::string& name, const std::string& value) {
@@ -46,8 +46,8 @@ public:
 
 	bool sink(const std::string& sinkName, const std::string& name, const std::string& value);
 	
-	void registerProvider(const std::string& name, PropertyProvider *p) {
-		_providers[name] = p;
+	void registerSource(const std::string& name, PropertySource *src) {
+		_sources[name] = src;
 	}
 
 	void registerSink(const std::string& name, ConfigSink s) {

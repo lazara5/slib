@@ -3,6 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "slib/util/CmdLine.h"
+#include "slib/exception/IOException.h"
+
+#include "fmt/format.h"
 
 namespace slib {
 
@@ -15,7 +18,11 @@ CmdLine::CmdLine(const char *description)
 }
 
 void CmdLine::parse(int argc, char **argv) {
-	_cmd.parse(argc, argv);
+	try {
+		_cmd.parse(argc, argv);
+	} catch (TCLAP::ArgException const& e) {
+		throw InitException(_HERE_, fmt::format("cmd line parse error: {}, arg: {}", e.error(), e.argId()).c_str());
+	}
 
 	if (_helpArg.getValue())
 		setAction(CMD_ACTION_HELP);

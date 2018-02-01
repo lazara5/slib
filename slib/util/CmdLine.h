@@ -28,6 +28,7 @@ public:
 	CmdLine(const char *description);
 	virtual ~CmdLine() {}
 
+	/** @throws InitException */
 	virtual void parse(int argc, char **argv);
 
 	void printHelp() {

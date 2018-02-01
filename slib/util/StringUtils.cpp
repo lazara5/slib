@@ -22,8 +22,8 @@ std::string ValueMap::get(const std::string& name) {
 		if ((dotPos = String::lastIndexOf(name, '.')) > 0) {
 			std::string providerName = String::substring(name, 0, dotPos);
 			std::string propertyName = String::substring(name, dotPos + 1);
-			ProviderMapConstIter provider = _providers.find(providerName);
-			if (provider == _providers.end())
+			SourceMapConstIter provider = _sources.find(providerName);
+			if (provider == _sources.end())
 				throw MissingValueException(_HERE_, name.c_str());
 			else
 				return provider->second->getProperty(propertyName);

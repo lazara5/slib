@@ -44,6 +44,6 @@ public:
 	virtual ~AbstractList() {}
 };
 
-} // namespace
+} // namespace slib
 
 #endif // H_SLIB_ABSTRACTLIST_H

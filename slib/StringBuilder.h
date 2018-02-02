@@ -42,7 +42,7 @@ public:
 	StringBuilder(std::tuple<const char *, std::ptrdiff_t> t)
 	:StringBuilder(std::get<0>(t), std::get<1>(t)) {}
 
-	StringBuilder(const char *str, size_t offset, std::ptrdiff_t count);
+	StringBuilder(const char *str, size_t offset, size_t count);
 
 	StringBuilder(std::tuple<const char *, size_t, std::ptrdiff_t> t)
 	:StringBuilder(std::get<0>(t), std::get<1>(t), std::get<2>(t)) {}

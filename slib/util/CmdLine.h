@@ -52,6 +52,6 @@ public:
 	}
 };
 
-} // namespace
+} // namespace slib
 
 #endif // H_SLIB_UTIL_CMDLINE_H

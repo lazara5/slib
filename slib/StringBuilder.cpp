@@ -37,32 +37,32 @@ StringBuilder::StringBuilder() {
 StringBuilder::StringBuilder(const char *str, ptrdiff_t len /* = -1 */) {
 	_hash = 0;
 	if (str == nullptr) {
-		if (len == -1) {
+		if (len < 0) {
 			_buffer = nullptr;
 			_len = 0;
 			_size = 0;
 		} else {
-			_buffer = (unsigned char*)malloc(len + 1);
+			_buffer = (unsigned char*)malloc((size_t)len + 1);
 			if (!_buffer)
 				throw OutOfMemoryError(_HERE_);
 			_buffer[0] = 0;
-			_size = len + 1;
+			_size = (size_t)len + 1;
 			_len = 0;
 		}
 	} else {
 		if (len < 0)
-			len = strlen(str);
+			len = (ptrdiff_t)strlen(str);
 		_buffer = (unsigned char*)malloc(len + _STR_EXTRA_ALLOC + 1);
 		if (!_buffer)
 			throw OutOfMemoryError(_HERE_);
-		memcpy(_buffer, str, len);
-		_len = len;
+		memcpy(_buffer, str, (size_t)len);
+		_len = (size_t)len;
 		_buffer[_len] = 0;
-		_size = len + _STR_EXTRA_ALLOC + 1;
+		_size = (size_t)len + _STR_EXTRA_ALLOC + 1;
 	}
 }
 
-StringBuilder::StringBuilder(const char *str, size_t offset, ptrdiff_t count) {
+StringBuilder::StringBuilder(const char *str, size_t offset, size_t count) {
 	_hash = 0;
 	_buffer = (unsigned char*) malloc(count + _STR_EXTRA_ALLOC + 1);
 	if (!_buffer)
@@ -102,7 +102,7 @@ StringBuilder::StringBuilder(StringBuilder &&other) {
 }
 
 StringBuilder::StringBuilder(const std::string& other)
-:StringBuilder(other.c_str(), other.length()) {}
+:StringBuilder(other.c_str(), (ptrdiff_t)other.length()) {}
 
 StringBuilder::~StringBuilder() {
 	if (_buffer)
@@ -118,8 +118,8 @@ void StringBuilder::build(const char *format, ...) {
 	int appended = vasprintf((char**)(&_buffer), format, ap);
 
 	if (appended >= 0) {
-		_len = appended;
-		_size = appended + 1;
+		_len = (size_t)appended;
+		_size = _len + 1;
 	} else {
 		if (_buffer != nullptr)
 			free(_buffer);
@@ -194,7 +194,7 @@ bool StringBuilder::operator <(const StringBuilder& other) const {
 }
 
 char StringBuilder::charAt(size_t pos) const {
-	return _buffer[pos];
+	return (char)_buffer[pos];
 }
 
 ptrdiff_t StringBuilder::indexOf(char ch) const {
@@ -224,7 +224,7 @@ ptrdiff_t StringBuilder::indexOf(const StringBuilder& sub, size_t fromIndex) con
 }
 
 ptrdiff_t StringBuilder::lastIndexOf(char ch) const {
-	return lastIndexOf(ch, _len - 1);
+	return lastIndexOf(ch, (ptrdiff_t)(_len - 1));
 }
 
 ptrdiff_t StringBuilder::lastIndexOf(char ch, ptrdiff_t fromIndex) const {
@@ -237,7 +237,7 @@ ptrdiff_t StringBuilder::lastIndexOf(char ch, ptrdiff_t fromIndex) const {
 	int min = 0;
 	const char *v = (const char*)_buffer;
 
-	ptrdiff_t i = (((size_t)fromIndex >= _len) ? _len - 1 : fromIndex);
+	ptrdiff_t i = (((size_t)fromIndex >= _len) ? (ptrdiff_t)(_len - 1) : fromIndex);
 
 	for (; i >= min ; i--) {
 		if (v[i] == ch)
@@ -249,13 +249,14 @@ ptrdiff_t StringBuilder::lastIndexOf(char ch, ptrdiff_t fromIndex) const {
 ptrdiff_t StringBuilder::lastIndexOf(const StringBuilder& sub) const {
 	if (isNull() || sub.isNull())
 		throw NullPointerException(_HERE_);
-	return StringBuilder::lastIndexOf((const char*)_buffer, 0, _len, (const char*)sub._buffer, 0, sub._len, _len);
+	return StringBuilder::lastIndexOf((const char*)_buffer, 0, _len, (const char*)sub._buffer, 0,
+									  sub._len, (ptrdiff_t)_len);
 }
 
 ptrdiff_t StringBuilder::lastIndexOf(const char *source, ptrdiff_t sourceOffset, size_t sourceCount,
 									 const char *target, ptrdiff_t targetOffset, size_t targetCount,
 									 ptrdiff_t fromIndex) {
-	ptrdiff_t rightIndex = sourceCount - targetCount;
+	ptrdiff_t rightIndex = (ptrdiff_t)(sourceCount - targetCount);
 
 	if (fromIndex < 0)
 		return -1;
@@ -265,7 +266,7 @@ ptrdiff_t StringBuilder::lastIndexOf(const char *source, ptrdiff_t sourceOffset,
 	if (targetCount == 0)
 		return fromIndex;
 
-	ptrdiff_t strLastIndex = targetOffset + targetCount - 1;
+	ptrdiff_t strLastIndex = (ptrdiff_t)(targetOffset + targetCount - 1);
 	char strLastChar = target[strLastIndex];
 	ptrdiff_t min = sourceOffset + targetCount - 1;
 	ptrdiff_t i = min + fromIndex;
@@ -299,9 +300,9 @@ StringBuilder StringBuilder::substring(size_t beginIndex) const {
 
 StringBuilder StringBuilder::substring(size_t beginIndex, size_t endIndex) const {
 	if (endIndex > _len)
-		throw StringIndexOutOfBoundsException(_HERE_, endIndex);
+		throw StringIndexOutOfBoundsException(_HERE_, (ptrdiff_t)endIndex);
 	if (beginIndex > endIndex)
-		throw StringIndexOutOfBoundsException(_HERE_, endIndex - beginIndex);
+		throw StringIndexOutOfBoundsException(_HERE_, (ptrdiff_t)(endIndex - beginIndex));
 	size_t len = endIndex - beginIndex;
 	StringBuilder res(nullptr, len + 1);
 	memcpy(res._buffer, _buffer + beginIndex, len);
@@ -312,9 +313,9 @@ StringBuilder StringBuilder::substring(size_t beginIndex, size_t endIndex) const
 
 StringBuilder StringBuilder::trim() const {
 	size_t a = 0;
-	ptrdiff_t b = _len;
+	ptrdiff_t b = (ptrdiff_t)_len;
 	for (a = 0; (a < _len) && isspace(_buffer[a]); a++);
-	for (b = _len; (b > 0) && isspace(_buffer[b - 1]); b--);
+	for (b = (ptrdiff_t)_len; (b > 0) && isspace(_buffer[b - 1]); b--);
 
 	if (b > (ptrdiff_t)a)
 		return substring(a, b);
@@ -370,7 +371,7 @@ bool StringBuilder::endsWith(char suffix) const {
 }
 
 bool StringBuilder::endsWith(const StringBuilder &suffix) const {
-	return (startsWith(suffix, _len - suffix.length()));
+	return (startsWith(suffix, (ptrdiff_t)(_len - suffix.length())));
 }
 
 int StringBuilder::hashCode() const {
@@ -510,11 +511,11 @@ StringBuilder& StringBuilder::add(const char *src, ptrdiff_t len /* = -1 */) {
 		return *this;
 	_hash = 0;
 	if (len < 0)
-		len = strlen(src);
+		len = (ptrdiff_t)strlen(src);
 	if (_len + len + 1 > _size)
 		grow(_len + len + 1);
 	memcpy(_buffer + _len, src, len + 1);
-	_len += len;
+	_len += (size_t)len;
 	_buffer[_len] = 0;
 	return *this;
 }
@@ -533,7 +534,7 @@ StringBuilder& StringBuilder::add(const StringBuilder& src) {
 	if (src.isNull())
 		return *this;
 	_hash = 0;
-	ptrdiff_t len = src.length();
+	ptrdiff_t len = (ptrdiff_t)src.length();
 	if (_len + len + 1 > _size)
 		grow(_len + len + 1);
 	memcpy(_buffer + _len, src.c_str(), len + 1);
@@ -677,8 +678,8 @@ void StringBuilder::internalAppend(const char *format, va_list ap) {
 	int toAppend = vsnprintf(nullptr, 0, format, ap);
 	if (toAppend > 0) {
 		_hash = 0;
-		if (_len + toAppend + 1 > _size)
-			grow(_len + toAppend + 1);
+		if (_len + (size_t)toAppend + 1 > _size)
+			grow(_len + (size_t)toAppend + 1);
 
 		int appended = vsnprintf((char*)_buffer + _len, toAppend + 1, format, ap1);
 		_len += appended;

@@ -54,13 +54,7 @@ public:
 		_sinks[name] = s;
 	}
 
-	void forEach(bool (*callback)(void*, const std::string&, const std::string&), void *userData) const {
-		for (StringMapConstIter i = _vars.begin(); i != _vars.end(); i++) {
-			bool cont = callback(userData, i->first, i->second);
-			if (!cont)
-				return;
-		}
-	}
+	void forEach(bool (*callback)(void*, const std::string&, const std::string&), void *userData) const;
 };
 
 /** Convenience class for building XML-escaped strings */
@@ -96,6 +90,6 @@ public:
 	static std::string interpolate(std::string const& src, ValueMap& vars);
 };
 
-} // namespace
+} // namespace slib
 
 #endif // H_SLIB_UTIL_STRINGUTILS_H

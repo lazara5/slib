@@ -28,7 +28,7 @@ protected:
 	static ptrdiff_t lastIndexOf(const char *source, ptrdiff_t sourceOffset, size_t sourceCount,
 								 const char *target, ptrdiff_t targetOffset, size_t targetCount,
 								 ptrdiff_t fromIndex) {
-		ptrdiff_t rightIndex = sourceCount - targetCount;
+		ptrdiff_t rightIndex = (ptrdiff_t)(sourceCount - targetCount);
 
 		if (fromIndex < 0)
 			return -1;
@@ -133,17 +133,17 @@ public:
 
 	static bool endsWith(const std::string& str, const std::string &suffix) {
 		size_t len = str.size();
-		return (startsWith(suffix, len - suffix.size()));
+		return (startsWith(str, suffix, (ptrdiff_t)(len - suffix.size())));
 	}
 
 	static std::string trim(const char *buffer, size_t len) {
 		size_t a = 0;
-		ptrdiff_t b = len;
+		ptrdiff_t b = (ptrdiff_t)len;
 		for (a = 0; (a < len) && isspace(buffer[a]); a++);
-		for (b = len; (b > 0) && isspace(buffer[b - 1]); b--);
+		for (b = (ptrdiff_t)len; (b > 0) && isspace(buffer[b - 1]); b--);
 
 		if (b > (ptrdiff_t)a)
-			return substring(buffer, len, a, b);
+			return substring(buffer, len, a, (size_t)b);
 		else
 			return "";
 	}
@@ -194,7 +194,7 @@ public:
 
 	static ptrdiff_t lastIndexOf(const std::string& str, char ch) {
 		size_t len = str.size();
-		return lastIndexOf(str, ch, len - 1);
+		return lastIndexOf(str, ch, (ptrdiff_t)(len - 1));
 	}
 
 	static ptrdiff_t lastIndexOf(const std::string& str, char ch, ptrdiff_t fromIndex) {
@@ -207,7 +207,7 @@ public:
 		int min = 0;
 		const char *v = buffer;
 
-		ptrdiff_t i = (((size_t)fromIndex >= len) ? len - 1 : fromIndex);
+		ptrdiff_t i = (((size_t)fromIndex >= len) ? (ptrdiff_t)(len - 1) : fromIndex);
 
 		for (; i >= min ; i--) {
 			if (v[i] == ch)
@@ -219,7 +219,7 @@ public:
 	static ptrdiff_t lastIndexOf(const std::string& str, const std::string& sub) {
 		const char *buffer = str.c_str();
 		size_t len = str.size();
-		return lastIndexOf(buffer, 0, len, sub.c_str(), 0, sub.size(), len);
+		return lastIndexOf(buffer, 0, len, sub.c_str(), 0, sub.size(), (ptrdiff_t)len);
 	}
 
 	static std::string substring(const char *buffer, size_t len, size_t beginIndex, size_t endIndex) {
@@ -336,7 +336,7 @@ public:
 	ASCIICaseInsensitiveString(std::tuple<const char *, std::ptrdiff_t> t)
 	:ASCIICaseInsensitiveString(std::get<0>(t), std::get<1>(t)) {}
 
-	ASCIICaseInsensitiveString(const char *str, size_t offset, std::ptrdiff_t count);
+	ASCIICaseInsensitiveString(const char *str, size_t offset, size_t count);
 
 	ASCIICaseInsensitiveString(std::tuple<const char *, size_t, std::ptrdiff_t> t)
 	:ASCIICaseInsensitiveString(std::get<0>(t), std::get<1>(t), std::get<2>(t)) {}

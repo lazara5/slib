@@ -25,16 +25,21 @@
 
 #include <memory>
 
-class JsonException : public slib::Exception {
+namespace slib {
+
+class JsonException : public Exception {
 public:
 	JsonException(const char *where, const char *msg)
 	:Exception(where, "JsonException", msg) {}
+protected:
+	JsonException(const char *where, const char *className, const char *msg)
+	:Exception(where, className, msg) {}
 };
 
-class JsonParseException : public slib::Exception {
+class JsonParseException : public JsonException {
 public:
 	JsonParseException(const char *where, const char *msg)
-	:Exception(where, "JsonParseException", msg) {}
+	:JsonException(where, "JsonParseException", msg) {}
 };
 
 class JsonStringAdapter {
@@ -98,55 +103,29 @@ public:
 			throw JsonParseException(where, fmt::format("JSON parse failed, error={}", rapidjson::GetParseError_En(doc.GetParseError())).c_str());
 	}
 
-	static void dump(const char *label, rapidjson::Document const& doc) {
-		extern slib::Log logger;
-		rapidjson::StringBuffer buffer;
-		rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
-		doc.Accept(writer);
-		logger.tracef("[{}]>{}<", label, buffer.GetString());
-	}
+	static void dump(const char *label, rapidjson::Document const& doc);
 
-	static const rapidjson::Value *getValue(const char *where, const rapidjson::Pointer& pointer, const rapidjson::Document& doc) {
-		return pointer.Get(doc);
-	}
+	static const rapidjson::Value *getValue(const char *where, const rapidjson::Pointer& pointer, const rapidjson::Document& doc);
 
-	static std::string pathToString(const char *path) {
-		return path;
-	}
+	static std::string pathToString(const char *path);
 
-	static std::string pathToString(const rapidjson::Pointer& pointer) {
-		std::string path;
-		JsonStringAdapter sa(path);
-		pointer.Stringify(sa);
-		return path;
-	}
+	static std::string pathToString(const rapidjson::Pointer& pointer);
 
-	/** @throws JSONException */
-	static const rapidjson::Value *getValue(const char *where, const char *path, const rapidjson::Document& doc) {
-		if (!doc.IsObject())
-			throw slib::InvalidValueException(where, path, "Object params expected");
-		if (path[0] == '@') {
-			if (doc.HasMember(path + 1))
-				return &(doc[path + 1]);
-			return nullptr;
-		} else {
-			rapidjson::Pointer pointer(path);
-			if (!pointer.IsValid())
-				throw JsonException(where, fmt::format("JSON pointer error {:d} (@'{}':{:d})",
-													   pointer.GetParseErrorCode(), path, pointer.GetParseErrorOffset()).c_str());
-			return getValue(where, pointer, doc);
-		}
-	}
+	/**
+	 * @throws InvalidValueException
+	 * @throws JsonException
+	 */
+	static const rapidjson::Value *getValue(const char *where, const char *path, const rapidjson::Document& doc);
 
 	/** @throws ValueException */
 	template <class P>
 	static std::string getString(const char *where, P path, const rapidjson::Document& doc) {
 		const rapidjson::Value *value = getValue(where, path, doc);
 		if (value == nullptr)
-			throw slib::MissingValueException(where, pathToString(path).c_str());
+			throw MissingValueException(where, pathToString(path).c_str());
 		if (value->IsString())
-			return slib::String::trim(value->GetString());
-		throw slib::InvalidValueException(where, pathToString(path).c_str(), "String expected");
+			return String::trim(value->GetString());
+		throw InvalidValueException(where, pathToString(path).c_str(), "String expected");
 	}
 
 	template <class P>
@@ -155,8 +134,8 @@ public:
 		if (value == nullptr)
 			return std::unique_ptr<std::string>();
 		if (value->IsString())
-			return std::make_unique<std::string>(slib::String::trim(value->GetString()));
-		throw slib::InvalidValueException(where, pathToString(path).c_str(), "String expected");
+			return std::make_unique<std::string>(String::trim(value->GetString()));
+		throw InvalidValueException(where, pathToString(path).c_str(), "String expected");
 	}
 
 	/** @throws InvalidValueException */
@@ -164,36 +143,25 @@ public:
 	static std::string getString(const char *where, P path, const rapidjson::Document& doc, const std::string& defaultValue) {
 		try {
 			return getString(where, path, doc);
-		} catch (slib::MissingValueException const&) {
+		} catch (MissingValueException const&) {
 			return defaultValue;
 		}
 	}
 
-	static void checkArrayIndex(const char *where, unsigned int index, const rapidjson::Document& doc) {
-		if (!doc.IsArray())
-			throw slib::InvalidValueException(where, slib::UInt::toString(index).c_str(), "Array params expected");
-		if (index >= doc.Size())
-			throw slib::InvalidValueException(where, slib::UInt::toString(index).c_str(), "Param not present in array");
-	}
+	static void checkArrayIndex(const char *where, unsigned int index, const rapidjson::Document& doc);
 
 	/** @throws InvalidValueException */
-	static std::string getString(const char *where, unsigned int index, const rapidjson::Document& doc) {
-		checkArrayIndex(where, index, doc);
-		const rapidjson::Value& value = doc[index];
-		if (value.IsString())
-			return value.GetString();
-		throw slib::InvalidValueException(where, slib::UInt::toString(index).c_str(), "String expected");
-	}
+	static std::string getString(const char *where, unsigned int index, const rapidjson::Document& doc);
 
 	/** @throws ValueException */
 	template <class P>
 	static int64_t getLong(const char *where, P path, const rapidjson::Document& doc) {
 		const rapidjson::Value *value = getValue(where, path, doc);
 		if (value == nullptr)
-			throw slib::MissingValueException(where, pathToString(path).c_str());
+			throw MissingValueException(where, pathToString(path).c_str());
 		if (value->IsInt64())
 			return value->GetInt64();
-		throw slib::InvalidValueException(where, pathToString(path).c_str(), "Int64 expected");
+		throw InvalidValueException(where, pathToString(path).c_str(), "Int64 expected");
 	}
 
 	/** @throws InvalidValueException */
@@ -211,10 +179,10 @@ public:
 	static bool getBool(const char *where, P path, const rapidjson::Document& doc) {
 		const rapidjson::Value *value = getValue(where, path, doc);
 		if (value == nullptr)
-			throw slib::MissingValueException(where, pathToString(path).c_str());
+			throw MissingValueException(where, pathToString(path).c_str());
 		if (value->IsBool())
 			return value->GetBool();
-		throw slib::InvalidValueException(where, pathToString(path).c_str(), "Bool expected");
+		throw InvalidValueException(where, pathToString(path).c_str(), "Bool expected");
 	}
 
 	/** @throws InvalidValueException */
@@ -222,20 +190,15 @@ public:
 	static bool getBool(const char *where, P path, const rapidjson::Document& doc, bool defaultValue) {
 		try {
 			return getBool(where, path, doc);
-		} catch (slib::MissingValueException const&) {
+		} catch (MissingValueException const&) {
 			return defaultValue;
 		}
 	}
 
 	/** @throws InvalidValueException */
-	static bool getBool(const char *where, unsigned int index, const rapidjson::Document& doc) {
-		checkArrayIndex(where, index, doc);
-		const rapidjson::Value& value = doc[index];
-		if (value.IsBool())
-			return value.GetBool();
-		throw slib::InvalidValueException(where, slib::UInt::toString(index).c_str(), "Bool expected");
-	}
-
+	static bool getBool(const char *where, unsigned int index, const rapidjson::Document& doc);
 };
+
+} // namespace slib
 
 #endif // H_SLIB_UTIL_JSONUTILS_H

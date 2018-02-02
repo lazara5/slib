@@ -21,7 +21,7 @@ namespace slib {
 
 class Number {
 public:
-	virtual ~Number() {}
+	virtual ~Number();
 
 	virtual double doubleValue() const = 0;
 };
@@ -80,9 +80,7 @@ public:
 		return _value;
 	}
 
-	virtual double doubleValue() const {
-		return (double)_value;
-	}
+	virtual double doubleValue() const;
 
 	static Integer getNull() { return Integer(0, true); }
 
@@ -205,9 +203,7 @@ public:
 		return _value;
 	}
 
-	virtual double doubleValue() const {
-		return (double)_value;
-	}
+	virtual double doubleValue() const;
 
 	static UInt getNull() { return UInt(0, true); }
 
@@ -333,9 +329,7 @@ public:
 		return _value;
 	}
 
-	virtual double doubleValue() const {
-		return (double)_value;
-	}
+	virtual double doubleValue() const;
 
 	static Long getNull() { return Long(0, true); }
 
@@ -433,9 +427,7 @@ public:
 		return _value;
 	}
 
-	virtual double doubleValue() const {
-		return (double)_value;
-	}
+	virtual double doubleValue() const;
 
 	static ULong getNull() { return ULong(0, true); }
 
@@ -548,9 +540,7 @@ public:
 		return equals(other);
 	}
 
-	virtual double doubleValue() const {
-		return (double)_value;
-	}
+	virtual double doubleValue() const;
 
 	static Double getNull() { return Double(0, true); }
 
@@ -603,7 +593,7 @@ public:
 		return (_value == other._value);
 	}
 
-	Boolean& operator =(const Boolean & other) {
+	Boolean& operator=(const Boolean & other) {
 		_value = other._value;
 		_isNull = other._isNull;
 		return *this;	// This will allow assignments to be chained

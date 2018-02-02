@@ -37,6 +37,6 @@ public:
 	static std::string normalize(const std::string& fileName);
 };
 
-} // namespace
+} // namespace slib
 
 #endif // H_SLIB_UTIL_FILEUTILS_H

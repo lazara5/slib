@@ -142,6 +142,6 @@ public:
 	const std::string& getConfDir() const { return _confDir; }
 };
 
-} // namespace
+} // namespace slib
 
 #endif // H_SLIB_UTIL_CONFIG_H

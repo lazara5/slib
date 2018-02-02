@@ -20,8 +20,8 @@ std::string ValueMap::get(const std::string& name) {
 	if (val == _vars.end()) {
 		std::ptrdiff_t dotPos;
 		if ((dotPos = String::lastIndexOf(name, '.')) > 0) {
-			std::string providerName = String::substring(name, 0, dotPos);
-			std::string propertyName = String::substring(name, dotPos + 1);
+			std::string providerName = String::substring(name, 0, (size_t)dotPos);
+			std::string propertyName = String::substring(name, (size_t)dotPos + 1);
 			SourceMapConstIter provider = _sources.find(providerName);
 			if (provider == _sources.end())
 				throw MissingValueException(_HERE_, name.c_str());
@@ -42,8 +42,16 @@ bool ValueMap::sink(const std::string& sinkName, const std::string& name, const 
 	return true;
 }
 
+void ValueMap::forEach(bool (*callback)(void*, const std::string&, const std::string&), void *userData) const {
+	for (StringMapConstIter i = _vars.begin(); i != _vars.end(); i++) {
+		bool cont = callback(userData, i->first, i->second);
+		if (!cont)
+			return;
+	}
+}
+
 XMLString::XMLString(const char *str)
-:StringBuilder(nullptr, str ? strlen(str) : -1) {
+:StringBuilder(nullptr, str ? (ssize_t)strlen(str) : -1) {
 	if (str) {
 		const char *s = str;
 		size_t tl = 0;
@@ -83,7 +91,7 @@ XMLString::XMLString(const char *str)
 					tl++;
 					if (tl >= _size)
 						grow(tl + 1);
-					_buffer[_len++] = *s;
+					_buffer[_len++] = (unsigned char)(*s);
 					break;
 			}
 			s++;
@@ -102,7 +110,7 @@ std::string StringUtils::interpolate(std::string const& src, ValueMap& vars) {
 	std::string result;
 	IState state = IS_APPEND;
 	size_t pos = 0;
-	int dollarBegin = 0;
+	size_t dollarBegin = 0;
 	while (pos < src.length()) {
 		char c = pattern[pos];
 		switch (state) {

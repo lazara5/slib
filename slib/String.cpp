@@ -22,7 +22,7 @@ ASCIICaseInsensitiveString::ASCIICaseInsensitiveString() {
 ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, ptrdiff_t len /* = -1 */) {
 	_hash = 0;
 	if (str == nullptr) {
-		if (len == -1) {
+		if (len < 0) {
 			_buffer = nullptr;
 			_len = 0;
 		} else {
@@ -32,15 +32,15 @@ ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, ptrdiff_
 		}
 	} else {
 		if (len < 0)
-			len = strlen(str);
-		_buffer = (unsigned char*)malloc(len + 1);
-		memcpy(_buffer, str, len);
-		_len = len;
+			len = (ptrdiff_t)strlen(str);
+		_buffer = (unsigned char*)malloc((size_t)len + 1);
+		memcpy(_buffer, str, (size_t)len);
+		_len = (size_t)len;
 		_buffer[_len] = 0;
 	}
 }
 
-ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, size_t offset, ptrdiff_t count) {
+ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, size_t offset, size_t count) {
 	_hash = 0;
 	_buffer = (unsigned char*) malloc(count + 1);
 	if (count > 0)
@@ -63,7 +63,7 @@ ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const ASCIICaseInsensitiv
 
 
 ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const std::string& other)
-:ASCIICaseInsensitiveString(other.c_str(), other.length()) {}
+:ASCIICaseInsensitiveString(other.c_str(), (ptrdiff_t)other.length()) {}
 
 ASCIICaseInsensitiveString::~ASCIICaseInsensitiveString() {
 	if (_buffer)

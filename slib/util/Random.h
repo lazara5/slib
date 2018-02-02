@@ -2,14 +2,14 @@
  * Originally written in 2014-2015 by Sebastiano Vigna (vigna@acm.org)
  *
  * To the extent possible under law, the author has dedicated all copyright
- *and related and neighboring rights to this software to the public domain
+ * and related and neighboring rights to this software to the public domain
  * worldwide. This software is distributed without any warranty.
  *
  * See <http://creativecommons.org/publicdomain/zero/1.0/>. 
  */
 
-#ifndef __SLIB_UTIL_RANDOM_H__
-#define __SLIB_UTIL_RANDOM_H__
+#ifndef H_SLIB_UTIL_RANDOM_H
+#define H_SLIB_UTIL_RANDOM_H
 
 #include <mutex>
 
@@ -101,6 +101,6 @@ public:
 	}
 };
 
-} // namespace
+} // namespace slib
 
-#endif
+#endif // H_SLIB_UTIL_RANDOM_H

@@ -2,10 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef H_SLIB_LINKEDHASHMAP_H
-#define H_SLIB_LINKEDHASHMAP_H
+#ifndef H_SLIB_COLLECTIONS_LINKEDHASHMAP_H
+#define H_SLIB_COLLECTIONS_LINKEDHASHMAP_H
 
-#include "slib/HashMap.h"
+#include "slib/collections/HashMap.h"
 
 namespace slib {
 
@@ -225,4 +225,4 @@ public:
 
 } // namespace
 
-#endif // H_SLIB_LINKEDHASHMAP_H
+#endif // H_SLIB_COLLECTIONS_LINKEDHASHMAP_H

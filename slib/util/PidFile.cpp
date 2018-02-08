@@ -25,7 +25,7 @@ pid_t PidFile::open(struct pidfh **pfh, const Config& cfg, const std::string& mo
 		throw PidFileException(_HERE_, "Pid file already open");
 	}
 
-	std::string pidFile = cfg.getValue("pidfile", cfg.getAppName() + ".pid");
+	std::string pidFile = cfg.getString("pidfile", cfg.getAppName() + ".pid");
 	if (!FileUtils::isPathAbsolute(pidFile))
 		pidFile = FileUtils::buildPath(cfg.getLogDir(), pidFile);
 

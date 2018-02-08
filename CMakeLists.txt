@@ -9,10 +9,16 @@ add_custom_target(headers SOURCES ${slibHeaders})
 
 set(SLIB_SOURCES slib/Numeric.cpp
                  slib/String.cpp
+                 slib/collections/Properties.cpp
                  slib/concurrent/Semaphore.cpp
                  slib/concurrent/Thread.cpp
                  slib/concurrent/FdThread.cpp
                  slib/exception/Exception.cpp
+                 slib/io/IO.cpp
+                 slib/io/InputStream.cpp
+                 slib/io/FileInputStream.cpp
+                 slib/io/OutputStream.cpp
+                 slib/io/FileOutputStream.cpp
                  slib/util/CmdLine.cpp
                  slib/util/Config.cpp
                  slib/util/FileUtils.cpp

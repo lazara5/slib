@@ -2,14 +2,23 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef H_SLIB_MAP_H
-#define H_SLIB_MAP_H
+#ifndef H_SLIB_COLLECTIONS_MAP_H
+#define H_SLIB_COLLECTIONS_MAP_H
 
-#include "Iterator.h"
+#include "slib/Iterator.h"
 
 #include <memory>
 
 namespace slib {
+
+template <class K, class V>
+class ValueProvider {
+public:
+	virtual ~ValueProvider() {}
+
+	virtual std::shared_ptr<V> get(const K& key) const = 0;
+	virtual bool containsKey(const K& key) const = 0;
+};
 
 /**
  * An object that maps keys to values. A map cannot contain duplicate keys;
@@ -24,7 +33,7 @@ namespace slib {
  */
 template <class K, class V,
 		  class Pred = std::equal_to<K> >
-class Map {
+class Map : public ValueProvider<K, V> {
 public:
 	class Entry {
 	public:
@@ -37,12 +46,12 @@ public:
 	virtual ~Map() {}
 
 	virtual std::shared_ptr<V> put(const K& key, const V& value) = 0;
-	virtual std::shared_ptr<V> put(const K& key, const std::shared_ptr<V> value) = 0;
-	virtual std::shared_ptr<V> get(const K& key) const = 0;
+	virtual std::shared_ptr<V> put(const K& key, std::shared_ptr<V> const& value) = 0;
+	virtual std::shared_ptr<V> get(const K& key) const override = 0;
 	virtual const Entry *getEntry(const K& key) const = 0;
 	virtual std::shared_ptr<V> remove(const K& key) = 0;
 
-	virtual bool containsKey(const K& key) const = 0;
+	virtual bool containsKey(const K& key) const override = 0;
 
 	virtual int size() const = 0;
 	virtual bool isEmpty() const = 0;
@@ -54,4 +63,4 @@ public:
 
 } // namespace
 
-#endif // H_SLIB_MAP_H
+#endif // H_SLIB_COLLECTIONS_MAP_H

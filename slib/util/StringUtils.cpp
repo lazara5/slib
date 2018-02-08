@@ -7,49 +7,6 @@
 
 namespace slib {
 
-std::string ValueMap::getVar(const std::string& name) const {
-	StringMapConstIter val = _vars.find(name);
-	if (val == _vars.end())
-		throw MissingValueException(_HERE_, name.c_str());
-	else
-		return val->second;
-}
-	
-std::string ValueMap::get(const std::string& name) {
-	StringMapConstIter val = _vars.find(name);
-	if (val == _vars.end()) {
-		std::ptrdiff_t dotPos;
-		if ((dotPos = String::lastIndexOf(name, '.')) > 0) {
-			std::string providerName = String::substring(name, 0, (size_t)dotPos);
-			std::string propertyName = String::substring(name, (size_t)dotPos + 1);
-			SourceMapConstIter provider = _sources.find(providerName);
-			if (provider == _sources.end())
-				throw MissingValueException(_HERE_, name.c_str());
-			else
-				return provider->second->getProperty(propertyName);
-		} else
-			throw MissingValueException(_HERE_, name.c_str());
-	} else
-		return val->second;
-}
-
-
-bool ValueMap::sink(const std::string& sinkName, const std::string& name, const std::string& value) {
-	SinkMapConstIter sink = _sinks.find(sinkName);
-	if (sink == _sinks.end())
-		return false;
-	sink->second(name, value);
-	return true;
-}
-
-void ValueMap::forEach(bool (*callback)(void*, const std::string&, const std::string&), void *userData) const {
-	for (StringMapConstIter i = _vars.begin(); i != _vars.end(); i++) {
-		bool cont = callback(userData, i->first, i->second);
-		if (!cont)
-			return;
-	}
-}
-
 XMLString::XMLString(const char *str)
 :StringBuilder(nullptr, str ? (ssize_t)strlen(str) : -1) {
 	if (str) {
@@ -104,10 +61,11 @@ typedef enum {
 	IS_APPEND, IS_DOLLAR, IS_READVAR
 } IState;
 
-std::string StringUtils::interpolate(std::string const& src, ValueMap& vars) {
+std::shared_ptr<std::string> StringUtils::interpolate(std::string const& src, ValueProvider<std::string, std::string> const& vars,
+													  bool ignoreUndefined) {
 	const char *pattern = src.c_str();
-	
-	std::string result;
+
+	std::shared_ptr<std::string> result = std::make_shared<std::string>();
 	IState state = IS_APPEND;
 	size_t pos = 0;
 	size_t dollarBegin = 0;
@@ -120,24 +78,32 @@ std::string StringUtils::interpolate(std::string const& src, ValueMap& vars) {
 					dollarBegin = pos;
 					break;
 				}
-				result.append(1, c);
+				result->append(1, c);
 				break;
 			case IS_DOLLAR:
 				if (c == '$') {
 					state = IS_APPEND;
-					result.append(1, '$');
+					result->append(1, '$');
 					break;
 				} else if (c == '{') {
 					state = IS_READVAR;
 					break;
 				}
 				state = IS_APPEND;
-				result.append(1, '$').append(1, c);
+				result->append(1, '$').append(1, c);
 				break;
 			case IS_READVAR:
 				if (c == '}') {
 					std::string varName(pattern + dollarBegin + 2, pos - dollarBegin - 2);
-					result.append(vars.get(varName));
+					std::shared_ptr<std::string> value = vars.get(varName);
+					if (value)
+						result->append(*value);
+					else {
+						if (ignoreUndefined)
+							result->append("${").append(varName).append("}");
+						else
+							throw MissingValueException(_HERE_, varName.c_str());
+					}
 					state = IS_APPEND;
 				}
 				break;
@@ -146,5 +112,6 @@ std::string StringUtils::interpolate(std::string const& src, ValueMap& vars) {
 	}
 	return result;
 }
+
 
 } // namespace

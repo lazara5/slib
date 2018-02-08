@@ -8,7 +8,8 @@
 #include "slib/util/Log.h"
 #include "slib/util/StringUtils.h"
 #include "slib/Numeric.h"
-#include "slib/List.h"
+#include "slib/collections/List.h"
+#include "slib/collections/Properties.h"
 
 #include "fmt/format.h"
 
@@ -16,8 +17,67 @@
 
 namespace slib {
 
-/** Manages a configuration file */
-class Config {
+class ConfigProcessor : public Properties::LineProcessor, public ValueProvider<std::string, std::string> {
+public:
+	typedef std::function<void(std::string const&, std::string const&)> PropertySink;
+private:
+	typedef HashMap<std::string, std::string> VarMap;
+
+	typedef std::unordered_map<std::string, std::shared_ptr<PropertySource>> SourceMap;
+	typedef SourceMap::const_iterator SourceMapConstIter;
+
+	typedef std::unordered_map<std::string, PropertySink> SinkMap;
+	typedef SinkMap::const_iterator SinkMapConstIter;
+private:
+	Properties const& _props;
+	std::unique_ptr<VarMap> _vars;
+	std::unique_ptr<SourceMap> _sources;
+	SinkMap _sinks;
+public:
+	ConfigProcessor(Properties const& props)
+	:_props(props) {}
+
+	virtual std::shared_ptr<std::string> processLine(const std::string& name,
+													 const std::string& rawProperty) override;
+
+	void registerSource(const std::string& name, std::shared_ptr<PropertySource> const& src) {
+		if (!_sources)
+			_sources = std::make_unique<SourceMap>();
+		(*_sources)[name] = src;
+	}
+
+	void registerSink(const std::string& name, PropertySink const& s) {
+		_sinks[name] = s;
+	}
+
+	bool sink(const std::string& sinkName, const std::string& name, const std::string& value);
+
+	// ValueProvider interface
+public:
+	virtual std::shared_ptr<std::string> get(std::string  const& name) const override;
+	virtual bool containsKey(std::string const& name) const override;
+};
+
+class SimpleConfigProcessor : public Properties::LineProcessor, public ValueProvider<std::string, std::string> {
+private:
+	typedef HashMap<std::string, std::string> VarMap;
+private:
+	Properties const& _props;
+	std::unique_ptr<VarMap> _vars;
+public:
+	SimpleConfigProcessor(Properties const& props)
+	:_props(props) {}
+
+	virtual std::shared_ptr<std::string> processLine(const std::string& name,
+													 const std::string& rawProperty) override;
+
+	// ValueProvider interface
+public:
+	virtual std::shared_ptr<std::string> get(std::string  const& name) const override;
+	virtual bool containsKey(std::string const& name) const override;
+};
+
+class Config : public Properties {
 protected:
 	std::string _rootDir;
 	std::string _homeDir;
@@ -26,18 +86,11 @@ protected:
 	std::string _confDir;
 	std::string _logDir;
 
-	ValueMap _vars;
+	ConfigProcessor _cfgProc;
+	SimpleConfigProcessor _simpleCfgProc;
 protected:
 	/** @throws InitException */
-	virtual void openConfigFile();
-
-	/**
-	 * @throws MissingValueException,
-	 * @throws InitException
-	 */
-	std::string interpolate(std::string const& src) {
-		return StringUtils::interpolate(src, _vars);
-	}
+	void openConfigFile(bool minimal);
 
 	/** @throws NumberFormatException */
 	template<class T, T MIN, T MAX>
@@ -49,92 +102,39 @@ protected:
 
 private:
 	virtual void readConfig();
+
+	/**
+	 * @param minimal  perform a minimal load (no sources, no sinks)
+	 * @throws InitException
+	 */
+	void internalInit(bool minimal);
 public:
 	Config(const std::string& confFileName, const std::string& appName);
 	virtual ~Config() {}
 
 	/** @throws InitException */
-	virtual void init();
+	virtual void init() {
+		internalInit(false);
+	}
+
+	/**
+	 * Just enough initialization to locate the pid file.
+	 * Does not run sources or sinks.
+	 * Does not throw errors on undefined variables!
+	 * @throws InitException
+	 */
+	virtual void initMinimal() {
+		internalInit(true);
+	}
 
 	virtual std::string locateConfigFile(const std::string& fileName) const;
 
 	virtual void onBeforeSearch(List<std::string> &pathList) const {}
 
 	static void shutdown();
-	void forEach(bool (*callback)(void*, const std::string&, const std::string&), void *userData) const {
-		_vars.forEach(callback, userData);
-	}
 public:
-	/** @throws MissingValueException */
-	std::string getValue(const std::string& name) const {
-		return _vars.getVar(name);
-	}
-
-	std::string getValue(const std::string& name, const std::string& defaultValue) const {
-		try {
-			return getValue(name);
-		} catch (MissingValueException const&) {
-			return defaultValue;
-		}
-	}
-
-	/** @throws MissingValueException
-	  * @throws NumberFormatException
-	  */
-	template <int32_t MIN = slib::Integer::MIN_VALUE, int32_t MAX = slib::Integer::MAX_VALUE>
-	int32_t getIntValue(const std::string& name) const {
-		try {
-			return rangeCheck<int32_t, MIN, MAX>(_HERE_, Integer::parseInt(getValue(name)));
-		} catch (NumberFormatException const& e) {
-			throw NumberFormatException(_HERE_, fmt::format("Invalid integer value: {} ({})", name, e.getMessage()).c_str());
-		}
-	}
-
-	/** @throws NumberFormatException */
-	template <int32_t MIN = slib::Integer::MIN_VALUE, int32_t MAX = slib::Integer::MAX_VALUE>
-	int32_t getIntValue(const std::string& name, int32_t defaultValue) const {
-		try {
-			return getIntValue<MIN, MAX>(name);
-		} catch (MissingValueException const&) {
-			return defaultValue;
-		}
-	}
-
-	/** @throws MissingValueException
-	  * @throws NumberFormatException
-	  */
-	template <uint32_t MIN = 0, uint32_t MAX = slib::UInt::MAX_VALUE>
-	uint32_t getUIntValue(const std::string& name) const {
-		try {
-			return rangeCheck<uint32_t, MIN, MAX>(_HERE_, UInt::parseUInt(getValue(name)));
-		} catch (NumberFormatException const& e) {
-			throw NumberFormatException(_HERE_, fmt::format("Invalid integer value: {} ({})", name, e.getMessage()).c_str());
-		}
-	}
-
-	/** @throws NumberFormatException */
-	template <uint32_t MIN = 0, uint32_t MAX = slib::UInt::MAX_VALUE>
-	uint32_t getUIntValue(const std::string& name, uint32_t defaultValue) const {
-		try {
-			return getUIntValue<MIN, MAX>(name);
-		} catch (MissingValueException const&) {
-			return defaultValue;
-		}
-	}
-
-	/** @throws MissingValueException */
-	bool getBoolValue(const std::string& name) const {
-		return Boolean::parseBoolean(getValue(name));
-	}
-
-	bool getBoolValue(const std::string& name, bool defaultValue) const {
-		try {
-			return getBoolValue(name);
-		} catch (MissingValueException const&) {
-			return defaultValue;
-		}
-	}
-
+	void registerPropertySource(const std::string& name, std::shared_ptr<PropertySource> const& src);
+	void registerPropertySink(const std::string& name, ConfigProcessor::PropertySink const& sink);
 public:
 	const std::string& getAppName() const { return _appName; }
 	const std::string& getHomeDir() const { return _homeDir; }

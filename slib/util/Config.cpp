@@ -5,7 +5,8 @@
 #include "slib/util/Config.h"
 #include "slib/util/FileUtils.h"
 #include "slib/String.h"
-#include "slib/ArrayList.h"
+#include "slib/collections/ArrayList.h"
+#include "slib/io/FileInputStream.h"
 
 #include <iostream>
 #include <fstream>
@@ -14,11 +15,105 @@
 #define PROCSELFEXE "/proc/self/exe"
 
 namespace slib {
-	
+
+std::shared_ptr<std::string> ConfigProcessor::processLine(const std::string& name,
+														  const std::string& rawProperty) {
+	std::shared_ptr<std::string> value = StringUtils::interpolate(rawProperty, *this, false);
+	if (String::startsWith(name, '@')) {
+		if (!_vars)
+			_vars = std::make_unique<VarMap>();
+		_vars->put(String::substring(name, 1), value);
+		return nullptr;
+	} else if (String::endsWith(name, ']')) {
+		ptrdiff_t openBracket = String::lastIndexOf(name, '[');
+		if (openBracket > 0) {
+			std::string mapName = String::trim(String::substring(name, 0, (size_t)openBracket));
+			std::string mapEntry = String::trim(String::substring(name, (size_t)openBracket + 1, name.length() - 1));
+			if ((!mapName.empty()) && (!mapEntry.empty())) {
+				bool sunk = sink(mapName, mapEntry, *value);
+				if (sunk)
+					return nullptr;
+			}
+		}
+	}
+	return value;
+}
+
+bool ConfigProcessor::sink(const std::string& sinkName, const std::string& name, const std::string& value) {
+	SinkMapConstIter sink = _sinks.find(sinkName);
+	if (sink == _sinks.end())
+		return false;
+	sink->second(name, value);
+	return true;
+}
+
+std::shared_ptr<std::string> ConfigProcessor::get(std::string const& name) const {
+	std::shared_ptr<std::string> value = _props.get(name);
+	if ((!value) && _vars)
+		value = _vars->get(name);
+	if ((!value) && _sources) {
+		std::ptrdiff_t dotPos;
+		if ((dotPos = String::lastIndexOf(name, '.')) > 0) {
+			std::string providerName = String::substring(name, 0, (size_t)dotPos);
+			std::string propertyName = String::substring(name, (size_t)dotPos + 1);
+			SourceMapConstIter provider = _sources->find(providerName);
+			if (provider != _sources->end())
+				return provider->second->get(propertyName);
+		}
+	}
+	return value;
+}
+
+bool ConfigProcessor::containsKey(std::string const& name) const {
+	if (_props.containsKey(name))
+		return true;
+	if (_vars && _vars->containsKey(name))
+		return true;
+	if (_sources) {
+		std::ptrdiff_t dotPos;
+		if ((dotPos = String::lastIndexOf(name, '.')) > 0) {
+			std::string providerName = String::substring(name, 0, (size_t)dotPos);
+			std::string propertyName = String::substring(name, (size_t)dotPos + 1);
+			SourceMapConstIter provider = _sources->find(providerName);
+			if ((provider != _sources->end()) && (provider->second->containsKey(propertyName)))
+				return true;
+		}
+	}
+	return false;
+}
+
+std::shared_ptr<std::string> SimpleConfigProcessor::processLine(const std::string& name,
+																const std::string& rawProperty) {
+	std::shared_ptr<std::string> value = StringUtils::interpolate(rawProperty, *this, true);
+	if (String::startsWith(name, '@')) {
+		if (!_vars)
+			_vars = std::make_unique<VarMap>();
+		_vars->put(String::substring(name, 1), value);
+		return nullptr;
+	}
+	return value;
+}
+
+std::shared_ptr<std::string> SimpleConfigProcessor::get(std::string const& name) const {
+	std::shared_ptr<std::string> value = _props.get(name);
+	if ((!value) && _vars)
+		value = _vars->get(name);
+	return value;
+}
+
+bool SimpleConfigProcessor::containsKey(std::string const& name) const {
+	if (_props.containsKey(name))
+		return true;
+	if (_vars && _vars->containsKey(name))
+		return true;
+	return false;
+}
+
 Config::Config(const std::string& confFileName, const std::string& appName)
 :_confFileName(confFileName)
-,_appName(appName) {
-}
+,_appName(appName)
+,_cfgProc(*this)
+,_simpleCfgProc(*this) {}
 
 std::string searchConfigFile(List<std::string> const& configDirs, const std::string& configFile) {
 	ConstIterator<std::shared_ptr<std::string> > i = configDirs.constIterator();
@@ -47,7 +142,7 @@ std::string Config::locateConfigFile(const std::string& fileName) const {
 }
 
 /** @throws InitException */
-void Config::init() {
+void Config::internalInit(bool minimal) {
 	char pathBuf[1024] = "";
 	struct stat s;
 
@@ -79,60 +174,45 @@ void Config::init() {
 
 	_confDir = configDir;
 
-	openConfigFile();
+	clear();
+	openConfigFile(minimal);
 	//_vars.forEach(&dmp, nullptr);
 	readConfig();
 }
 
 void Config::readConfig() {
 	// read home dir
-	_homeDir = getValue("home", _rootDir);
+	_homeDir = getString("home", _rootDir);
 	
 	// read logdir
-	_logDir = getValue("logdir", "");
+	_logDir = getString("logdir", "");
 	if (_logDir.empty())
 		_logDir = FileUtils::buildPath(_homeDir, "log");
 }
-	
-void Config::openConfigFile() {
+
+void Config::openConfigFile(bool minimal) {
 	std::string configFile = FileUtils::buildPath(_confDir, _confFileName);
-	
-	std::ifstream iniFile(configFile.c_str());
-	if (!iniFile.is_open())
-		throw InitException(_HERE_, fmt::format("Cannot open config file '{}', errno='{}'", configFile, StringUtils::formatErrno()).c_str());
-		
-	std::string line;
-	while (getline(iniFile, line)) {
-		std::string iniLine = String::trim(line);
-		if (String::startsWith(iniLine, ';') || String::startsWith(iniLine, '#'))
-			continue;
-		std::ptrdiff_t eqPos;
-		if ((eqPos = String::indexOf(iniLine, '=')) > 0) {
-			std::string name = String::trim(String::substring(iniLine, 0, eqPos));
-			std::string rawValue = String::trim(String::substring(iniLine, eqPos + 1));
-			if (String::endsWith(name, ']')) {
-				ptrdiff_t openBracket = String::lastIndexOf(name, '[');
-				if (openBracket > 0) {
-					std::string mapName = String::trim(String::substring(name, 0, openBracket));
-					std::string mapEntry = String::trim(String::substring(name, openBracket + 1, name.length() - 1));
-					if ((!mapName.empty()) && (!mapEntry.empty())) {
-						bool sunk = _vars.sink(mapName, mapEntry, interpolate(rawValue));
-						if (sunk)
-							continue;
-					}
-				}
-			}
-			_vars.set(name, interpolate(rawValue));
-		}
+	try {
+		FileInputStream propsFile(configFile);
+		if (minimal)
+			load(propsFile, &_simpleCfgProc);
+		else
+			load(propsFile, &_cfgProc);
+	} catch (IOException const& e) {
+		throw InitException(_HERE_, fmt::format("I/O error reading config file: {}", e.getMessage()).c_str());
 	}
-	if (iniFile.bad())
-		throw InitException(_HERE_, fmt::format("Cannot read config file '{}', errno='{}'", configFile, StringUtils::formatErrno()).c_str());
-
-	iniFile.close();
 }
-
+	
 void Config::shutdown() {
 	Log::shutdown();
+}
+
+void Config::registerPropertySource(std::string const& name, std::shared_ptr<PropertySource> const& src) {
+	_cfgProc.registerSource(name, src);
+}
+
+void Config::registerPropertySink(std::string const& name, ConfigProcessor::PropertySink const& sink) {
+	_cfgProc.registerSink(name, sink);
 }
 
 } // namespace

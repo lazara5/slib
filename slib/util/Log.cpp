@@ -4,7 +4,7 @@
 
 #include "slib/util/Log.h"
 #include "slib/Numeric.h"
-#include "slib/ArrayList.h"
+#include "slib/collections/ArrayList.h"
 #include "slib/util/Config.h"
 #include "slib/util/FileUtils.h"
 #include "slib/String.h"
@@ -203,7 +203,7 @@ void Log::init(const Config& cfg, ConstIterator<std::shared_ptr<std::string> > p
 }
 
 void Log::init(const Config& cfg, const std::string& name, const std::string& defaultValue /*= ""*/) {
-	std::string logCfg = cfg.getValue(name, defaultValue);
+	std::string logCfg = cfg.getString(name, defaultValue);
 	if (logCfg.empty())
 		throw InitException(_HERE_, fmt::format("Log config not found ({})", name).c_str());
 

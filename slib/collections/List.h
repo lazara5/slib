@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef H_SLIB_LIST_H
-#define H_SLIB_LIST_H
+#ifndef H_SLIB_COLLECTIONS_LIST_H
+#define H_SLIB_COLLECTIONS_LIST_H
 
 #include "slib/Iterator.h"
 #include "slib/exception/UnsupportedOperationException.h"
@@ -53,4 +53,4 @@ public:
 
 } // namespace
 
-#endif // H_SLIB_LIST_H
+#endif // H_SLIB_COLLECTIONS_LIST_H

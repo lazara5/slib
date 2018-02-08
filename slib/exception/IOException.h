@@ -20,6 +20,15 @@ public:
 
 	IOException(const char *where)
 	:Exception(where, "IOException", "") {}
+protected:
+	IOException(const char *where, const char *className, const char *msg)
+	:Exception(where, className, msg) {}
+};
+
+class FileNotFoundException: public IOException {
+public:
+	FileNotFoundException(const char *where, const char *msg)
+	:IOException(where, "FileNotFoundException", msg) {}
 };
 
 } // namespace slib

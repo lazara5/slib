@@ -16,7 +16,7 @@ SystemInfo::SystemInfo() {
 	provideProperty("ipv6", 	static_cast<GetProperty>(&SystemInfo::getIpV6));
 }
 
-int getIPAddrs(std::string& ip, std::string& ipv4, std::string& ipv6) {
+int getIPAddrs(std::shared_ptr<std::string>& ip, std::shared_ptr<std::string>& ipv4, std::shared_ptr<std::string>& ipv6) {
 	struct ifaddrs *ifaddr, *ifa;
 	int family, n;
 
@@ -43,14 +43,14 @@ int getIPAddrs(std::string& ip, std::string& ipv4, std::string& ipv6) {
 			const char *ipaddr = inet_ntop(family, addr, ipstr, sizeof(ipstr));
 
 			if (ipaddr) {
-				if (ip.empty())
-					ip = ipaddr;
+				if (!ip)
+					ip = std::make_shared<std::string>(ipaddr);
 				if (family == AF_INET) {
-					if (ipv4.empty())
-						ipv4 = ipaddr;
+					if (!ipv4)
+						ipv4 = ip = std::make_shared<std::string>(ipaddr);
 				} else if (family == AF_INET6) {
-					if (ipv6.empty())
-						ipv6 = ipaddr;
+					if (!ipv6)
+						ipv6 = ip = std::make_shared<std::string>(ipaddr);
 				}
 			}
 		}
@@ -67,9 +67,9 @@ void SystemInfo::initialize() {
 
 	if (gethostname(hostname, sizeof(hostname)) < 0) {
 		logger.warnf("[SystemInfo] Failed to determine hostname, errno={}", StringUtils::formatErrno());
-		_hostname = "localhost";
+		_hostname = std::make_shared<std::string>("localhost");
 	} else
-		_hostname = hostname;
+		_hostname = std::make_shared<std::string>(hostname);
 }
 
 } // namespace slib

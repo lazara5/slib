@@ -7,7 +7,9 @@
 
 #include "slib/exception/Exception.h"
 #include "slib/util/PropertySource.h"
+#include "slib/collections/Map.h"
 #include "slib/StringBuilder.h"
+
 
 #include "fmt/format.h"
 
@@ -16,46 +18,6 @@
 #include <functional>
 
 namespace slib {
-
-/** map of std::string keys and values; allows retrieving properties from external PropertyProvider sources. */
-class ValueMap {
-private:
-	typedef std::unordered_map<std::string, std::string> StringMap;
-	typedef StringMap::const_iterator StringMapConstIter;
-
-	typedef std::unordered_map<std::string, PropertySource*> SourceMap;
-	typedef SourceMap::const_iterator SourceMapConstIter;
-
-	typedef std::function<void(std::string const&, std::string const&)> ConfigSink;
-	typedef std::unordered_map<std::string, ConfigSink> SinkMap;
-	typedef SinkMap::const_iterator SinkMapConstIter;
-private:
-	StringMap _vars;
-	SourceMap _sources;
-	SinkMap _sinks;
-public:
-	void set(const std::string& name, const std::string& value) {
-		_vars[name] = value;
-	}
-
-	/** @throws MissingValueException */
-	std::string getVar(const std::string& name) const;
-	
-	/** @throws MissingValueException, InitException */
-	std::string get(const std::string& name);
-
-	bool sink(const std::string& sinkName, const std::string& name, const std::string& value);
-	
-	void registerSource(const std::string& name, PropertySource *src) {
-		_sources[name] = src;
-	}
-
-	void registerSink(const std::string& name, ConfigSink s) {
-		_sinks[name] = s;
-	}
-
-	void forEach(bool (*callback)(void*, const std::string&, const std::string&), void *userData) const;
-};
 
 /** Convenience class for building XML-escaped strings */
 class XMLString : public StringBuilder {
@@ -87,7 +49,8 @@ public:
 		return formatErrno(errno);
 	}
 
-	static std::string interpolate(std::string const& src, ValueMap& vars);
+	static std::shared_ptr<std::string> interpolate(std::string const& src,
+													ValueProvider<std::string, std::string> const& vars, bool ignoreUndefined);
 };
 
 } // namespace slib

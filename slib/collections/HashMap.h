@@ -2,12 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef H_SLIB_HASHMAP_H
-#define H_SLIB_HASHMAP_H
+#ifndef H_SLIB_COLLECTIONS_HASHMAP_H
+#define H_SLIB_COLLECTIONS_HASHMAP_H
 
 #include <functional>
 
-#include "slib/Map.h"
+#include "slib/collections/Map.h"
 #include "slib/Numeric.h"
 #include "slib/exception/IllegalStateException.h"
 
@@ -337,7 +337,7 @@ public:
 		return put(key, std::make_shared<V>(value));
 	}
 
-	std::shared_ptr<V> put(const K& key, std::shared_ptr<V> value) {
+	std::shared_ptr<V> put(const K& key, std::shared_ptr<V> const& value) {
 		int hash = _smudge(std::hash<K>()(key));
 		int i = indexFor(hash, _tableLength);
 		for (Entry *e = _table[i]; e != nullptr; e = e->_next) {
@@ -546,4 +546,4 @@ public:
 
 } // namespace
 
-#endif // H_SLIB_HASHMAP_H
+#endif // H_SLIB_COLLECTIONS_HASHMAP_H

@@ -117,7 +117,7 @@ public:
 		_hash = 0;
 		if (_len + 1 >= _size) 
 			grow(_len + 2);
-		_buffer[_len] = c;
+		_buffer[_len] = (unsigned char)c;
 		_len++;
 		_buffer[_len] = 0;
 		return *this;

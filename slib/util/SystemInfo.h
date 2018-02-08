@@ -12,34 +12,34 @@ namespace slib {
 class SystemInfo : public PropertySource {
 private:
 	/** hostname */
-	std::string _hostname;
+	std::shared_ptr<std::string> _hostname;
 
 	/** IP addresses */
-	std::string _ip;
-	std::string _ipv4;
-	std::string _ipv6;
+	std::shared_ptr<std::string> _ip;
+	std::shared_ptr<std::string> _ipv4;
+	std::shared_ptr<std::string> _ipv6;
 public:
 	SystemInfo();
 
 	void initialize();
 
 	/** get host name */
-	std::string getHostname() {
+	std::shared_ptr<std::string> getHostname() const {
 		return _hostname;
 	}
 
 	/** get first active non-loopback IP address */
-	std::string getIp() {
+	std::shared_ptr<std::string> getIp() const {
 		return _ip;
 	}
 
 	/** get first active non-loopback IPv4 address */
-	std::string getIpV4() {
+	std::shared_ptr<std::string> getIpV4() const {
 		return _ipv4;
 	}
 
 	/** get firstactive  non-loopback IPv6 address */
-	std::string getIpV6() {
+	std::shared_ptr<std::string> getIpV6() const {
 		return _ipv6;
 	}
 };

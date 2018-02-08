@@ -2,10 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef H_SLIB_ABSTRACTLIST_H
-#define H_SLIB_ABSTRACTLIST_H
+#ifndef H_SLIB_COLLECTIONS_ABSTRACTLIST_H
+#define H_SLIB_COLLECTIONS_ABSTRACTLIST_H
 
-#include "slib/List.h"
+#include "slib/collections/List.h"
 
 namespace slib {
 
@@ -46,4 +46,4 @@ public:
 
 } // namespace slib
 
-#endif // H_SLIB_ABSTRACTLIST_H
+#endif // H_SLIB_COLLECTIONS_ABSTRACTLIST_H

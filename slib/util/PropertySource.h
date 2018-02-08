@@ -5,6 +5,7 @@
 #ifndef H_SLIB_UTIL_PROPERTYSOURCE_H
 #define H_SLIB_UTIL_PROPERTYSOURCE_H
 
+#include "slib/collections/Map.h"
 #include "slib/exception/ValueException.h"
 
 #include <unordered_map>
@@ -12,9 +13,9 @@
 
 namespace slib {
 
-class PropertySource {
+class PropertySource : public ValueProvider<std::string, std::string> {
 protected:
-	typedef std::string (PropertySource::*GetProperty)();
+	typedef std::shared_ptr<std::string> (PropertySource::*GetProperty)() const;
 private:
 	typedef std::unordered_map<std::string, GetProperty> PropertyMap;
 	typedef PropertyMap::const_iterator PropMapConstIter;
@@ -39,6 +40,10 @@ public:
 		initialize();
 		_initialized = true;
 	}
+
+	virtual std::shared_ptr<std::string> get(std::string const& name) const override;
+
+	virtual bool containsKey(std::string const& name) const override;
 };
 
 } // namespace

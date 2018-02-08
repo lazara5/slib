@@ -2,10 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef H_SLIB_ARRAYLIST_H
-#define H_SLIB_ARRAYLIST_H
+#ifndef H_SLIB_COLLECTIONS_ARRAYLIST_H
+#define H_SLIB_COLLECTIONS_ARRAYLIST_H
 
-#include "slib/AbstractList.h"
+#include "slib/collections/AbstractList.h"
 #include "slib/exception/IllegalStateException.h"
 #include "slib/exception/IllegalArgumentException.h"
 #include "slib/Numeric.h"
@@ -251,4 +251,4 @@ public:
 
 } // namespace
 
-#endif // H_SLIB_ARRAYLIST_H
+#endif // H_SLIB_COLLECTIONS_ARRAYLIST_H

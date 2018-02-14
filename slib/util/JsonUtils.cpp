@@ -68,6 +68,15 @@ std::string getString(const char *where, unsigned int index, const Value &v) {
 }
 
 /** @throws InvalidValueException */
+const rapidjson::Value *getStringValue(const char *where, unsigned int index, const Value &v) {
+	checkArrayIndex(where, index, v);
+	const Value& value = v[index];
+	if (value.IsString())
+		return &value;
+	throw InvalidValueException(where, UInt::toString(index).c_str(), "String expected");
+}
+
+/** @throws InvalidValueException */
 bool getBool(const char *where, unsigned int index, const Value &v) {
 	checkArrayIndex(where, index, v);
 	const Value& value = v[index];

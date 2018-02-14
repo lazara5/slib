@@ -28,10 +28,6 @@ protected:
 
 	void grow(size_t newLen);
 	void internalAppend(const char *format, va_list ap);
-
-	static std::ptrdiff_t lastIndexOf(const char *source, std::ptrdiff_t sourceOffset, size_t sourceCount,
-									  const char *target, std::ptrdiff_t targetOffset, size_t targetCount,
-									  std::ptrdiff_t fromIndex);
 public:
 	/** for std container compatibility */
 	typedef char value_type;
@@ -44,11 +40,11 @@ public:
 
 	StringBuilder(const char *str, size_t offset, size_t count);
 
-	StringBuilder(std::tuple<const char *, size_t, std::ptrdiff_t> t)
+	StringBuilder(std::tuple<const char *, size_t, size_t> t)
 	:StringBuilder(std::get<0>(t), std::get<1>(t), std::get<2>(t)) {}
 
-	StringBuilder(const StringBuilder &other);
-	StringBuilder(const std::string& other);
+	StringBuilder(StringBuilder const& other);
+	StringBuilder(std::string const& other);
 
 	/** move constructor */
 	StringBuilder(StringBuilder &&other);
@@ -81,9 +77,9 @@ public:
 		return std::make_tuple(c_str(), length());
 	}
 
-	bool operator==(const StringBuilder& other) const;
+	bool operator==(StringBuilder const& other) const;
 
-	StringBuilder& operator=(const StringBuilder& other);
+	StringBuilder& operator=(StringBuilder const& other);
 
 	/** move assignment */
 	StringBuilder& operator=(StringBuilder &&other);
@@ -98,11 +94,11 @@ public:
 
 	// appenders
 	StringBuilder& add(const char *src, std::ptrdiff_t len = -1);
-	StringBuilder& add(const StringBuilder &src);
-	StringBuilder& add(const ASCIICaseInsensitiveString &src);
-	StringBuilder& add(const std::string& src);
+	StringBuilder& add(StringBuilder const& src);
+	StringBuilder& add(ASCIICaseInsensitiveString const& src);
+	StringBuilder& add(std::string const& src);
 
-	StringBuilder& add(const std::shared_ptr<std::string>& src) {
+	StringBuilder& add(std::shared_ptr<std::string> const& src) {
 		if (src)
 			add(*src);
 		return *this;
@@ -136,8 +132,8 @@ public:
 		__attribute__((format (printf, 2, 3)));
 
 	// appender operators
-	StringBuilder& operator +=(const StringBuilder& op);
-	const StringBuilder operator+(const StringBuilder& other) const;
+	StringBuilder& operator +=(StringBuilder const& op);
+	const StringBuilder operator+(StringBuilder const& other) const;
 
 	StringBuilder& operator +=(const char* op);
 	const StringBuilder operator+(const char* other) const;
@@ -154,7 +150,7 @@ public:
 	StringBuilder& operator +=(double op);
 	const StringBuilder operator+(double other) const;
 
-	bool operator <(const StringBuilder& other) const;
+	bool operator <(StringBuilder const& other) const;
 
 	/** bool operator */
 	explicit operator bool() const {
@@ -162,7 +158,7 @@ public:
 	}
 
 	// stream versions
-	StringBuilder& operator <<(const StringBuilder& src);
+	StringBuilder& operator <<(StringBuilder const& src);
 	StringBuilder& operator <<(char c);
 	StringBuilder& operator <<(int i);
 	StringBuilder& operator <<(int64_t i);
@@ -179,7 +175,7 @@ public:
 	 * @return <i>true</i> if the given object represents a String object
 	 *		equivalent to this String, <i>false</i> otherwise.
 	 */
-	virtual bool equals(const StringBuilder& other) const;
+	virtual bool equals(StringBuilder const& other) const;
 
 	/**
 	 * Compares this String to another String, ignoring case.
@@ -194,7 +190,7 @@ public:
 	 *
 	 * @see equals(const String&)
 	 */
-	bool equalsIgnoreCase(const StringBuilder& other) const;
+	bool equalsIgnoreCase(StringBuilder const& other) const;
 
 	/**
 	 * Returns the character at the specified offset. The index ranges from <i>0</i> to
@@ -238,7 +234,7 @@ public:
 	 *		index of the first character of the first occurence is returned; if it does not,
 	 *      then <i><b>-1</b></i> is returned.
 	 */
-	std::ptrdiff_t indexOf(const StringBuilder& sub) const;
+	std::ptrdiff_t indexOf(StringBuilder const& sub) const;
 
 	/**
 	 * Returns the offset in this String of the first occurrence of the
@@ -249,7 +245,7 @@ public:
 	 *		the specified offset, then the index of the first character of the first occurence 
 	 *		is returned; if it does not, then <i><b>-1</b></i> is returned.
 	 */
-	std::ptrdiff_t indexOf(const StringBuilder& sub, size_t fromIndex) const;
+	std::ptrdiff_t indexOf(StringBuilder const& sub, size_t fromIndex) const;
 
 	/**
 	 * Returns the index within this string of the last occurrence of
@@ -290,7 +286,7 @@ public:
 	 *      the last such substring is returned. If it does not occur as
 	 *      a substring, <i><b>-1</b></i> is returned.
 	 */
-	std::ptrdiff_t lastIndexOf(const StringBuilder &sub) const;
+	std::ptrdiff_t lastIndexOf(StringBuilder const& sub) const;
 
 	/**
      * Tests if this string starts with the specified prefix.
@@ -309,7 +305,7 @@ public:
      *      this string; <i><b>false</b></i> otherwise.
      *      Note also that <i><b>true</b></i> will be returned if the argument is an empty string.
      */
-	bool startsWith(const StringBuilder &prefix) const;
+	bool startsWith(StringBuilder const& prefix) const;
 
 	/**
      * Tests if the substring of this string beginning at the
@@ -324,7 +320,7 @@ public:
 	 *		the result is the same as the result of the expression
      *      <i>this->substring(offset).startsWith(prefix)</i>
      */
-	bool startsWith(const StringBuilder &prefix, std::ptrdiff_t offset) const;
+	bool startsWith(StringBuilder const& prefix, std::ptrdiff_t offset) const;
 
 	/**
 	 * Tests if this string ends with the specified sufffix.
@@ -344,7 +340,7 @@ public:
 	 *      result will be <i><b>true</b></i> if the argument is the
 	 *      empty string or is equal to this String object.
 	*/
-	bool endsWith(const StringBuilder &suffix) const;
+	bool endsWith(StringBuilder const& suffix) const;
 
 	/**
 	 * Returns a new String that is a substring of this String. The
@@ -444,6 +440,8 @@ public:
 	NullStringBuilder()
 	:StringBuilder(nullptr) {}
 
+	virtual ~NullStringBuilder();
+
 	[[ noreturn ]] void alloc(size_t) { throw NullStringBuilderException(); }
 	[[ noreturn ]] void setLength(size_t) { throw NullStringBuilderException(); }
 	StringBuilder& operator=(const StringBuilder&) { throw NullStringBuilderException(); }
@@ -483,7 +481,7 @@ extern NullStringBuilder NULLSTRINGBUILDER;
 namespace std {
 	// for using StringBuilder as key in unordered_map
 	template<> struct hash<slib::StringBuilder> {
-		std::size_t operator()(const slib::StringBuilder& s) const {
+		std::size_t operator()(slib::StringBuilder const& s) const {
 			return (size_t)s.hashCode();
 		}
 	};

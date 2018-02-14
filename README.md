@@ -18,6 +18,6 @@ Please note this is not currently intended as a general-purpose library. Only wh
   * [spdlog](https://github.com/gabime/spdlog)
   * [tclap](http://tclap.sourceforge.net/)
   * [libbsd](https://libbsd.freedesktop.org/wiki/)
-  * [std::experimental::optional](https://github.com/akrzemi1/Optional)
+  * [std::experimental::optional](https://github.com/akrzemi1/Optional) - optional, for some of the concurrent queues
   * [rapidjson](http://rapidjson.org/) - optional, for JsonUtils only
 

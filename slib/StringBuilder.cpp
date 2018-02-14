@@ -52,7 +52,7 @@ StringBuilder::StringBuilder(const char *str, ptrdiff_t len /* = -1 */) {
 	} else {
 		if (len < 0)
 			len = (ptrdiff_t)strlen(str);
-		_buffer = (unsigned char*)malloc(len + _STR_EXTRA_ALLOC + 1);
+		_buffer = (unsigned char*)malloc((size_t)len + _STR_EXTRA_ALLOC + 1);
 		if (!_buffer)
 			throw OutOfMemoryError(_HERE_);
 		memcpy(_buffer, str, (size_t)len);
@@ -74,7 +74,7 @@ StringBuilder::StringBuilder(const char *str, size_t offset, size_t count) {
 	_size = count + _STR_EXTRA_ALLOC + 1;
 }
 
-StringBuilder::StringBuilder(const StringBuilder &other) {
+StringBuilder::StringBuilder(StringBuilder const& other) {
 	if (other._buffer == nullptr) {
 		_buffer = nullptr;
 	} else {
@@ -101,7 +101,7 @@ StringBuilder::StringBuilder(StringBuilder &&other) {
 	other._hash = 0;
 }
 
-StringBuilder::StringBuilder(const std::string& other)
+StringBuilder::StringBuilder(std::string const& other)
 :StringBuilder(other.c_str(), (ptrdiff_t)other.length()) {}
 
 StringBuilder::~StringBuilder() {
@@ -154,35 +154,19 @@ StringBuilder::StringBuilder(double val) {
 	build("%g", val);
 }
 
-bool StringBuilder::operator ==(const StringBuilder& other) const {
+bool StringBuilder::operator ==(StringBuilder const& other) const {
 	return equals(other);
 }
 
-bool StringBuilder::equals(const StringBuilder& other) const {
-	if (_buffer == nullptr)
-		return (other._buffer == nullptr);
-	if (other._buffer == nullptr)
-		return _buffer == nullptr;
-	if (_buffer == other._buffer)
-		return true;
-	if (_len == other._len)
-		return !strcmp((char*)_buffer, (char*)other._buffer);
-	return false;
+bool StringBuilder::equals(StringBuilder const& other) const {
+	return String::equals(*this, other);
 }
 
-bool StringBuilder::equalsIgnoreCase(const StringBuilder& other) const {
-	if (_buffer == nullptr)
-		return (other._buffer == nullptr);
-	if (other._buffer == nullptr)
-		return _buffer == nullptr;
-	if (_buffer == other._buffer)
-		return true;
-	if (_len == other._len)
-		return !strcasecmp((char*)_buffer, (char*)other._buffer);
-	return false;
+bool StringBuilder::equalsIgnoreCase(StringBuilder const& other) const {
+	return String::equalsIgnoreCase(*this, other);
 }
 
-bool StringBuilder::operator <(const StringBuilder& other) const {
+bool StringBuilder::operator <(StringBuilder const& other) const {
 	if (_buffer == nullptr) {
 		if (other._buffer == nullptr)
 			return false;
@@ -203,95 +187,27 @@ ptrdiff_t StringBuilder::indexOf(char ch) const {
 }
 
 ptrdiff_t StringBuilder::indexOf(char ch, size_t fromIndex) const {
-	if (fromIndex >= _len)
-		return -1;
-
-	const char *pos = strchr((char*)_buffer + fromIndex, ch);
-	return (pos == nullptr ? -1 : pos - (char*)_buffer);
+	return String::indexOf(*this, ch, fromIndex);
 }
 
-ptrdiff_t StringBuilder::indexOf(const StringBuilder& sub) const {
-	const char *pos = strstr((char*)_buffer, (char*)sub._buffer);
-	return (pos == nullptr ? -1 : pos - (char*)_buffer);
+ptrdiff_t StringBuilder::indexOf(StringBuilder const& sub) const {
+	return String::indexOf(*this, sub);
 }
 
-ptrdiff_t StringBuilder::indexOf(const StringBuilder& sub, size_t fromIndex) const {
-	if (fromIndex >= _len)
-		return -1;
-
-	const char *pos = strstr((char*)_buffer + fromIndex, sub.c_str());
-	return (pos == nullptr ? -1 : pos - (char*)_buffer);
+ptrdiff_t StringBuilder::indexOf(StringBuilder const& sub, size_t fromIndex) const {
+	return String::indexOf(*this, sub, fromIndex);
 }
 
 ptrdiff_t StringBuilder::lastIndexOf(char ch) const {
-	return lastIndexOf(ch, (ptrdiff_t)(_len - 1));
+	return String::lastIndexOf(*this, ch);
 }
 
 ptrdiff_t StringBuilder::lastIndexOf(char ch, ptrdiff_t fromIndex) const {
-	if (isNull())
-		throw NullPointerException(_HERE_);
-
-	if (fromIndex < 0)
-		return -1;
-
-	int min = 0;
-	const char *v = (const char*)_buffer;
-
-	ptrdiff_t i = (((size_t)fromIndex >= _len) ? (ptrdiff_t)(_len - 1) : fromIndex);
-
-	for (; i >= min ; i--) {
-		if (v[i] == ch)
-			return i;
-	}
-	return -1;
+	return String::lastIndexOf(*this, ch, fromIndex);
 }
 
-ptrdiff_t StringBuilder::lastIndexOf(const StringBuilder& sub) const {
-	if (isNull() || sub.isNull())
-		throw NullPointerException(_HERE_);
-	return StringBuilder::lastIndexOf((const char*)_buffer, 0, _len, (const char*)sub._buffer, 0,
-									  sub._len, (ptrdiff_t)_len);
-}
-
-ptrdiff_t StringBuilder::lastIndexOf(const char *source, ptrdiff_t sourceOffset, size_t sourceCount,
-									 const char *target, ptrdiff_t targetOffset, size_t targetCount,
-									 ptrdiff_t fromIndex) {
-	ptrdiff_t rightIndex = (ptrdiff_t)(sourceCount - targetCount);
-
-	if (fromIndex < 0)
-		return -1;
-	if (fromIndex > rightIndex)
-		fromIndex = rightIndex;
-
-	if (targetCount == 0)
-		return fromIndex;
-
-	ptrdiff_t strLastIndex = (ptrdiff_t)(targetOffset + targetCount - 1);
-	char strLastChar = target[strLastIndex];
-	ptrdiff_t min = sourceOffset + targetCount - 1;
-	ptrdiff_t i = min + fromIndex;
-
-	while (true) {
-		while (i >= min && source[i] != strLastChar)
-			i--;
-		if (i < min)
-			return -1;
-		ptrdiff_t j = i - 1;
-		ptrdiff_t start = j - (targetCount - 1);
-		ptrdiff_t k = strLastIndex - 1;
-
-		bool continueOuter = false;
-		while (j > start) {
-			if (source[j--] != target[k--]) {
-				i--;
-				continueOuter = true;
-				break;
-			}
-		}
-		if (continueOuter)
-			continue;
-		return start - sourceOffset + 1;
-	}
+ptrdiff_t StringBuilder::lastIndexOf(StringBuilder const& sub) const {
+	return String::lastIndexOf(*this, sub);
 }
 
 StringBuilder StringBuilder::substring(size_t beginIndex) const {
@@ -304,7 +220,7 @@ StringBuilder StringBuilder::substring(size_t beginIndex, size_t endIndex) const
 	if (beginIndex > endIndex)
 		throw StringIndexOutOfBoundsException(_HERE_, (ptrdiff_t)(endIndex - beginIndex));
 	size_t len = endIndex - beginIndex;
-	StringBuilder res(nullptr, len + 1);
+	StringBuilder res(nullptr, (ptrdiff_t)(len + 1));
 	memcpy(res._buffer, _buffer + beginIndex, len);
 	res._buffer[len] = 0;
 	res._len = len;
@@ -330,7 +246,7 @@ StringBuilder StringBuilder::trim() const {
 StringBuilder StringBuilder::toLowerCase() const {
 	if (isNull())
 		return getNull();
-	StringBuilder res(nullptr, _len + 1);
+	StringBuilder res(nullptr, (ptrdiff_t)(_len + 1));
 	for (size_t i = 0; i < _len; i++)
 		res.add((char)tolower(_buffer[i]));
 	return res;
@@ -339,39 +255,30 @@ StringBuilder StringBuilder::toLowerCase() const {
 StringBuilder StringBuilder::toUpperCase() const {
 	if (isNull())
 		return getNull();
-	StringBuilder res(nullptr, _len + 1);
+	StringBuilder res(nullptr, (ptrdiff_t)(_len + 1));
 	for (size_t i = 0; i < _len; i++)
 		res.add((char)toupper(_buffer[i]));
 	return res;
 }
 
 bool StringBuilder::startsWith(char prefix) const {
-	if (_buffer == nullptr)
-		return false;
-	return _buffer[0] == prefix;
+	return String::startsWith(*this, prefix);
 }
 
-bool StringBuilder::startsWith(const StringBuilder &prefix) const {
-	return (strncmp((char*)_buffer, prefix.c_str(), prefix.length()) == 0);
+bool StringBuilder::startsWith(StringBuilder const& prefix) const {
+	return String::startsWith(*this, prefix);
 }
 
-bool StringBuilder::startsWith(const StringBuilder &prefix, ptrdiff_t offset) const {
-	if (offset < 0)
-		return false;
-	size_t uOffset = (size_t) offset;
-	if (uOffset > _len - prefix._len)
-		return false;
-	return (strncmp((char*)_buffer + uOffset, prefix.c_str(), prefix.length()) == 0);
+bool StringBuilder::startsWith(StringBuilder const& prefix, ptrdiff_t offset) const {
+	return String::startsWith(*this, prefix, offset);
 }
 
 bool StringBuilder::endsWith(char suffix) const {
-	if ((_buffer == nullptr) || (_len == 0))
-		return false;
-	return _buffer[_len - 1] == suffix;
+	return String::endsWith(*this, suffix);
 }
 
-bool StringBuilder::endsWith(const StringBuilder &suffix) const {
-	return (startsWith(suffix, (ptrdiff_t)(_len - suffix.length())));
+bool StringBuilder::endsWith(StringBuilder const& suffix) const {
+	return String::endsWith(*this, suffix);
 }
 
 int StringBuilder::hashCode() const {
@@ -408,7 +315,7 @@ void StringBuilder::grow(size_t newLen) {
 	size_t newSize = (_size > 0 ? _size : 1);
 	while (newSize < newLen) {
 		size_t oldSize = newSize;
-		newSize = _STR_GROWTH_FACTOR * newSize;
+		newSize = (size_t)(_STR_GROWTH_FACTOR * newSize);
 		// guard against float growth factor
 		if (newSize == oldSize)
 			newSize++;
@@ -425,7 +332,7 @@ void StringBuilder::grow(size_t newLen) {
 	_size = newSize;
 }
 
-StringBuilder& StringBuilder::operator=(const StringBuilder& other) {
+StringBuilder& StringBuilder::operator=(StringBuilder const& other) {
 	if (this == &other)
 		return *this;
 	if (other._buffer == nullptr) {
@@ -512,9 +419,9 @@ StringBuilder& StringBuilder::add(const char *src, ptrdiff_t len /* = -1 */) {
 	_hash = 0;
 	if (len < 0)
 		len = (ptrdiff_t)strlen(src);
-	if (_len + len + 1 > _size)
-		grow(_len + len + 1);
-	memcpy(_buffer + _len, src, len + 1);
+	if (_len + (size_t)len + 1 > _size)
+		grow(_len + (size_t)len + 1);
+	memcpy(_buffer + _len, src, (size_t)len + 1);
 	_len += (size_t)len;
 	_buffer[_len] = 0;
 	return *this;
@@ -530,11 +437,11 @@ const StringBuilder StringBuilder::operator +(const char* other) const {
 
 // append StringBuilder
 
-StringBuilder& StringBuilder::add(const StringBuilder& src) {
+StringBuilder& StringBuilder::add(StringBuilder const& src) {
 	if (src.isNull())
 		return *this;
 	_hash = 0;
-	ptrdiff_t len = (ptrdiff_t)src.length();
+	size_t len = src.length();
 	if (_len + len + 1 > _size)
 		grow(_len + len + 1);
 	memcpy(_buffer + _len, src.c_str(), len + 1);
@@ -544,11 +451,11 @@ StringBuilder& StringBuilder::add(const StringBuilder& src) {
 	return *this;
 }
 
-StringBuilder& StringBuilder::add(const ASCIICaseInsensitiveString& src) {
+StringBuilder& StringBuilder::add(ASCIICaseInsensitiveString const& src) {
 	if (src.isNull())
 		return *this;
 	_hash = 0;
-	ptrdiff_t len = src.length();
+	size_t len = src.length();
 	if (_len + len + 1 > _size)
 		grow(_len + len + 1);
 	memcpy(_buffer + _len, src.c_str(), len + 1);
@@ -558,9 +465,9 @@ StringBuilder& StringBuilder::add(const ASCIICaseInsensitiveString& src) {
 	return *this;
 }
 
-StringBuilder& StringBuilder::add(const std::string& src) {
+StringBuilder& StringBuilder::add(std::string const& src) {
 	_hash = 0;
-	ptrdiff_t len = (ptrdiff_t)src.length();
+	size_t len = src.length();
 	if (_len + len + 1 > _size)
 		grow(_len + len + 1);
 	memcpy(_buffer + _len, src.c_str(), len + 1);
@@ -570,15 +477,15 @@ StringBuilder& StringBuilder::add(const std::string& src) {
 	return *this;
 }
 
-StringBuilder& StringBuilder::operator+=(const StringBuilder& op) {
+StringBuilder& StringBuilder::operator+=(StringBuilder const& op) {
 	return add(op);
 }
 
-const StringBuilder StringBuilder::operator+(const StringBuilder& other) const {
+const StringBuilder StringBuilder::operator+(StringBuilder const& other) const {
 	return StringBuilder(*this) += other;
 }
 
-StringBuilder& StringBuilder::operator<<(const StringBuilder& src) {
+StringBuilder& StringBuilder::operator<<(StringBuilder const& src) {
 	return add(src);
 }
 
@@ -681,8 +588,8 @@ void StringBuilder::internalAppend(const char *format, va_list ap) {
 		if (_len + (size_t)toAppend + 1 > _size)
 			grow(_len + (size_t)toAppend + 1);
 
-		int appended = vsnprintf((char*)_buffer + _len, toAppend + 1, format, ap1);
-		_len += appended;
+		int appended = vsnprintf((char*)_buffer + _len, (size_t)toAppend + 1, format, ap1);
+		_len += (size_t)appended;
 	}
 	va_end(ap1);
 }
@@ -708,6 +615,8 @@ StringBuilder& StringBuilder::addFmtLine(const char *format, ...) {
 	add("\n", 1);
 	return *this;
 }
+
+NullStringBuilder::~NullStringBuilder() {}
 
 NullStringBuilder NULLSTRINGBUILDER;
 

@@ -129,6 +129,16 @@ std::string getString(const char *where, P path, const rapidjson::Value& v) {
 }
 
 template <class P>
+const rapidjson::Value *getStringValue(const char *where, P path, const rapidjson::Value& v) {
+	const rapidjson::Value *value = getValue(where, path, v);
+	if (value == nullptr)
+		throw MissingValueException(where, pathToString(path).c_str());
+	if (value->IsString())
+		return value;
+	throw InvalidValueException(where, pathToString(path).c_str(), "String expected");
+}
+
+template <class P>
 std::unique_ptr<std::string> getStringIfExists(const char *where, P path, const rapidjson::Value& v) {
 	const rapidjson::Value *value = getValue(where, path, v);
 	if (value == nullptr)
@@ -152,6 +162,9 @@ void checkArrayIndex(const char *where, unsigned int index, const rapidjson::Val
 
 /** @throws InvalidValueException */
 std::string getString(const char *where, unsigned int index, const rapidjson::Value& v);
+
+/** @throws InvalidValueException */
+const rapidjson::Value *getStringValue(const char *where, unsigned int index, const rapidjson::Value& v);
 
 /** @throws ValueException */
 template <class P>

@@ -70,11 +70,17 @@ public:
 	static bool equals(S1 const& str, S2 const& other) {
 		const char *buffer = str.c_str();
 		size_t len = str.length();
+		const char *otherBuffer = other.c_str();
+		size_t otherLen = other.length();
 		
-		if (buffer == other.c_str())
+		if (buffer == nullptr)
+			return (otherBuffer == nullptr);
+		if (otherBuffer == nullptr)
+			return buffer == nullptr;
+		if (buffer == otherBuffer)
 			return true;
-		if (len == other.size())
-			return !strcmp(buffer, other.c_str());
+		if (len == otherLen)
+			return !strcmp(buffer, otherBuffer);
 		return false;
 	}
 
@@ -82,23 +88,33 @@ public:
 	static bool equalsIgnoreCase(S1 const& str, S2 const& other) {
 		const char *buffer = str.c_str();
 		size_t len = str.length();
+		const char *otherBuffer = other.c_str();
+		size_t otherLen = other.length();
 
-		if (len == other.length())
-			return !strcasecmp(buffer, other.c_str());
+		if (buffer == nullptr)
+			return (otherBuffer == nullptr);
+		if (otherBuffer == nullptr)
+			return (buffer == nullptr);
+		if (buffer == otherBuffer)
+			return true;
+		if (len == otherLen)
+			return !strcasecmp(buffer, otherBuffer);
 		return false;
 	}
 
 	template <class S>
 	static bool startsWith(S const& str, char prefix) {
-		if (str.length() < 1)
-			return false;
 		const char *buffer = str.c_str();
+
+		if (buffer == nullptr)
+			return false;
 		return buffer[0] == prefix;
 	}
 
 	template <class S1, class S2>
 	static bool startsWith(S1 const& str,  S2 const& prefix) {
 		const char *buffer = str.c_str();
+
 		if (!buffer)
 			return false;
 		return (strncmp(buffer, prefix.c_str(), prefix.length()) == 0);
@@ -117,10 +133,14 @@ public:
 		if (offset < 0)
 			return false;
 		size_t uOffset = (size_t) offset;
+
 		size_t len = str.size();
+
 		if (uOffset > len - prefix.length())
 			return false;
+
 		const char *buffer = str.c_str();
+
 		return (strncmp(buffer + uOffset, prefix.c_str(), prefix.length()) == 0);
 	}
 
@@ -140,6 +160,7 @@ public:
 	static bool endsWith(S const& str, char suffix) {
 		const char *buffer = str.c_str();
 		size_t len = str.length();
+
 		if ((buffer == nullptr) || (len == 0))
 			return false;
 		return buffer[len - 1] == suffix;
@@ -148,7 +169,8 @@ public:
 	template <class S1, class S2>
 	static bool endsWith(S1 const& str, S2 const& suffix) {
 		size_t len = str.length();
-		return (startsWith(str, suffix, (ptrdiff_t)(len - suffix.size())));
+
+		return (startsWith(str, suffix, (ptrdiff_t)(len - suffix.length())));
 	}
 
 	static std::string trim(const char *buffer, size_t len) {
@@ -187,7 +209,8 @@ public:
 	template <class S>
 	static ptrdiff_t indexOf(S const& str, char ch, size_t fromIndex) {
 		const char *buffer = str.c_str();
-		if (!buffer)
+
+		if (buffer == nullptr)
 			return -1;
 
 		size_t len = str.length();
@@ -202,7 +225,8 @@ public:
 	template <class S1, class S2>
 	static ptrdiff_t indexOf(S1 const& str,  S2 const& sub) {
 		const char *buffer = str.c_str();
-		if (!buffer)
+
+		if (buffer == nullptr)
 			return -1;
 
 		const char *pos = strstr(buffer, sub.c_str());
@@ -212,6 +236,7 @@ public:
 	template <class S1, class S2>
 	static ptrdiff_t indexOf(S1 const& str, S2 const& sub, size_t fromIndex) {
 		const char *buffer = str.c_str();
+
 		if (!buffer)
 			return -1;
 
@@ -227,6 +252,7 @@ public:
 	template <class S>
 	static ptrdiff_t lastIndexOf(S const& str, char ch) {
 		size_t len = str.length();
+
 		return lastIndexOf(str, ch, (ptrdiff_t)(len - 1));
 	}
 
@@ -236,7 +262,8 @@ public:
 			return -1;
 
 		const char *buffer = str.c_str();
-		if (!buffer)
+
+		if (buffer == nullptr)
 			return -1;
 
 		size_t len = str.length();
@@ -256,10 +283,13 @@ public:
 	template <class S1, class S2>
 	static ptrdiff_t lastIndexOf(S1 const& str, S2 const& sub) {
 		const char *buffer = str.c_str();
-		if (!buffer)
+		const char *subBuffer = sub.c_str();
+
+		if ((buffer == nullptr) || (subBuffer == nullptr))
 			return -1;
+
 		size_t len = str.length();
-		return lastIndexOf(buffer, 0, len, sub.c_str(), 0, sub.length(), (ptrdiff_t)len);
+		return String::lastIndexOf(buffer, 0, len, subBuffer, 0, sub.length(), (ptrdiff_t)len);
 	}
 
 	static std::string substring(const char *buffer, size_t len, size_t beginIndex, size_t endIndex) {

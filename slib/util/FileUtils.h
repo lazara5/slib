@@ -22,6 +22,13 @@ extern mode_t parseModeSpec(const std::string& modeSpec);
 
 class FileUtils {
 protected:
+	/**
+	 * Performs normalization on the file name
+	 * @param fileName  file name
+	 * @param sep  separator character
+	 * @param keepSep  set to true to keep the final separator
+	 * @return the normalized file name
+	 */
 	static std::string doNormalize(const std::string& fileName, char sep, bool keepSep);
 public:
 	static const char SYSTEM_SEPARATOR;

@@ -25,9 +25,9 @@ public:
 	virtual ~FdThread();
 
 	/** Requests the tread to exit from run(). Does <b>not</b> actually interrupt anything ! */
-	virtual int stop();
+    virtual int stop() override;
 
-	virtual int signal();
+    virtual int signal() override;
 
 	/** returns a file descriptor that is readable when the thread was signalled */
 	virtual int getFd() {
@@ -36,7 +36,7 @@ public:
 
 protected:
 	/** @return true if stop() has been called for this thread. If a timeout has been specified, it waits. */
-	virtual bool stopRequested(long timeout = 0, bool *signalled = nullptr);
+    virtual bool stopRequested(long timeout = 0, bool *signalled = nullptr) override;
 };
 
 } // namespace

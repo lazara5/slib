@@ -5,6 +5,7 @@
 #ifndef H_SLIB_COLLECTIONS_LIST_H
 #define H_SLIB_COLLECTIONS_LIST_H
 
+#include "slib/collections/Collection.h"
 #include "slib/Iterator.h"
 #include "slib/exception/UnsupportedOperationException.h"
 
@@ -13,16 +14,17 @@
 namespace slib {
 
 template <class E>
-class List {
+class List : public Collection<E> {
 public:
 	virtual ~List() {}
 
-	virtual int size() const = 0;
+	virtual ssize_t size() const override = 0;
 
-	virtual bool isEmpty() const = 0;
+	virtual bool isEmpty() const override = 0;
 
-	virtual void add(const E& e) = 0;
-	virtual void add(const std::shared_ptr<E> e) = 0;
+	virtual bool add(std::shared_ptr<E> const& e) override = 0;
+
+	using Collection<E>::add;
 
 	/**
 	 * Inserts the specified element at the specified position in this list
@@ -39,16 +41,12 @@ public:
 	virtual void add(int index, const E& e) {
 		throw UnsupportedOperationException(_HERE_);
 	}
-
-	virtual std::shared_ptr<E> remove(const E& o) = 0;
 	
 	virtual int indexOf(const E& o) = 0;
 
-	virtual void clear() = 0;
-
 	virtual std::shared_ptr<E> get(int index) const = 0;
 public:
-	virtual ConstIterator<std::shared_ptr<E> > constIterator() const = 0;
+	virtual ConstIterator<std::shared_ptr<E> > constIterator() const override = 0;
 };
 
 } // namespace

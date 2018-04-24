@@ -5,7 +5,9 @@
 #ifndef H_SLIB_NUMERIC_H
 #define H_SLIB_NUMERIC_H
 
+#include "slib/Object.h"
 #include "slib/exception/NumericExceptions.h"
+#include "slib/String.h"
 
 #include "fmt/format.h"
 
@@ -19,7 +21,7 @@
 
 namespace slib {
 
-class Number {
+class Number : virtual public Object {
 public:
 	virtual ~Number();
 
@@ -30,46 +32,40 @@ public:
 class Integer : public Number {
 private:
 	int32_t _value;
-	bool _isNull;
-protected:
-	Integer(int32_t value, bool makeNull)
-	:_value(value)
-	,_isNull(makeNull) {}
 public:
 	static const int32_t MIN_VALUE = INT32_MIN;
 	static const int32_t MAX_VALUE = INT32_MAX;
 
 	Integer()
-	:_value(0)
-	,_isNull(false) {
-	}
+	:_value(0) {}
 
 	Integer(int32_t value)
-	:_value(value)
-	,_isNull(false) {
-	}
+	:_value(value) {}
 
 	Integer(const Integer& other)
-	: _value(other._value)
-	, _isNull(other._isNull) {
+	: _value(other._value) {}
+
+	virtual Class const& getClass() const override {
+		return integerClass;
 	}
 
-	int hashCode() const {
+	virtual int32_t hashCode() const override {
 		return _value;
 	}
 
 	Integer& operator =(const Integer& other) {
 		_value = other._value;
-		_isNull = other._isNull;
 		return *this;	// This will allow assignments to be chained
 	}
 
 	bool equals(const Integer& other) const {
-		if (_isNull)
-			return (other._isNull);
-		if (other._isNull)
-			return _isNull;
 		return (_value == other._value);
+	}
+
+	bool equals(std::shared_ptr<Integer> const& other) const {
+		if (!other)
+			return false;
+		return (_value == other->_value);
 	}
 
 	bool operator ==(const Integer& other) const {
@@ -80,11 +76,7 @@ public:
 		return _value;
 	}
 
-	virtual double doubleValue() const;
-
-	static Integer getNull() { return Integer(0, true); }
-
-	bool isNull() const { return _isNull; }
+	virtual double doubleValue() const override;
 
 	static int32_t parseInt(const char *str, int radix) {
 		if (str == nullptr)
@@ -120,10 +112,10 @@ public:
 		return parseInt(s.c_str(), radix);
 	}
 
-	static std::string toString(int32_t i) {
+	static String toString(int32_t i) {
 		std::stringstream stream;
 		stream << i;
-		return stream.str();
+		return String(stream.str());
 	}
 
 	/**
@@ -144,8 +136,12 @@ public:
 	 * @return the string representation of the unsigned integer value
 	 *         represented by the argument in hexadecimal (base 16).
 	 */
-	static std::string toHexString(int32_t i) {
-		return fmt::format("{:x}", i);
+	static String toHexString(int32_t i) {
+		return String(fmt::format("{:x}", i));
+	}
+
+	virtual String toString() const override {
+		return toString(_value);
 	}
 };
 
@@ -153,46 +149,40 @@ public:
 class UInt : public Number {
 private:
 	uint32_t _value;
-	bool _isNull;
-protected:
-	UInt(uint32_t value, bool makeNull)
-	:_value(value)
-	,_isNull(makeNull) {}
 public:
 	static const uint32_t MIN_VALUE = 0;
 	static const uint32_t MAX_VALUE = UINT32_MAX;
 
 	UInt()
-	:_value(0)
-	,_isNull(false) {
-	}
+	:_value(0) {}
 
 	UInt(uint32_t value)
-	:_value(value)
-	,_isNull(false) {
-	}
+	:_value(value) {}
 
 	UInt(const UInt& other)
-	: _value(other._value)
-	, _isNull(other._isNull) {
+	: _value(other._value) {}
+
+	virtual Class const& getClass() const override {
+		return uIntClass;
 	}
 
-	int hashCode() const {
+	int32_t hashCode() const override {
 		return (int)_value;
 	}
 
 	UInt& operator =(const UInt& other) {
 		_value = other._value;
-		_isNull = other._isNull;
 		return *this;	// This will allow assignments to be chained
 	}
 
 	bool equals(const UInt& other) const {
-		if (_isNull)
-			return (other._isNull);
-		if (other._isNull)
-			return _isNull;
 		return (_value == other._value);
+	}
+
+	bool equals(std::shared_ptr<UInt> const& other) const {
+		if (!other)
+			return false;
+		return (_value == other->_value);
 	}
 
 	bool operator ==(const UInt& other) const {
@@ -203,11 +193,7 @@ public:
 		return _value;
 	}
 
-	virtual double doubleValue() const;
-
-	static UInt getNull() { return UInt(0, true); }
-
-	bool isNull() const { return _isNull; }
+	virtual double doubleValue() const override;
 
 	static uint32_t parseUInt(const char *str, int radix) {
 		if (str == nullptr)
@@ -239,10 +225,10 @@ public:
 		return parseUInt(s.c_str(), radix);
 	}
 
-	static std::string toString(uint32_t i) {
+	static String toString(uint32_t i) {
 		std::stringstream stream;
 		stream << i;
-		return stream.str();
+		return String(stream.str());
 	}
 
 	/**
@@ -263,8 +249,12 @@ public:
 	 * @return the string representation of the unsigned integer value
 	 *         represented by the argument in hexadecimal (base 16).
 	 */
-	static std::string toHexString(uint32_t i) {
-		return fmt::format("{:x}", i);
+	static String toHexString(uint32_t i) {
+		return String(fmt::format("{:x}", i));
+	}
+
+	virtual String toString() const override {
+		return toString(_value);
 	}
 };
 
@@ -272,53 +262,48 @@ public:
 class Long : public Number {
 private:
 	int64_t _value;
-	bool _isNull;
-protected:
-	Long(int64_t value, bool makeNull)
-	:_value(value)
-	, _isNull(makeNull) {
-	}
 public:
 	static const int64_t MIN_VALUE = INT64_MIN;
 	static const int64_t MAX_VALUE = INT64_MAX;
 
 	Long()
-	:_value(0)
-	,_isNull(false) {
-	}
+	:_value(0) {}
 
 	Long(int64_t value)
-	:_value(value)
-	,_isNull(false) {
+	:_value(value) {}
+
+	virtual Class const& getClass() const override {
+		return longClass;
 	}
 
 	/**
-     * Returns a hash code for this <code>Long</code>. The result is
-     * the exclusive OR of the two halves of the primitive
-     * <code>int64_t</code> value held by this <code>Long</code>
+	 * Returns a hash code for this <code>Long</code>. The result is
+	 * the exclusive OR of the two halves of the primitive
+	 * <code>int64_t</code> value held by this <code>Long</code>
 	 * object. That is, the hashcode is the value of the expression:
 	 * <blockquote><pre>
 	 * (int)(_value()^((unsigned)_value()&gt;&gt;32))
 	 * </pre></blockquote>
 	 *
-     * @return  a hash code value for this object.
-     */
-	int hashCode() const {
-		return (int)(_value ^ (((uint64_t)_value) >> 32));
+	 * @return  a hash code value for this object.
+	 */
+	virtual int32_t hashCode() const override {
+		return (int32_t)((uint64_t)_value ^ (((uint64_t)_value) >> 32));
 	} 
 
 	Long& operator =(const Long& other) {
 		_value = other._value;
-		_isNull = other._isNull;
 		return *this;	// This will allow assignments to be chained
 	}
 
 	bool equals(const Long& other) const {
-		if (_isNull)
-			return (other._isNull);
-		if (other._isNull)
-			return _isNull;
 		return (_value == other._value);
+	}
+
+	bool equals(std::shared_ptr<Long> const& other) const {
+		if (!other)
+			return false;
+		return (_value == other->_value);
 	}
 
 	bool operator==(const Long& other) const {
@@ -329,11 +314,7 @@ public:
 		return _value;
 	}
 
-	virtual double doubleValue() const;
-
-	static Long getNull() { return Long(0, true); }
-
-	bool isNull() const { return _isNull; }
+	virtual double doubleValue() const override;
 
 	static int64_t parseLong(const char *str) {
 		if (str == NULL)
@@ -357,10 +338,14 @@ public:
 		return parseLong(str.c_str());
 	}
 
-	static std::string toString(int64_t i) {
+	static String toString(int64_t i) {
 		std::stringstream stream;
 		stream << i;
-		return stream.str();
+		return String(stream.str());
+	}
+
+	virtual String toString() const override {
+		return toString(_value);
 	}
 };
 
@@ -368,47 +353,44 @@ public:
 class ULong : public Number {
 private:
 	uint64_t _value;
-	bool _isNull;
-protected:
-	ULong(uint64_t value, bool makeNull)
-	:_value(value)
-	, _isNull(makeNull) {
-	}
 public:
 	static const uint64_t MAX_VALUE = UINT64_MAX;
 
 	ULong(uint64_t value)
-	:_value(value)
-	,_isNull(false) {
+	:_value(value) {}
+
+	virtual Class const& getClass() const override {
+		return uLongClass;
 	}
 
 	/**
-     * Returns a hash code for this <code>Long</code>. The result is
-     * the exclusive OR of the two halves of the primitive
-     * <code>uint64_t</code> value held by this <code>Long</code>
-     * object. That is, the hashcode is the value of the expression:
-     * <blockquote><pre>
-     * (int)(_value()^((unsigned)_value()&gt;&gt;32))
-     * </pre></blockquote>
-     *
-     * @return  a hash code value for this object.
-     */
-	int hashCode() const {
+	 * Returns a hash code for this <code>Long</code>. The result is
+	 * the exclusive OR of the two halves of the primitive
+	 * <code>uint64_t</code> value held by this <code>Long</code>
+	 * object. That is, the hashcode is the value of the expression:
+	 * <blockquote><pre>
+	 * (int)(_value()^((unsigned)_value()&gt;&gt;32))
+	 * </pre></blockquote>
+	 *
+	 * @return  a hash code value for this object.
+	 */
+	int32_t hashCode() const override {
 		return (int)(_value ^ (_value >> 32));
 	}
 
 	ULong& operator =(const ULong& other) {
 		_value = other._value;
-		_isNull = other._isNull;
 		return *this;	// This will allow assignments to be chained
 	}
 
 	bool equals(const ULong& other) const {
-		if (_isNull) 
-			return (other._isNull);
-		if (other._isNull)
-			return _isNull;
 		return (_value == other._value);
+	}
+
+	bool equals(std::shared_ptr<ULong> const& other) const {
+		if (!other)
+			return false;
+		return (_value == other->_value);
 	}
 
 	bool operator ==(const ULong& other) const {
@@ -427,11 +409,7 @@ public:
 		return _value;
 	}
 
-	virtual double doubleValue() const;
-
-	static ULong getNull() { return ULong(0, true); }
-
-	bool isNull() const { return _isNull; }
+	virtual double doubleValue() const override;
 
 	static uint64_t parseULong(const char *str) {
 		if (str == nullptr)
@@ -483,13 +461,7 @@ public:
 class Double : public Number {
 private:
 	double _value;
-	bool _isNull;
 protected:
-	Double(double value, bool makeNull)
-	:_value(value)
-	, _isNull(makeNull) {
-	}
-
 	static uint64_t doubleToLongBits(double value) {
 		if (std::isnan(value))
 			return 0x7ff8000000000000LL;
@@ -502,49 +474,48 @@ protected:
 	}
 public:
 	Double(double value)
-	:_value(value)
-	,_isNull(false) {
+	:_value(value) {}
+
+	virtual Class const& getClass() const override {
+		return doubleClass;
 	}
 
 	/**
-     * Returns a hash code for this <code>Double</code>. The result is
-     * the exclusive OR of the two halves of the primitive
-     * long integer bit representation. That is, the hashcode 
+	 * Returns a hash code for this <code>Double</code>. The result is
+	 * the exclusive OR of the two halves of the primitive
+	 * long integer bit representation. That is, the hashcode
 	 * is the value of the expression:
-     * <blockquote><pre>
-     * (int)(_value()^((unsigned)_value()&gt;&gt;32))
-     * </pre></blockquote>
-     *
-     * @return a hash code value for this object.
-     */
-	int hashCode() const {
+	 * <blockquote><pre>
+	 * (int)(_value()^((unsigned)_value()&gt;&gt;32))
+	 * </pre></blockquote>
+	 *
+	 * @return a hash code value for this object.
+	 */
+	int32_t hashCode() const override {
 		uint64_t bits = doubleToLongBits(_value);
-		return (int)(bits ^ (bits >> 32));
+		return (int32_t)(bits ^ (bits >> 32));
 	}
 
 	Double& operator=(const Double& other) {
 		_value = other._value;
-		_isNull = other._isNull;
 		return *this;	// This will allow assignments to be chained
 	}
 
 	bool equals(const Double& other) const {
-		if (_isNull) 
-			return (other._isNull);
-		if (other._isNull)
-			return _isNull;
 		return (doubleToLongBits(_value) == doubleToLongBits(other._value));
+	}
+
+	bool equals(std::shared_ptr<Double> const& other) const {
+		if (!other)
+			return false;
+		return (doubleToLongBits(_value) == doubleToLongBits(other->_value));
 	}
 
 	bool operator==(const Double& other) const {
 		return equals(other);
 	}
 
-	virtual double doubleValue() const;
-
-	static Double getNull() { return Double(0, true); }
-
-	bool isNull() const { return _isNull; }
+	virtual double doubleValue() const override;
 
 	static double parseDouble(const char *str) {
 		if (str == nullptr)
@@ -570,42 +541,35 @@ public:
 };
 
 /** Boolean value */
-class Boolean {
+class Boolean : virtual public Object {
 private:
 	bool _value;
-	bool _isNull;
-protected:
-	Boolean(bool value, bool makeNull)
-	:_value(value)
-	, _isNull(makeNull) {
-	}
 public:
 	Boolean(bool value)
-	:_value(value)
-	,_isNull(false) {
+	:_value(value) {}
+
+	virtual int32_t hashCode() const override {
+		return _value ? 1231 : 1237;
 	}
 	
 	bool equals(const Boolean& other) const {
-		if (_isNull) 
-			return (other._isNull);
-		if (other._isNull)
-			return _isNull;
 		return (_value == other._value);
+	}
+
+	bool equals(std::shared_ptr<Boolean> const& other) const {
+		if (!other)
+			return false;
+		return (_value == other->_value);
 	}
 
 	Boolean& operator=(const Boolean & other) {
 		_value = other._value;
-		_isNull = other._isNull;
 		return *this;	// This will allow assignments to be chained
 	}
 
 	bool operator==(const Boolean& other) const {
 		return equals(other);
 	}
-
-	static Boolean getNull() { return Boolean(false, true); }
-
-	bool isNull() const { return _isNull; }
 
 	static bool parseBoolean(const char *str) {
 		if (str == nullptr)

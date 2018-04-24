@@ -19,11 +19,11 @@ namespace slib {
 template <class E>
 class ArrayList : public AbstractList<E> {
 using AbstractList<E>::_modCount;
-public:
+private:
 	static const int DEFAULT_CAPACITY = 10;
-private:
+
 	std::vector<std::shared_ptr<E> > _elements;
-private:
+
 	static const int MAX_ARRAY_SIZE = Integer::MAX_VALUE - 1;
 
 	/** Checks if the given index is in range. If not, throws IndexOutOfBoundsException */
@@ -58,7 +58,7 @@ public:
 	ArrayList()
 	: ArrayList(DEFAULT_CAPACITY) {}
 
-	virtual void clear() {
+	virtual void clear() override {
 		_modCount++;
 
 		_elements.clear();
@@ -67,11 +67,15 @@ public:
 	virtual ~ArrayList() {
 	}
 
+	virtual Class const& getClass() const override {
+		return arrayListClass;
+	}
+
 	/**
 	 * Returns the number of elements in this list.
 	 * @return the number of elements in this list
 	 */
-	int size() const {
+	ssize_t size() const override {
 		return _elements.size();
 	}
 
@@ -84,23 +88,17 @@ public:
 	 *
 	 * @param e element to be appended to this list
 	 */
-	void add(const E& e) {
+	virtual bool add(std::shared_ptr<E> const& e) override {
 		_modCount++;
 		try {
-			_elements.push_back(std::make_shared<E>(e));
+			_elements.push_back(e);
+			return true;
 		} catch (std::bad_alloc const &) {
 			throw OutOfMemoryError(_HERE_);
 		}
 	}
 
-	void add(const std::shared_ptr<E> e) {
-		_modCount++;
-		try {
-			_elements.push_back(e);
-		} catch (std::bad_alloc const &) {
-			throw OutOfMemoryError(_HERE_);
-		}
-	}
+	using Collection<E>::add;
 
 	void add(int index, const E& e) {
 		addRangeCheck(index);
@@ -112,14 +110,15 @@ public:
 		}
 	}
 
-	std::shared_ptr<E> remove(const E& o) {
+	bool remove(const E& o) override {
 		for (int index = 0; index < size(); index++) {
 			if (_elements[index] && (o == (*_elements[index]))) {
-				return internalRemove(index);
+				internalRemove(index);
+				return true;
 			}
 		}
 
-		return std::shared_ptr<E>();
+		return false;
 	}
 
 	int indexOf(const E& o) {
@@ -234,12 +233,12 @@ private:
 
 public:
 	/**
-     * Returns an iterator over the elements in this list in proper sequence.
-     *
-     * <p>The returned iterator is <i>fail-fast</i>.
-     *
-     * @return an iterator over the elements in this list in proper sequence
-     */
+	 * Returns an iterator over the elements in this list in proper sequence.
+	 *
+	 * <p>The returned iterator is <i>fail-fast</i>.
+	 *
+	 * @return an iterator over the elements in this list in proper sequence
+	 */
 	virtual ConstIterator<std::shared_ptr<E> > constIterator() const {
 		return ConstIterator<std::shared_ptr<E> >(new ConstArrayListIterator(this, 0));
 	}

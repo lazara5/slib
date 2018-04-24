@@ -5,6 +5,7 @@
 #ifndef H_SLIB_COLLECTIONS_MAP_H
 #define H_SLIB_COLLECTIONS_MAP_H
 
+#include "slib/Object.h"
 #include "slib/Iterator.h"
 
 #include <memory>
@@ -33,7 +34,7 @@ public:
  */
 template <class K, class V,
 		  class Pred = std::equal_to<K> >
-class Map : public ValueProvider<K, V> {
+class Map : virtual public Object, public ValueProvider<K, V> {
 public:
 	class Entry {
 	public:
@@ -53,7 +54,7 @@ public:
 
 	virtual bool containsKey(const K& key) const override = 0;
 
-	virtual int size() const = 0;
+	virtual ssize_t size() const = 0;
 	virtual bool isEmpty() const = 0;
 
 	virtual void clear() = 0;

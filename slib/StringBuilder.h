@@ -5,6 +5,7 @@
 #ifndef H_SLIB_STRINGBUILDER_H
 #define H_SLIB_STRINGBUILDER_H
 
+#include "slib/Object.h"
 #include "slib/String.h"
 #include "slib/exception/NullPointerException.h"
 
@@ -18,7 +19,7 @@ namespace slib {
  * Mutable string container (roughly equivalent with a Java <b>%String</b> + <b>%StringBuilder</b>, i.e. <b>NOT</b>
  * thread-safe when used in a mutable fashion !!!)
  */
-class StringBuilder {
+class StringBuilder : public BasicString {
 private:
 	void build(const char *format, ...);
 protected:
@@ -58,10 +59,14 @@ public:
 	StringBuilder(uint64_t val);
 	StringBuilder(double val);
 
+	virtual Class const& getClass() const override {
+		return stringBuilderClass;
+	}
+
 	void alloc(size_t newLen);
 	void setLength(size_t newLen);
 
-	size_t length() const {
+	size_t length() const override {
 		return _len;
 	}
 
@@ -387,7 +392,7 @@ public:
 	 * The hash value of an empty string is zero.
 	 * @return a hash code value for this object.
 	 */
-	virtual int hashCode() const;
+	virtual int32_t hashCode() const override;
 
 	/** 
 	 * Creates a <i>'NULL'</i> reference to a StringBuilder.
@@ -407,7 +412,7 @@ public:
 	 * Get constant C string (null-terminated)
 	 * @return pointer to constant C string
 	 */
-	const char *c_str() const {
+	const char *c_str() const override {
 		return (const char*)_buffer;
 	}
 

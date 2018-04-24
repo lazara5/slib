@@ -3,12 +3,12 @@ Application bootstrapping and general utility library. It handles:
 
   * Application configuration
   * Logging (on top of spdlog)
-  * String and number manipulation (with Java-like API)
+  * String and number manipulation (with mixed Java/C++-like API)
   * Basic data structures (with mixed Java/C++-like API)
   * Basic threading and concurrency
   * File manipulation
 
-Currently Linux only. Requires a compiler with C++14 support.
+Currently Linux only. Requires a compiler with C++11 support.
 
 Please note this is not currently intended as a general-purpose library. Only what was needed so far is implemented. There is no warranty for merchantability or fitness for a particular purpose.
 

@@ -10,6 +10,7 @@
 #include "slib/exception/ValueException.h"
 
 namespace slib {
+
 class Properties : public LinkedHashMap<std::string, std::string> {
 public:
 	class LineProcessor {
@@ -55,6 +56,10 @@ protected:
 	}
 public:
 	virtual ~Properties() {}
+
+	virtual Class const& getClass() const override {
+		return propertiesClass;
+	}
 
 	/**
 	 * Searches for the property with the specified key in this property list.

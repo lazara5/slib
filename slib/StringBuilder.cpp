@@ -281,7 +281,7 @@ bool StringBuilder::endsWith(StringBuilder const& suffix) const {
 	return String::endsWith(*this, suffix);
 }
 
-int StringBuilder::hashCode() const {
+int32_t StringBuilder::hashCode() const {
 	if (_buffer == nullptr)
 		return 0;
 	int h = _hash;

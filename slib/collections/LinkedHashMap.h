@@ -13,10 +13,10 @@ namespace slib {
  * Hash table and linked list implementation of the Map interface, with predictable iteration order.
  * This implementation differs from HashMap in that it maintains a doubly-linked list running through the entries.
  */
-template <class K, class V>
+template <class K, class V, class Pred = std::equal_to<K> >
 class LinkedHashMap : public HashMap<K, V> {
 private:
-	class Entry : public HashMap<K, V>::Entry {
+	class Entry : public HashMap<K, V, Pred>::Entry {
 	friend class LinkedHashMap;
 	protected:
 		Entry *_before, *_after;
@@ -34,18 +34,18 @@ private:
 			_after->_before = this;
 		}
 	public:
-		Entry(int h, const K& k, std::shared_ptr<V> v, typename HashMap<K,V>::Entry *n)
-		: HashMap<K, V>::Entry(h, k, v, n) {
+		Entry(int h, const K& k, std::shared_ptr<V> v, typename HashMap<K, V, Pred>::Entry *n)
+		: HashMap<K, V, Pred>::Entry(h, k, v, n) {
 			_before = _after = nullptr;
 		}
 
 		/** inplace constructor */
 		Entry(typename HashMap<K,V>::Entry *n, int h, K& k, V& v)
-		: HashMap<K, V>::Entry(n, h, k, v) {
+		: HashMap<K, V, Pred>::Entry(n, h, k, v) {
 			_before = _after = nullptr;
 		}
 
-		virtual void onRemove(HashMap<K, V> *) {
+		virtual void onRemove(HashMap<K, V, Pred> *) {
 			remove();
 		}
 	};
@@ -86,13 +86,13 @@ public:
 	static const int MAXIMUM_CAPACITY = 1 << 30;
 public:
 	LinkedHashMap(int initialCapacity = DEFAULT_INITIAL_CAPACITY, float loadFactor = HASH_DEFAULT_LOAD_FACTOR)
-	:HashMap<K, V>(initialCapacity, loadFactor) {
+	:HashMap<K, V, Pred>(initialCapacity, loadFactor) {
 		_header = new Entry(-1, K(), std::shared_ptr<V>(), nullptr);
 		_header->_before = _header->_after = _header;
 	}
 
 	LinkedHashMap(const LinkedHashMap& other)
-	:HashMap<K, V>(other._tableLength, other._loadFactor) {
+	:HashMap<K, V, Pred>(other._tableLength, other._loadFactor) {
 		_header = new Entry(-1, K(), std::shared_ptr<V>(), nullptr);
 		_header->_before = _header->_after = _header;
 
@@ -100,7 +100,7 @@ public:
 	}
 
 	virtual void clear() {
-		HashMap<K, V>::clear();
+		HashMap<K, V, Pred>::clear();
 		_header->_before = _header->_after = _header;
 	}
 
@@ -108,6 +108,10 @@ public:
 		if (_header != nullptr)
 			delete _header;
 		_header = nullptr;
+	}
+
+	virtual Class const& getClass() const override {
+		return linkedHashMapClass;
 	}
 
 	/**
@@ -166,7 +170,7 @@ private:
 			return _nextEntry != _map->_header;
 		}
 
-		virtual const typename Map<K, V>::Entry& next() {
+		virtual const typename Map<K, V, Pred>::Entry& next() {
 			if (_nextEntry == _map->_header)
 				throw NoSuchElementException(_HERE_);
 			Entry *e = _lastReturned = _nextEntry;
@@ -174,7 +178,7 @@ private:
 			return *e;
 		}
 
-		virtual typename ConstIterator<typename Map<K, V>::Entry>::ConstIteratorImpl *clone() {
+		virtual typename ConstIterator<typename Map<K, V, Pred>::Entry>::ConstIteratorImpl *clone() {
 			return new ConstEntryIterator(this);
 		}
 	};
@@ -197,7 +201,7 @@ private:
 			return ConstEntryIterator::hasNext();
 		}
 
-		virtual const typename Map<K, V>::Entry& next() {
+		virtual const typename Map<K, V, Pred>::Entry& next() {
 			return ConstEntryIterator::next();
 		}
 
@@ -208,18 +212,18 @@ private:
 			this->_lastReturned = nullptr;
 		}
 
-		virtual typename Iterator<typename Map<K, V>::Entry>::IteratorImpl *clone() {
+		virtual typename Iterator<typename Map<K, V, Pred>::Entry>::IteratorImpl *clone() {
 			return new EntryIterator(this);
 		}
 	};
 
 public:
-	ConstIterator<typename Map<K, V>::Entry> constIterator() const {
-		return ConstIterator<typename Map<K, V>::Entry>(new ConstEntryIterator(this));
+	ConstIterator<typename Map<K, V, Pred>::Entry> constIterator() const {
+		return ConstIterator<typename Map<K, V, Pred>::Entry>(new ConstEntryIterator(this));
 	}
 
-	Iterator<typename Map<K, V>::Entry> iterator() {
-		return Iterator<typename Map<K, V>::Entry>(new EntryIterator(this));
+	Iterator<typename Map<K, V, Pred>::Entry> iterator() {
+		return Iterator<typename Map<K, V, Pred>::Entry>(new EntryIterator(this));
 	}
 };
 

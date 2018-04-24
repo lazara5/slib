@@ -7,7 +7,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 FILE(GLOB_RECURSE slibHeaders "slib/*.h")
 add_custom_target(headers SOURCES ${slibHeaders})
 
-set(SLIB_SOURCES slib/Numeric.cpp
+option(WITH_JSON "build JSON utils" ON)
+
+set(SLIB_SOURCES slib/Class.cpp
+	             slib/Numeric.cpp
+				 slib/Object.cpp
                  slib/String.cpp
                  slib/collections/Properties.cpp
                  slib/concurrent/Semaphore.cpp
@@ -22,7 +26,6 @@ set(SLIB_SOURCES slib/Numeric.cpp
                  slib/util/CmdLine.cpp
                  slib/util/Config.cpp
                  slib/util/FileUtils.cpp
-                 slib/util/JsonUtils.cpp
                  slib/util/Log.cpp
                  slib/util/PidFile.cpp
                  slib/util/ProcessUtils.cpp
@@ -33,7 +36,12 @@ set(SLIB_SOURCES slib/Numeric.cpp
                  slib/util/SystemInfo.cpp
                  slib/StringBuilder.cpp)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++14 -fPIC")
+if(WITH_JSON)
+    MESSAGE("JSON utilities enabled")
+    list(APPEND SLIB_SOURCES slib/util/JsonUtils.cpp)
+endif(WITH_JSON)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fPIC")
 
 add_library(slib STATIC ${SLIB_SOURCES})
 

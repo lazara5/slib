@@ -199,7 +199,7 @@ void Config::openConfigFile(bool minimal) {
 		else
 			load(propsFile, &_cfgProc);
 	} catch (IOException const& e) {
-		throw InitException(_HERE_, fmt::format("I/O error reading config file: {}", e.getMessage()).c_str());
+		throw InitException(_HERE_, fmt::format("I/O error reading config file '{}': {}", configFile, e.getMessage()).c_str());
 	}
 }
 	

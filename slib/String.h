@@ -5,6 +5,7 @@
 #ifndef H_SLIB_STRING_H
 #define H_SLIB_STRING_H
 
+#include "slib/Object.h"
 #include "slib/exception/Exception.h"
 #include "slib/collections/List.h"
 
@@ -23,7 +24,16 @@ public:
 	:IndexOutOfBoundsException(where, fmt::format("String index out of range: {:d}", index).c_str()) {}
 };
 
-class String {
+class BasicString: virtual public Object {
+public:
+	virtual size_t length() const = 0;
+	virtual const char *c_str() const = 0;
+};
+
+class String : public BasicString {
+protected:
+	std::string _str;
+	mutable volatile int32_t _hash;
 protected:
 	static ptrdiff_t lastIndexOf(const char *source, ptrdiff_t sourceOffset, size_t sourceCount,
 								 const char *target, ptrdiff_t targetOffset, size_t targetCount,
@@ -64,6 +74,25 @@ protected:
 				continue;
 			return start - sourceOffset + 1;
 		}
+	}
+public:
+	String(std::string const& str);
+	virtual ~String();
+
+	virtual Class const& getClass() const override {
+		return stringClass;
+	}
+
+	size_t length() const override {
+		return _str.length();
+	}
+
+	bool isEmpty() const {
+		return _str.empty();
+	}
+
+	const char *c_str() const override {
+		return _str.c_str();
 	}
 public:
 	template <class S1, class S2>
@@ -396,7 +425,7 @@ public:
 /**
  * Immutable ASCII string with case-insensitive comparison and hash code
  */
-class ASCIICaseInsensitiveString {
+class ASCIICaseInsensitiveString : public BasicString {
 private:
 	static const unsigned char _toLower[];
 protected:
@@ -420,7 +449,7 @@ public:
 
 	virtual ~ASCIICaseInsensitiveString();
 
-	size_t length() const {
+	size_t length() const override {
 		return _len;
 	}
 
@@ -481,7 +510,7 @@ public:
 	 * The hash value of an empty string is zero.
 	 * @return  a hash code value for this object.
 	 */
-	virtual int hashCode() const;
+	virtual int32_t hashCode() const override;
 
 	/**
 	 * Creates a <i>'NULL'</i> reference to a String.
@@ -501,7 +530,7 @@ public:
 	 * Get constant C string (null-terminated)
 	 * @return pointer to constant C string
 	 */
-	const char *c_str() const {
+	const char *c_str() const override {
 		return (const char*)_buffer;
 	}
 };

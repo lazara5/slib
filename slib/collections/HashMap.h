@@ -16,12 +16,12 @@ namespace slib {
 #define HASH_DEFAULT_LOAD_FACTOR (0.75f)
 
 /** Hash table based object that maps keys to values */
-template <class K, class V>
-class HashMap : public Map<K, V> {
+template <class K, class V, class Pred = std::equal_to<K> >
+class HashMap : public Map<K, V, Pred> {
 public:
-	class Entry : public Map<K, V>::Entry {
+	class Entry : public Map<K, V, Pred>::Entry {
 	friend class HashMap;
-	template <class K1, class V1> friend class LinkedHashMap;
+	template <class K1, class V1, class Pred1> friend class LinkedHashMap;
 	protected:
 		const K _key;
 		std::shared_ptr<V> _value;
@@ -58,7 +58,7 @@ public:
 			return _value;
 		}
 
-		int hashCode() {
+		int32_t hashCode() const {
 			return (std::hash<K>()(_key) ^ (_value ? 0 : std::hash<V>(*_value)));
 		}
 
@@ -72,7 +72,7 @@ public:
 protected:
 	Entry **_table;
 	int _tableLength;
-	int _size;
+	ssize_t _size;
 	int _threshold;
 	float _loadFactor;
 protected:
@@ -158,10 +158,11 @@ protected:
 		int i = indexFor(hash, _tableLength);
 		Entry* prev = _table[i];
 		Entry* e = prev;
+		Pred eq;
 
 		while (e != nullptr) {
 			Entry* next = e->_next;
-			if ((e->_hash == hash) && (key == e->_key)) {
+			if ((e->_hash == hash) && (eq(key, e->_key))) {
 				_size--;
 				if (prev == e)
 					_table[i] = next;
@@ -188,10 +189,11 @@ protected:
 		int i = indexFor(hash, _tableLength);
 		Entry* prev = _table[i];
 		Entry* e = prev;
+		Pred eq;
 
 		while (e != nullptr) {
 			Entry* next = e->_next;
-			if ((e->_hash == hash) && (key == e->_key)) {
+			if ((e->_hash == hash) && (eq(key, e->_key))) {
 				_size--;
 				if (prev == e)
 					_table[i] = next;
@@ -261,12 +263,16 @@ public:
 		_table = NULL;
 	}
 
+	virtual Class const& getClass() const override {
+		return hashMapClass;
+	}
+
 	/**
 	 * Returns the number of key-value mappings in this map.
 	 *
 	 * @return the number of mappings in this map
 	 */
-	int size() const {
+	ssize_t size() const override {
 		return _size;
 	}
 
@@ -293,8 +299,9 @@ public:
 	 */
 	std::shared_ptr<V> get(const K& key) const {
 		int hash = _smudge(std::hash<K>()(key));
+		Pred eq;
 		for (Entry *e = _table[indexFor(hash, _tableLength)]; e != nullptr; e = e->_next) {
-			if ((e->_hash == hash) && (e->_key == key))
+			if ((e->_hash == hash) && (eq(e->_key, key)))
 				return e->_value;
 		}
 		return std::shared_ptr<V>();
@@ -302,8 +309,9 @@ public:
 
 	virtual const typename Map<K, V>::Entry *getEntry(const K& key) const {
 		int hash = _smudge(std::hash<K>()(key));
+		Pred eq;
 		for (const Entry *e = _table[indexFor(hash, _tableLength)]; e != nullptr; e = e->_next) {
-			if ((e->_hash == hash) && (e->_key == key))
+			if ((e->_hash == hash) && (eq(e->_key, key)))
 				return e;
 		}
 		return nullptr;
@@ -316,8 +324,9 @@ public:
 	 */
 	bool containsKey(const K& key) const {
 		int hash = _smudge(std::hash<K>()(key));
+		Pred eq;
 		for (Entry *e = _table[indexFor(hash, _tableLength)]; e != nullptr; e = e->_next) {
-			if ((e->_hash == hash) && (e->_key == key))
+			if ((e->_hash == hash) && (eq(e->_key, key)))
 				return true;
 		}
 		return false;
@@ -340,8 +349,9 @@ public:
 	std::shared_ptr<V> put(const K& key, std::shared_ptr<V> const& value) {
 		int hash = _smudge(std::hash<K>()(key));
 		int i = indexFor(hash, _tableLength);
+		Pred eq;
 		for (Entry *e = _table[i]; e != nullptr; e = e->_next) {
-			if ((e->_hash == hash) && (e->_key == key)) {
+			if ((e->_hash == hash) && (eq(e->_key, key))) {
 				std::shared_ptr<V> oldValue = e->_value;
 				e->_value = value;
 				return oldValue;
@@ -364,8 +374,9 @@ public:
 	void insert(const K& key, const V& value) {
 		int hash = _smudge(std::hash<K>()(key));
 		int i = indexFor(hash, _tableLength);
+		Pred eq;
 		for (Entry *e = _table[i]; e != nullptr; e = e->_next) {
-			if ((e->_hash == hash) && (e->_key == key)) {
+			if ((e->_hash == hash) && (eq(e->_key, key))) {
 				e->_value = value;
 				return;
 			}
@@ -384,8 +395,9 @@ public:
 		K key(std::forward<K1>(k));
 		int hash = _smudge(std::hash<K>()(key));
 		int i = indexFor(hash, _tableLength);
+		Pred eq;
 		for (Entry *e = _table[i]; e != nullptr; e = e->_next) {
-			if ((e->_hash == hash) && (e->_key == key)) {
+			if ((e->_hash == hash) && (eq(e->_key, key))) {
 				e->_value = v;
 				return;
 			}

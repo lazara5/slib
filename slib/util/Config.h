@@ -10,6 +10,7 @@
 #include "slib/Numeric.h"
 #include "slib/collections/List.h"
 #include "slib/collections/Properties.h"
+#include "slib/compat/cppbits/make_unique.h"
 
 #include "fmt/format.h"
 
@@ -36,6 +37,8 @@ private:
 public:
 	ConfigProcessor(Properties const& props)
 	:_props(props) {}
+
+	virtual ~ConfigProcessor() {}
 
 	virtual std::shared_ptr<std::string> processLine(const std::string& name,
 													 const std::string& rawProperty) override;

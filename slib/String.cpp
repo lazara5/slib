@@ -12,6 +12,12 @@ using std::ptrdiff_t;
 
 namespace slib {
 
+String::String(std::string const& str)
+:_str(str)
+,_hash(0) {}
+
+String::~String() {}
+
 ASCIICaseInsensitiveString::ASCIICaseInsensitiveString() {
 	_hash = 0;
 	_buffer = (unsigned char*)malloc(1);
@@ -19,8 +25,8 @@ ASCIICaseInsensitiveString::ASCIICaseInsensitiveString() {
 	_len = 0;
 }
 
-ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, ptrdiff_t len /* = -1 */) {
-	_hash = 0;
+ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, ptrdiff_t len /* = -1 */)
+:_hash(0) {
 	if (str == nullptr) {
 		if (len < 0) {
 			_buffer = nullptr;
@@ -40,8 +46,8 @@ ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, ptrdiff_
 	}
 }
 
-ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, size_t offset, size_t count) {
-	_hash = 0;
+ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, size_t offset, size_t count)
+:_hash(0) {
 	_buffer = (unsigned char*) malloc(count + 1);
 	if (count > 0)
 		memcpy(_buffer, str + offset, count);
@@ -60,7 +66,6 @@ ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const ASCIICaseInsensitiv
 	_len = other._len;
 	_hash = other._hash;
 }
-
 
 ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const std::string& other)
 :ASCIICaseInsensitiveString(other.c_str(), (ptrdiff_t)other.length()) {}
@@ -91,7 +96,7 @@ bool ASCIICaseInsensitiveString::equalsIgnoreCase(const ASCIICaseInsensitiveStri
 	return false;
 }
 
-int ASCIICaseInsensitiveString::hashCode() const {
+int32_t ASCIICaseInsensitiveString::hashCode() const {
 	if (_buffer == nullptr)
 		return 0;
 	int h = _hash;

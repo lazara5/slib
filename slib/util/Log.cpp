@@ -207,10 +207,9 @@ void Log::init(const Config& cfg, const std::string& name, const std::string& de
 	if (logCfg.empty())
 		throw InitException(_HERE_, fmt::format("Log config not found ({})", name).c_str());
 
-	ArrayList<std::string> logParams;
-	String::simpleSplit(logCfg, logParams, ',');
+	std::unique_ptr<ArrayList<std::string>> logParams = String::simpleSplit(logCfg, ',');
 	
-	init(cfg, logParams.constIterator());
+	init(cfg, logParams->constIterator());
 }
 
 std::string createLogPath(const Config& cfg, const std::string& fileName) {

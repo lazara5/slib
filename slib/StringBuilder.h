@@ -59,8 +59,8 @@ public:
 	StringBuilder(uint64_t val);
 	StringBuilder(double val);
 
-	virtual Class const& getClass() const override {
-		return stringBuilderClass;
+	virtual Class const* getClass() const override {
+		return STRINGBUILDERCLASS();
 	}
 
 	void alloc(size_t newLen);
@@ -104,8 +104,7 @@ public:
 	StringBuilder& add(std::string const& src);
 
 	StringBuilder& add(std::shared_ptr<std::string> const& src) {
-		if (src)
-			add(*src);
+		add(*src);
 		return *this;
 	}
 

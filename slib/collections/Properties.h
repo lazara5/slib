@@ -55,10 +55,10 @@ protected:
 		return value;
 	}
 public:
-	virtual ~Properties() {}
+	virtual ~Properties() override {}
 
-	virtual Class const& getClass() const override {
-		return propertiesClass;
+	virtual Class const* getClass() const override {
+		return PROPERTIESCLASS();
 	}
 
 	/**

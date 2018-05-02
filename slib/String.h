@@ -7,7 +7,7 @@
 
 #include "slib/Object.h"
 #include "slib/exception/Exception.h"
-#include "slib/collections/List.h"
+#include "slib/util/TemplateUtils.h"
 
 #include "fmt/format.h"
 
@@ -26,11 +26,18 @@ public:
 
 class BasicString: virtual public Object {
 public:
+	static Class const* _class;
+public:
 	virtual size_t length() const = 0;
 	virtual const char *c_str() const = 0;
 };
 
+template <class E>
+class ArrayList;
+
 class String : public BasicString {
+public:
+	static Class const* _class;
 protected:
 	std::string _str;
 	mutable volatile int32_t _hash;
@@ -48,9 +55,9 @@ protected:
 		if (targetCount == 0)
 			return fromIndex;
 
-		ptrdiff_t strLastIndex = targetOffset + targetCount - 1;
+		ptrdiff_t strLastIndex = targetOffset + (ptrdiff_t)targetCount - 1;
 		char strLastChar = target[strLastIndex];
-		ptrdiff_t min = sourceOffset + targetCount - 1;
+		ptrdiff_t min = sourceOffset + (ptrdiff_t)targetCount - 1;
 		ptrdiff_t i = min + fromIndex;
 
 		while (true) {
@@ -59,7 +66,7 @@ protected:
 			if (i < min)
 				return -1;
 			ptrdiff_t j = i - 1;
-			ptrdiff_t start = j - (targetCount - 1);
+			ptrdiff_t start = j - ((ptrdiff_t)targetCount - 1);
 			ptrdiff_t k = strLastIndex - 1;
 
 			bool continueOuter = false;
@@ -77,10 +84,15 @@ protected:
 	}
 public:
 	String(std::string const& str);
-	virtual ~String();
 
-	virtual Class const& getClass() const override {
-		return stringClass;
+	String(const char *buffer, size_t len);
+
+	String(String const& other);
+
+	virtual ~String() override;
+
+	virtual Class const* getClass() const override {
+		return STRINGCLASS();
 	}
 
 	size_t length() const override {
@@ -95,12 +107,14 @@ public:
 		return _str.c_str();
 	}
 public:
-	template <class S1, class S2>
-	static bool equals(S1 const& str, S2 const& other) {
-		const char *buffer = str.c_str();
-		size_t len = str.length();
-		const char *otherBuffer = other.c_str();
-		size_t otherLen = other.length();
+	template <typename S1, typename S2>
+	static bool equals(S1 str, S2 other) {
+		const S1* pStr = constPtr(str);
+		const S2* pOther = constPtr(other);
+
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
+		const char *otherBuffer = pOther? pOther->c_str() : nullptr;
+
 		
 		if (buffer == nullptr)
 			return (otherBuffer == nullptr);
@@ -108,17 +122,30 @@ public:
 			return buffer == nullptr;
 		if (buffer == otherBuffer)
 			return true;
+
+		size_t len = pStr->length();
+		size_t otherLen = pOther->length();
 		if (len == otherLen)
 			return !strcmp(buffer, otherBuffer);
 		return false;
 	}
 
-	template <class S1, class S2>
-	static bool equalsIgnoreCase(S1 const& str, S2 const& other) {
-		const char *buffer = str.c_str();
-		size_t len = str.length();
-		const char *otherBuffer = other.c_str();
-		size_t otherLen = other.length();
+	template <typename S>
+	bool equals(S other) const {
+		return equals(_str, other);
+	}
+
+	bool operator==(String const& other) const {
+		return equals(other);
+	}
+
+	template <typename S1, typename S2>
+	static bool equalsIgnoreCase(S1 str, S2 other) {
+		const S1* pStr = constPtr(str);
+		const S2* pOther = constPtr(other);
+
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
+		const char *otherBuffer = pOther? pOther->c_str() : nullptr;
 
 		if (buffer == nullptr)
 			return (otherBuffer == nullptr);
@@ -126,80 +153,152 @@ public:
 			return (buffer == nullptr);
 		if (buffer == otherBuffer)
 			return true;
+
+		size_t len = pStr->length();
+		size_t otherLen = pOther->length();
 		if (len == otherLen)
 			return !strcasecmp(buffer, otherBuffer);
 		return false;
 	}
 
-	template <class S>
-	static bool startsWith(S const& str, char prefix) {
-		const char *buffer = str.c_str();
+	template <typename S>
+	bool equalsIgnoreCase(S other) {
+		return equalsIgnoreCase(_str, other);
+	}
+
+	template <typename S>
+	static bool startsWith(S str, char prefix) {
+		const S* pStr = constPtr(str);
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
 
 		if (buffer == nullptr)
 			return false;
 		return buffer[0] == prefix;
 	}
 
-	template <class S1, class S2>
-	static bool startsWith(S1 const& str,  S2 const& prefix) {
-		const char *buffer = str.c_str();
-
-		if (!buffer)
-			return false;
-		return (strncmp(buffer, prefix.c_str(), prefix.length()) == 0);
+	bool startsWith(char prefix) {
+		return startsWith(_str, prefix);
 	}
 
-	template <class S1, class S2>
-	static bool startsWithIgnoreCase(S1 const& str, S2 const& prefix) {
-		const char *buffer = str.c_str();
-		if (!buffer)
+	template <typename S1, typename S2>
+	static bool startsWith(S1 str,  S2 prefix) {
+		const S1* pStr = constPtr(str);
+		const S2* pPrefix = constPtr(prefix);
+
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
+		const char *prefixBuffer = pPrefix? pPrefix->c_str() : nullptr;
+
+		if ((!buffer) || (!prefixBuffer))
 			return false;
-		return (strncasecmp(buffer, prefix.c_str(), prefix.length()) == 0);
+		return (strncmp(buffer, prefixBuffer, pPrefix->length()) == 0);
 	}
 
-	template <class S1, class S2>
-	static bool startsWith(S1 const& str, S2 const& prefix, ptrdiff_t offset) {
+	template <typename S>
+	bool startsWith(S prefix) {
+		return startsWith(_str, prefix);
+	}
+
+	template <typename S1, typename S2>
+	static bool startsWithIgnoreCase(S1 str, S2 prefix) {
+		const S1* pStr = constPtr(str);
+		const S2* pPrefix = constPtr(prefix);
+
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
+		const char *prefixBuffer = pPrefix? pPrefix->c_str() : nullptr;
+
+		if ((!buffer) || (!prefixBuffer))
+			return false;
+		return (strncasecmp(buffer, prefixBuffer, pPrefix->length()) == 0);
+	}
+
+	template <typename S>
+	bool startsWithIgnoreCase(S prefix) {
+		return startsWithIgnoreCase(_str, prefix);
+	}
+
+	template <typename S1, typename S2>
+	static bool startsWith(S1 str, S2 prefix, ptrdiff_t offset) {
 		if (offset < 0)
 			return false;
 		size_t uOffset = (size_t) offset;
 
-		size_t len = str.size();
+		const S1* pStr = constPtr(str);
+		const S2* pPrefix = constPtr(prefix);
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
+		const char *prefixBuffer = pPrefix? pPrefix->c_str() : nullptr;
 
-		if (uOffset > len - prefix.length())
+		if ((!buffer) || (!prefixBuffer))
 			return false;
 
-		const char *buffer = str.c_str();
+		size_t len = pStr->length();
 
-		return (strncmp(buffer + uOffset, prefix.c_str(), prefix.length()) == 0);
+		if (uOffset > len - pPrefix->length())
+			return false;
+
+		return (strncmp(buffer + uOffset, prefixBuffer, pPrefix->length()) == 0);
 	}
 
-	template <class S1, class S2>
-	static bool startsWithIgnoreCase(S1 const& str, S2 const& prefix, ptrdiff_t offset) {
+	template <typename S>
+	bool startsWith(S prefix, ptrdiff_t offset) {
+		return startsWith(_str, prefix, offset);
+	}
+
+	template <typename S1, typename S2>
+	static bool startsWithIgnoreCase(S1 str, S2 prefix, ptrdiff_t offset) {
 		if (offset < 0)
 			return false;
 		size_t uOffset = (size_t) offset;
-		size_t len = str.length();
-		if (uOffset > len - prefix.size())
+
+		const S1* pStr = constPtr(str);
+		const S2* pPrefix = constPtr(prefix);
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
+		const char *prefixBuffer = pPrefix? pPrefix->c_str() : nullptr;
+
+		if ((!buffer) || (!prefixBuffer))
 			return false;
-		const char *buffer = str.c_str();
-		return (strncasecmp(buffer + uOffset, prefix.c_str(), prefix.length()) == 0);
+
+		size_t len = pStr->length();
+		if (uOffset > len - pPrefix->length())
+			return false;
+
+		return (strncasecmp(buffer + uOffset, prefixBuffer, pPrefix->length()) == 0);
 	}
 
-	template <class S>
-	static bool endsWith(S const& str, char suffix) {
-		const char *buffer = str.c_str();
-		size_t len = str.length();
+	template <typename S>
+	bool startsWithIgnoreCase(S prefix, ptrdiff_t offset) {
+		return startsWithIgnoreCase(_str, prefix, offset);
+	}
+
+	template <typename S>
+	static bool endsWith(S str, char suffix) {
+		const S* pStr = constPtr(str);
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
+		size_t len = pStr ? pStr->length() : 0;
 
 		if ((buffer == nullptr) || (len == 0))
 			return false;
 		return buffer[len - 1] == suffix;
 	}
 
-	template <class S1, class S2>
-	static bool endsWith(S1 const& str, S2 const& suffix) {
-		size_t len = str.length();
+	bool endsWith(char suffix) {
+		return endsWith(_str, suffix);
+	}
 
-		return (startsWith(str, suffix, (ptrdiff_t)(len - suffix.length())));
+	template <typename S1, typename S2>
+	static bool endsWith(S1 str, S2 suffix) {
+		const S1* pStr = constPtr(str);
+		size_t len = pStr ? pStr->length() : 0;
+		const S2* pSuffix = constPtr(suffix);
+
+		if (!pSuffix)
+			return false;
+
+		return (startsWith(str, suffix, (ptrdiff_t)(len - pSuffix->length())));
+	}
+
+	template <typename S>
+	bool endsWith(S suffix) {
+		return endsWith(_str, suffix);
 	}
 
 	static std::string trim(const char *buffer, size_t len) {
@@ -216,18 +315,28 @@ public:
 			return "";
 	}
 
-	template <class S>
-	static std::string trim(S const& str) {
-		return trim(str.c_str(), str.length());
+	template <typename S>
+	static std::string trim(S str) {
+		const S* pStr = constPtr(str);
+		if (!pStr)
+			return "";
+		return trim(pStr->c_str(), pStr->length());
+	}
+
+	String trim() {
+		return trim(_str);
 	}
 
 	static std::string trim(const char *str) {
+		if (!str)
+			return "";
 		return trim(str, strlen(str));
 	}
 
-	template <class S>
-	static ptrdiff_t indexOf(S const& str, char ch) {
-		const char *buffer = str.c_str();
+	template <typename S>
+	static ptrdiff_t indexOf(S str, char ch) {
+		const S* pStr = constPtr(str);
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
 		if (!buffer)
 			return -1;
 
@@ -235,14 +344,19 @@ public:
 		return (pos == nullptr ? -1 : pos - buffer);
 	}
 
-	template <class S>
-	static ptrdiff_t indexOf(S const& str, char ch, size_t fromIndex) {
-		const char *buffer = str.c_str();
+	ptrdiff_t indexOf(char ch) {
+		return indexOf(_str, ch);
+	}
+
+	template <typename S>
+	static ptrdiff_t indexOf(S str, char ch, size_t fromIndex) {
+		const S* pStr = constPtr(str);
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
 
 		if (buffer == nullptr)
 			return -1;
 
-		size_t len = str.length();
+		size_t len = pStr->length();
 
 		if (fromIndex >= len)
 			return -1;
@@ -251,51 +365,79 @@ public:
 		return (pos == nullptr ? -1 : pos - buffer);
 	}
 
-	template <class S1, class S2>
-	static ptrdiff_t indexOf(S1 const& str,  S2 const& sub) {
-		const char *buffer = str.c_str();
+	ptrdiff_t indexOf(char ch, size_t fromIndex) {
+		return indexOf(_str, ch, fromIndex);
+	}
 
-		if (buffer == nullptr)
+	template <typename S1, typename S2>
+	static ptrdiff_t indexOf(S1 str, S2 sub) {
+		const S1* pStr = constPtr(str);
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
+		const S2* pSub = constPtr(sub);
+		const char *subBuffer = pSub ? pSub->c_str() : nullptr;
+
+		if ((buffer == nullptr) || (subBuffer == nullptr))
 			return -1;
 
-		const char *pos = strstr(buffer, sub.c_str());
+		const char *pos = strstr(buffer, subBuffer);
 		return (pos == nullptr ? -1 : pos - buffer);
 	}
 
-	template <class S1, class S2>
-	static ptrdiff_t indexOf(S1 const& str, S2 const& sub, size_t fromIndex) {
-		const char *buffer = str.c_str();
+	template <typename S>
+	ptrdiff_t indexOf(S sub) {
+		return indexOf(_str, sub);
+	}
 
-		if (!buffer)
+	template <typename S1, typename S2>
+	static ptrdiff_t indexOf(S1 str, S2 sub, size_t fromIndex) {
+		const S1* pStr = constPtr(str);
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
+		const S2* pSub = constPtr(sub);
+		const char *subBuffer = pSub ? pSub->c_str() : nullptr;
+
+		if ((buffer == nullptr) || (subBuffer == nullptr))
 			return -1;
 
-		size_t len = str.length();
+		size_t len = pStr->length();
 
 		if (fromIndex >= len)
 			return -1;
 
-		const char *pos = strstr(buffer + fromIndex, sub.c_str());
+		const char *pos = strstr(buffer + fromIndex, subBuffer);
 		return (pos == nullptr ? -1 : pos - buffer);
 	}
 
-	template <class S>
-	static ptrdiff_t lastIndexOf(S const& str, char ch) {
-		size_t len = str.length();
+	template <typename S>
+	ptrdiff_t indexOf(S sub, size_t fromIndex) {
+		return indexOf(_str, sub, fromIndex);
+	}
+
+	template <typename S>
+	static ptrdiff_t lastIndexOf(S str, char ch) {
+		const S* pStr = constPtr(str);
+		if (!pStr)
+			return -1;
+		size_t len = pStr->length();
 
 		return lastIndexOf(str, ch, (ptrdiff_t)(len - 1));
 	}
 
-	template <class S>
-	static ptrdiff_t lastIndexOf(S const& str, char ch, ptrdiff_t fromIndex) {
+	ptrdiff_t lastIndexOf(char ch) {
+		return lastIndexOf(_str, ch);
+	}
+
+	template <typename S>
+	static ptrdiff_t lastIndexOf(S str, char ch, ptrdiff_t fromIndex) {
 		if (fromIndex < 0)
 			return -1;
 
-		const char *buffer = str.c_str();
+		const S* pStr = constPtr(str);
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
 
 		if (buffer == nullptr)
 			return -1;
 
-		size_t len = str.length();
+		size_t len = pStr->length();
 
 		int min = 0;
 		const char *v = buffer;
@@ -309,16 +451,28 @@ public:
 		return -1;
 	}
 
-	template <class S1, class S2>
-	static ptrdiff_t lastIndexOf(S1 const& str, S2 const& sub) {
-		const char *buffer = str.c_str();
-		const char *subBuffer = sub.c_str();
+
+	ptrdiff_t lastIndexOf(char ch, ptrdiff_t fromIndex) {
+		return lastIndexOf(_str, ch, fromIndex);
+	}
+
+	template <typename S1, typename S2>
+	static ptrdiff_t lastIndexOf(S1 str, S2 sub) {
+		const S1* pStr = constPtr(str);
+		const char *buffer = pStr ? pStr->c_str() : nullptr;
+		const S2* pSub = constPtr(sub);
+		const char *subBuffer = pSub ? pSub->c_str() : nullptr;
 
 		if ((buffer == nullptr) || (subBuffer == nullptr))
 			return -1;
 
-		size_t len = str.length();
-		return String::lastIndexOf(buffer, 0, len, subBuffer, 0, sub.length(), (ptrdiff_t)len);
+		size_t len = pStr->length();
+		return lastIndexOf(buffer, 0, len, subBuffer, 0, pSub->length(), (ptrdiff_t)len);
+	}
+
+	template <typename S>
+	ptrdiff_t lastIndexOf(S sub) {
+		return lastIndexOf(_str, sub);
 	}
 
 	static std::string substring(const char *buffer, size_t len, size_t beginIndex, size_t endIndex) {
@@ -331,14 +485,28 @@ public:
 		return std::string(buffer + beginIndex, outLen);
 	}
 
-	template <class S>
-	static std::string substring(S const& str, size_t beginIndex, size_t endIndex) {
-		return substring(str.c_str(), str.length(), beginIndex, endIndex);
+	template <typename S>
+	static std::string substring(S str, size_t beginIndex, size_t endIndex) {
+		const S* pStr = constPtr(str);
+		if (!pStr)
+			throw NullPointerException(_HERE_);
+		return substring(pStr->c_str(), pStr->length(), beginIndex, endIndex);
 	}
 
-	template <class S>
-	static std::string substring(S const& str, size_t beginIndex) {
-		return substring(str, beginIndex, str.length());
+	String substring(size_t beginIndex, size_t endIndex) {
+		return substring(_str, beginIndex, endIndex);
+	}
+
+	template <typename S>
+	static std::string substring(S str, size_t beginIndex) {
+		const S* pStr = constPtr(str);
+		if (!pStr)
+			throw NullPointerException(_HERE_);
+		return substring(str, beginIndex, pStr->length());
+	}
+
+	String substring(size_t beginIndex) {
+		return substring(_str, beginIndex);
 	}
 
 	/*static void simpleSplit(const std::string& str, List<std::string> &results, const char delim, int limit = 65535) {
@@ -392,34 +560,21 @@ public:
 		} while (nextDelim != nullptr);
 	}*/
 
-	static void simpleSplit(const char *buffer, size_t len, List<std::string> &results, const char delim, int limit = 65535) {
-		if (len == 0)
-			return;
 
-		const char *nextDelim;
-		const char *ptr = buffer;
-		do {
-			if (--limit == 0) {
-				results.add(std::make_shared<std::string>(ptr, len));
-				return;
-			}
-			nextDelim = (const char *)memchr(ptr, delim, len);
-			if (nextDelim)
-				len -= (size_t)(nextDelim - ptr + 1);
-			if (nextDelim == nullptr) {
-				results.add(std::make_shared<std::string>(ptr, len));
-			} else {
-				results.add(std::make_shared<std::string>(ptr, (size_t)(nextDelim - ptr)));
-			}
-			ptr = nextDelim + 1;
-		} while (nextDelim != nullptr);
+
+	static std::unique_ptr<ArrayList<std::string>> simpleSplit(const char *buffer, size_t len, const char delim, int limit = 65535);
+
+	template <typename S>
+	static std::unique_ptr<ArrayList<std::string>> simpleSplit(S str, const char delim, int limit = 65535) {
+		const S* pStr = constPtr(str);
+		if (!pStr)
+			throw NullPointerException(_HERE_);
+		return simpleSplit(pStr->c_str(), pStr->length(), delim, limit);
 	}
 
+	static std::unique_ptr<ArrayList<String>> split(const char *buffer, size_t len, const char *pattern, int limit = 0);
 
-	template <class S>
-	static void simpleSplit(S const& str, List<std::string> &results, const char delim, int limit = 65535) {
-		simpleSplit(str.c_str(), str.length(), results, delim, limit);
-	}
+	std::unique_ptr<ArrayList<String>> split(const char *pattern, int limit = 65535);
 };
 
 /**
@@ -447,7 +602,7 @@ public:
 	ASCIICaseInsensitiveString(const ASCIICaseInsensitiveString &other);
 	ASCIICaseInsensitiveString(const std::string& other);
 
-	virtual ~ASCIICaseInsensitiveString();
+	virtual ~ASCIICaseInsensitiveString() override;
 
 	size_t length() const override {
 		return _len;

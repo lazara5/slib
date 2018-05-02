@@ -78,8 +78,8 @@ public:
 		_queue.reserve(initialCapacity);
 	}
 
-	virtual Class const& getClass() const override {
-		return priorityQueueClass;
+	virtual Class const* getClass() const override {
+		return PRIORITYQUEUECLASS();
 	}
 
 	virtual ssize_t size() const override {

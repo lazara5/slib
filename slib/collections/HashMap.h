@@ -263,8 +263,8 @@ public:
 		_table = NULL;
 	}
 
-	virtual Class const& getClass() const override {
-		return hashMapClass;
+	virtual Class const* getClass() const override {
+		return HASHMAPCLASS();
 	}
 
 	/**

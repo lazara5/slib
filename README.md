@@ -5,6 +5,7 @@ Application bootstrapping and general utility library. It handles:
   * Logging (on top of spdlog)
   * String and number manipulation (with mixed Java/C++-like API)
   * Basic data structures (with mixed Java/C++-like API)
+  * Runtime type system (class names, instanceof and casts only, limited to string, numeric and collection types)
   * Basic threading and concurrency
   * File manipulation
 
@@ -18,6 +19,5 @@ Please note this is not currently intended as a general-purpose library. Only wh
   * [spdlog](https://github.com/gabime/spdlog)
   * [tclap](http://tclap.sourceforge.net/)
   * [libbsd](https://libbsd.freedesktop.org/wiki/)
-  * [std::experimental::optional](https://github.com/akrzemi1/Optional) - optional, for some of the concurrent queues
   * [rapidjson](http://rapidjson.org/) - optional, for JsonUtils only
 

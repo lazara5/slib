@@ -9,10 +9,10 @@
 
 namespace slib {
 
+Class const* Object::_class = OBJECTCLASS();
+
 String Object::toString() const {
-	return String(fmt::format("{}@{x}", getClass().getName(), hashCode()));
+	return String(fmt::format("{}@{x}", getClass()->getName(), hashCode()));
 }
-
-
 
 } // namespace slib

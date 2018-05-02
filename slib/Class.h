@@ -5,11 +5,15 @@
 #ifndef H_SLIB_CLASS_H
 #define H_SLIB_CLASS_H
 
+#include "slib/exception/NullPointerException.h"
+
 #include <stdint.h>
 
 #include <string>
+#include <atomic>
+#include <memory>
 
-#define BASEID(c) (PRIMES[ClassIndex::c])
+#define BASEID(c) (PRIMES[TypeIndex::c])
 
 namespace slib {
 
@@ -26,26 +30,8 @@ constexpr uint64_t typeId() {
 	return BaseId * typeId<AIds...>();
 }
 
-class Class {
-protected:
-	std::string _name;
-	uint64_t _typeId;
-public:
-	Class(const char *name, uint64_t typeId)
-	:_name(name)
-	,_typeId(typeId) {}
-
-	std::string const& getName() const {
-		return _name;
-	}
-
-	constexpr uint64_t getTypeId() const {
-		return _typeId;
-	}
-};
-
 constexpr unsigned int PRIMES[] = {
-	2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101,
+	1, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101,
 	103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199,
 	211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313, 317,
 	331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419, 421, 431, 433, 439, 443,
@@ -141,10 +127,12 @@ typedef enum {
 		BASICSTRING,
 			STRING,
 			ASCIICASEINSENSITIVESTRING,
-			STRINGBUILDER
-} ClassIndex;
+			STRINGBUILDER,
+		BOOLEAN,
+	DYNAMICSTART
+} TypeIndex;
 
-constexpr uint64_t OBJECTID = typeId<BASEID(OBJECT)>();
+constexpr uint64_t OBJECTID = typeId<1>();
 	constexpr uint64_t NUMBERID = typeId<BASEID(NUMBER), OBJECTID>();
 		constexpr uint64_t INTEGERID = typeId<BASEID(INTEGER), NUMBERID>();
 		constexpr uint64_t UINTID = typeId<BASEID(UINT), NUMBERID>();
@@ -164,20 +152,78 @@ constexpr uint64_t OBJECTID = typeId<BASEID(OBJECT)>();
 		constexpr uint64_t STRINGID = typeId<BASEID(STRING), BASICSTRINGID>();
 		constexpr uint64_t ASCIICASEINSENSITIVESTRINGD = typeId<BASEID(ASCIICASEINSENSITIVESTRING), BASICSTRINGID>();
 		constexpr uint64_t STRINGBUILDERID = typeId<BASEID(STRINGBUILDER), BASICSTRINGID>();
+	constexpr uint64_t BOOLEANID = typeId<BASEID(BOOLEAN), OBJECTID>();
 
-extern Class objectClass;
-extern Class integerClass;
-extern Class uIntClass;
-extern Class longClass;
-extern Class uLongClass;
-extern Class doubleClass;
-extern Class priorityQueueClass;
-extern Class arrayListClass;
-extern Class hashMapClass;
-extern Class linkedHashMapClass;
-extern Class propertiesClass;
-extern Class stringClass;
-extern Class stringBuilderClass;
+class ClassCastException : public Exception {
+public:
+	ClassCastException(const char *where, const char *c1, const char *c2);
+};
+
+class Class {
+protected:
+	std::string _name;
+	uint64_t _typeId;
+
+	static std::atomic<int> _dynamicIndex;
+public:
+	Class(const char *name, uint64_t typeId)
+	:_name(name)
+	,_typeId(typeId) {}
+
+	Class(const char *name);
+
+	Class(Class const&) = delete;
+	Class& operator=(Class const&) = delete;
+
+	std::string const& getName() const {
+		return _name;
+	}
+
+	constexpr uint64_t getTypeId() const {
+		return _typeId;
+	}
+
+	bool isAssignableFrom(Class const* cls) const {
+		if (!cls)
+			throw NullPointerException(_HERE_);
+		uint64_t div = (cls->getTypeId() % getTypeId());
+		return (div == 0);
+	}
+
+	template <class T, class V>
+	static T* cast(V *from) {
+		if (from != nullptr) {
+			// Check if it is convertible to the base class or to itself
+			if (std::is_convertible<typename std::remove_pointer<V*>::type, typename std::remove_pointer<T*>::type>::value == true)
+				return reinterpret_cast<T*>(from);
+
+			bool canCast = T::_class->isAssignableFrom(V::_class);
+			if (canCast)
+				return reinterpret_cast<T*>(from);
+
+			throw ClassCastException(_HERE_, V::_class->getName().c_str(), T::_class->getName().c_str());
+		}
+
+		return nullptr;
+	}
+};
+
+extern const Class* OBJECTCLASS();
+extern const Class* NUMBERCLASS();
+extern const Class* INTEGERCLASS();
+extern const Class* UINTCLASS();
+extern const Class* LONGCLASS();
+extern const Class* ULONGCLASS();
+extern const Class* DOUBLECLASS();
+extern const Class* PRIORITYQUEUECLASS();
+extern const Class* ARRAYLISTCLASS();
+extern const Class* HASHMAPCLASS();
+extern const Class* LINKEDHASHMAPCLASS();
+extern const Class* PROPERTIESCLASS();
+extern const Class* BASICSTRINGCLASS();
+extern const Class* STRINGCLASS();
+extern const Class* STRINGBUILDERCLASS();
+extern const Class* BOOLEANCLASS();
 
 } // namespace slib
 

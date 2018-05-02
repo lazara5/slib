@@ -23,6 +23,8 @@ namespace slib {
 
 class Number : virtual public Object {
 public:
+	static Class const* _class;
+public:
 	virtual ~Number();
 
 	virtual double doubleValue() const = 0;
@@ -30,6 +32,8 @@ public:
 
 /** 32-bit signed integer */
 class Integer : public Number {
+public:
+	static Class const* _class;
 private:
 	int32_t _value;
 public:
@@ -45,8 +49,8 @@ public:
 	Integer(const Integer& other)
 	: _value(other._value) {}
 
-	virtual Class const& getClass() const override {
-		return integerClass;
+	virtual Class const* getClass() const override {
+		return INTEGERCLASS();
 	}
 
 	virtual int32_t hashCode() const override {
@@ -147,6 +151,8 @@ public:
 
 /** 32-bit unsigned integer */
 class UInt : public Number {
+public:
+	static Class const* _class;
 private:
 	uint32_t _value;
 public:
@@ -162,8 +168,8 @@ public:
 	UInt(const UInt& other)
 	: _value(other._value) {}
 
-	virtual Class const& getClass() const override {
-		return uIntClass;
+	virtual Class const* getClass() const override {
+		return UINTCLASS();
 	}
 
 	int32_t hashCode() const override {
@@ -260,6 +266,8 @@ public:
 
 /** 64-bit signed integer */
 class Long : public Number {
+public:
+	static Class const* _class;
 private:
 	int64_t _value;
 public:
@@ -272,8 +280,8 @@ public:
 	Long(int64_t value)
 	:_value(value) {}
 
-	virtual Class const& getClass() const override {
-		return longClass;
+	virtual Class const* getClass() const override {
+		return LONGCLASS();
 	}
 
 	/**
@@ -316,8 +324,9 @@ public:
 
 	virtual double doubleValue() const override;
 
+	/** Parses the string argument as a signed decimal long */
 	static int64_t parseLong(const char *str) {
-		if (str == NULL)
+		if (str == nullptr)
 			throw NumberFormatException("null");
 
 		char *end;
@@ -334,7 +343,8 @@ public:
 		return res;
 	}
 
-	static int64_t parseLong(const std::string& str) {
+	template <class S>
+	static int64_t parseLong(const S& str) {
 		return parseLong(str.c_str());
 	}
 
@@ -351,6 +361,8 @@ public:
 
 /** 64-bit unsigned integer */
 class ULong : public Number {
+public:
+	static Class const* _class;
 private:
 	uint64_t _value;
 public:
@@ -359,8 +371,8 @@ public:
 	ULong(uint64_t value)
 	:_value(value) {}
 
-	virtual Class const& getClass() const override {
-		return uLongClass;
+	virtual Class const* getClass() const override {
+		return ULONGCLASS();
 	}
 
 	/**
@@ -459,6 +471,8 @@ public:
 
 /** Double value */
 class Double : public Number {
+public:
+	static Class const* _class;
 private:
 	double _value;
 protected:
@@ -476,8 +490,8 @@ public:
 	Double(double value)
 	:_value(value) {}
 
-	virtual Class const& getClass() const override {
-		return doubleClass;
+	virtual Class const* getClass() const override {
+		return DOUBLECLASS();
 	}
 
 	/**
@@ -542,11 +556,19 @@ public:
 
 /** Boolean value */
 class Boolean : virtual public Object {
+public:
+	static Class const* _class;
 private:
 	bool _value;
 public:
 	Boolean(bool value)
 	:_value(value) {}
+
+	virtual ~Boolean() override;
+
+	virtual Class const* getClass() const override {
+		return BOOLEANCLASS();
+	}
 
 	virtual int32_t hashCode() const override {
 		return _value ? 1231 : 1237;

@@ -110,8 +110,8 @@ public:
 		_header = nullptr;
 	}
 
-	virtual Class const& getClass() const override {
-		return linkedHashMapClass;
+	virtual Class const* getClass() const override {
+		return LINKEDHASHMAPCLASS();
 	}
 
 	/**

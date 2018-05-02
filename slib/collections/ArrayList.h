@@ -67,8 +67,8 @@ public:
 	virtual ~ArrayList() {
 	}
 
-	virtual Class const& getClass() const override {
-		return arrayListClass;
+	virtual Class const* getClass() const override {
+		return ARRAYLISTCLASS();
 	}
 
 	/**

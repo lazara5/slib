@@ -33,7 +33,7 @@ Thread::~Thread() {
 }
 
 void Thread::start() {
-	int res = pthread_create(&_threadId, NULL, threadProc, (void*)this);
+	int res = pthread_create(&_threadId, nullptr, threadProc, (void*)this);
 	if (res)
 		throw ThreadException(_HERE_, fmt::format("pthread_create() failed, error='{}'", StringUtils::formatErrno(res).c_str()).c_str());
 	if (!_name.empty())
@@ -41,7 +41,7 @@ void Thread::start() {
 }
 
 void Thread::join() {
-	int res = pthread_join(_threadId, NULL);
+	int res = pthread_join(_threadId, nullptr);
 	if (res)
 		throw ThreadException(_HERE_, fmt::format("pthread_join() failed, error='{}'", StringUtils::formatErrno(res).c_str()).c_str());
 }
@@ -68,7 +68,7 @@ bool Thread::stopRequested(long timeout, bool *signalled /*=nullptr*/) {
 		return true;
 
 	if (timeout > 0) {
-		gettimeofday(&now, NULL);
+		gettimeofday(&now, nullptr);
 		t = (long long)now.tv_sec * 1000 + (long long)now.tv_usec/1000;
 		t += timeout;
 		t *= 1000000;					// convert from milliseconds to nanoseconds

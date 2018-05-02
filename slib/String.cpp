@@ -4,19 +4,99 @@
 
 #include "slib/String.h"
 #include "slib/StringBuilder.h"
+#include "slib/collections/ArrayList.h"
+#include "slib/compat/cppbits/make_unique.h"
 
 #include <sstream>
 #include <string>
+#include <regex>
 
 using std::ptrdiff_t;
 
 namespace slib {
 
+Class const* BasicString::_class = BASICSTRINGCLASS();
+
+Class const* String::_class = STRINGCLASS();
+
 String::String(std::string const& str)
 :_str(str)
 ,_hash(0) {}
 
+String::String(const char *buffer, size_t len)
+:_str(buffer, len)
+,_hash(0) {}
+
+String::String(String const& other)
+:_str(other._str)
+,_hash(other._hash) {}
+
 String::~String() {}
+
+std::unique_ptr<ArrayList<std::string>> String::simpleSplit(const char *buffer, size_t len, const char delim, int limit /* = 65535 */) {
+	std::unique_ptr<ArrayList<std::string>> results = std::make_unique<ArrayList<std::string>>();
+	if (len == 0)
+		return results;
+
+	const char *nextDelim;
+	const char *ptr = buffer;
+	do {
+		if (--limit == 0) {
+			results->add(std::make_shared<std::string>(ptr, len));
+			return results;
+		}
+		nextDelim = (const char *)memchr(ptr, delim, len);
+		if (nextDelim)
+			len -= (size_t)(nextDelim - ptr + 1);
+		if (nextDelim == nullptr) {
+			results->add(std::make_shared<std::string>(ptr, len));
+		} else {
+			results->add(std::make_shared<std::string>(ptr, (size_t)(nextDelim - ptr)));
+		}
+		ptr = nextDelim + 1;
+	} while (nextDelim != nullptr);
+
+	return results;
+}
+
+std::unique_ptr<ArrayList<String> > String::split(const char *buffer, size_t len, const char *pattern, int limit /* = 0 */) {
+	std::unique_ptr<ArrayList<String>> results = std::make_unique<ArrayList<String>>();
+	if (len == 0)
+		return results;
+
+	bool allowTrailing = (limit < 0);
+	if (limit <= 0)
+		limit = Integer::MAX_VALUE;
+
+	std::regex delim(pattern);
+	std::cregex_token_iterator iter(buffer, buffer + len, delim, -1);
+	std::cregex_token_iterator end;
+	const char *ptr = buffer;
+	size_t remaining = len;
+	size_t sliceLen = 0;
+
+	for ( ; iter != end; ++iter) {
+		std::csub_match slice = *iter;
+		ptr = slice.first;
+		sliceLen = slice.length();
+		remaining = len - (ptr - buffer);
+		if (--limit == 0) {
+			results->add(std::make_shared<String>(ptr, remaining));
+			return results;
+		}
+
+		results->add(std::make_shared<String>(ptr, sliceLen));
+	}
+
+	if ((allowTrailing) && ((ptr - buffer + sliceLen) != len))
+		results->add(std::make_shared<String>(""));
+
+	return results;
+}
+
+std::unique_ptr<ArrayList<String>> String::split(const char *pattern, int limit /* = 65535 */) {
+	return split(_str.c_str(), _str.length(), pattern, limit);
+}
 
 ASCIICaseInsensitiveString::ASCIICaseInsensitiveString() {
 	_hash = 0;

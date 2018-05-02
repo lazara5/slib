@@ -44,7 +44,7 @@ public:
 		const T* _crt;
 	public:
 		StdConstIterator(const ConstIterator& iter) {
-			printf("I %p\n", this);
+			//printf("I %p\n", this);
 			_instance = iter._instance->clone();
 			if (_instance->hasNext())
 				_crt = &_instance->next();
@@ -53,7 +53,7 @@ public:
 		}
 
 		StdConstIterator(const StdConstIterator& other) {
-			printf("& %p %p\n", this, &other);
+			//printf("& %p %p\n", this, &other);
 			if (other._instance)
 				_instance = other._instance->clone();
 			else
@@ -62,19 +62,19 @@ public:
 		}
 
 		StdConstIterator() {
-			printf("N %p\n", this);
+			//printf("N %p\n", this);
 			_instance = nullptr;
 			_crt = nullptr;
 		}
 
 		virtual ~StdConstIterator() {
-			printf("~ %p\n", this);
+			//printf("~ %p\n", this);
 			if (_instance != nullptr)
 				delete _instance;
 		}
 
 		StdConstIterator& operator=(const StdConstIterator& other) {
-			printf("= %p %p\n", this, &other);
+			//printf("= %p %p\n", this, &other);
 			if (this == &other)
 				return *this;
 			if (_instance != nullptr)
@@ -88,7 +88,7 @@ public:
 		}
 
 		StdConstIterator operator ++() {
-			printf("+ %p\n", this);
+			//printf("+ %p\n", this);
 			if (_instance) {
 				if (_instance->hasNext())
 					_crt = &_instance->next();
@@ -99,7 +99,7 @@ public:
 		}
 
 		bool operator !=(const StdConstIterator &other) const {
-			printf("!= %p %p\n", this, &other);
+			//printf("!= %p %p\n", this, &other);
 			return (_crt != other._crt);
 		}
 

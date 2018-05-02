@@ -10,7 +10,7 @@
 namespace slib {
 
 PidFile::PidFile() {
-	_pfh = 0;
+	_pfh = nullptr;
 }
 
 pid_t PidFile::open(const Config& cfg, const std::string& modeSpec /*= "rw-r--r--"*/) {

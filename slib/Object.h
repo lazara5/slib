@@ -9,21 +9,30 @@
 
 #include <stdint.h>
 
+#include <memory>
+
 namespace slib {
 
 class String;
 
 class Object {
 public:
+	static Class const* _class;
+public:
 	virtual ~Object() {}
 
-	virtual Class const& getClass() const {
-		return objectClass;
+	virtual Class const* getClass() const {
+		return OBJECTCLASS();
 	}
 
 	virtual int32_t hashCode() const {
 		uint64_t value = (uint64_t)this;
 		return (int32_t)(value ^ (value >> 32));
+	}
+
+	template <class O>
+	bool instanceof() {
+		return (O::_class->isAssignableFrom(getClass()));
 	}
 
 	virtual String toString() const;

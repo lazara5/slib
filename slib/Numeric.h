@@ -8,6 +8,7 @@
 #include "slib/Object.h"
 #include "slib/exception/NumericExceptions.h"
 #include "slib/String.h"
+#include "slib/compat/cppbits/make_unique.h"
 
 #include "fmt/format.h"
 
@@ -16,6 +17,7 @@
 
 #include <math.h>
 #include <limits.h>
+#include <cmath>
 
 #define slib_min(a,b)  (((a) < (b)) ? (a) : (b))
 
@@ -27,7 +29,13 @@ public:
 public:
 	virtual ~Number();
 
+	virtual int64_t longValue() const = 0;
+
 	virtual double doubleValue() const = 0;
+
+	static std::unique_ptr<Number> createNumber(std::unique_ptr<String> const& str);
+
+	static bool isMathematicalInteger(double val);
 };
 
 /** 32-bit signed integer */
@@ -37,8 +45,8 @@ public:
 private:
 	int32_t _value;
 public:
-	static const int32_t MIN_VALUE = INT32_MIN;
-	static const int32_t MAX_VALUE = INT32_MAX;
+	static constexpr int32_t MIN_VALUE = INT32_MIN;
+	static constexpr int32_t MAX_VALUE = INT32_MAX;
 
 	Integer()
 	:_value(0) {}
@@ -80,8 +88,10 @@ public:
 		return _value;
 	}
 
+	virtual int64_t longValue() const override;
 	virtual double doubleValue() const override;
 
+	/** @throws NumberFormatException */
 	static int32_t parseInt(const char *str, int radix) {
 		if (str == nullptr)
 			throw NumberFormatException(_HERE_, "null");
@@ -108,18 +118,65 @@ public:
 		return parseInt(str, 10);
 	}
 
-	static int32_t parseInt(const std::string& s) {
-		return parseInt(s.c_str(), 10);
+	/** @throws NumberFormatException */
+	template <class S>
+	static int32_t parseInt(S const* str, int radix = 10) {
+		const char *buffer = str ? str->c_str() : nullptr;
+		return parseInt(buffer, radix);
 	}
 
-	static int32_t parseInt(const std::string& s, int radix) {
-		return parseInt(s.c_str(), radix);
+	/** @throws NumberFormatException */
+	template <class S>
+	static int32_t decode(S const* str) {
+		const char *buffer = str ? str->c_str() : nullptr;
+		size_t len = str ? str->length() : 0;
+
+		int radix = 10;
+		size_t index = 0;
+		bool negative = false;
+
+		if (len == 0)
+			throw NumberFormatException(_HERE_, "Empty string");
+
+		char firstChar = buffer[0];
+		if (firstChar == '-') {
+			negative = true;
+			index++;
+		} else if (firstChar == '+')
+			index++;
+
+		if (String::startsWith(str, "0x", index) || String::startsWith(str, "0X", index)) {
+			radix = 16;
+			index += 2;
+		} else if (String::startsWith(str, "#", index)) {
+			radix = 16;
+			index++;
+		} else if (String::startsWith(str, "0", index) && (len > 1 + index)) {
+			radix = 8;
+			index ++;
+		}
+
+		if (String::startsWith(str, "-", index) || String::startsWith(str, "+", index))
+			throw NumberFormatException("Misplaced sign character");
+
+		int32_t result = 0;
+
+		try {
+			result = parseInt(buffer + index, radix);
+			if (negative)
+				result = -result;
+		} catch (NumberFormatException const&) {
+			result = negative ? parseInt(Ptr(std::string("-") + (buffer + index)), radix) :
+								parseInt(buffer + index, radix);
+		}
+
+		return result;
 	}
 
-	static String toString(int32_t i) {
+	static std::unique_ptr<String> toString(int32_t i) {
 		std::stringstream stream;
 		stream << i;
-		return String(stream.str());
+		return std::make_unique<String>(stream.str());
 	}
 
 	/**
@@ -144,7 +201,7 @@ public:
 		return String(fmt::format("{:x}", i));
 	}
 
-	virtual String toString() const override {
+	virtual std::unique_ptr<String> toString() const override {
 		return toString(_value);
 	}
 };
@@ -156,8 +213,8 @@ public:
 private:
 	uint32_t _value;
 public:
-	static const uint32_t MIN_VALUE = 0;
-	static const uint32_t MAX_VALUE = UINT32_MAX;
+	static constexpr uint32_t MIN_VALUE = 0;
+	static constexpr uint32_t MAX_VALUE = UINT32_MAX;
 
 	UInt()
 	:_value(0) {}
@@ -231,10 +288,10 @@ public:
 		return parseUInt(s.c_str(), radix);
 	}
 
-	static String toString(uint32_t i) {
+	static std::unique_ptr<String> toString(uint32_t i) {
 		std::stringstream stream;
 		stream << i;
-		return String(stream.str());
+		return std::make_unique<String>(stream.str());
 	}
 
 	/**
@@ -259,7 +316,7 @@ public:
 		return String(fmt::format("{:x}", i));
 	}
 
-	virtual String toString() const override {
+	virtual std::unique_ptr<String> toString() const override {
 		return toString(_value);
 	}
 };
@@ -271,8 +328,8 @@ public:
 private:
 	int64_t _value;
 public:
-	static const int64_t MIN_VALUE = INT64_MIN;
-	static const int64_t MAX_VALUE = INT64_MAX;
+	static constexpr int64_t MIN_VALUE = INT64_MIN;
+	static constexpr int64_t MAX_VALUE = INT64_MAX;
 
 	Long()
 	:_value(0) {}
@@ -318,20 +375,17 @@ public:
 		return equals(other);
 	}
 
-	int64_t longValue() const {
-		return _value;
-	}
-
+	int64_t longValue() const override;
 	virtual double doubleValue() const override;
 
 	/** Parses the string argument as a signed decimal long */
-	static int64_t parseLong(const char *str) {
+	static int64_t parseLong(const char *str, int radix) {
 		if (str == nullptr)
 			throw NumberFormatException("null");
 
 		char *end;
 		errno = 0;
-		const int64_t res = strtoll(str, &end, 10);
+		const int64_t res = strtoll(str, &end, radix);
 
 		if (end == str)
 			throw NumberFormatException(_HERE_, "Not a decimal number");
@@ -344,17 +398,66 @@ public:
 	}
 
 	template <class S>
-	static int64_t parseLong(const S& str) {
-		return parseLong(str.c_str());
+	static int64_t parseLong(S const* str, int radix = 10) {
+		const char *buffer = str ? str->c_str() : nullptr;
+		return parseLong(buffer, radix);
 	}
 
-	static String toString(int64_t i) {
+	/** @throws NumberFormatException */
+	template <class S>
+	static int64_t decode(S const* str) {
+		const char *buffer = str ? str->c_str() : nullptr;
+		size_t len = str ? str->length() : 0;
+
+		int radix = 10;
+		size_t index = 0;
+		bool negative = false;
+
+		if (len == 0)
+			throw NumberFormatException(_HERE_, "Empty string");
+
+		char firstChar = buffer[0];
+		if (firstChar == '-') {
+			negative = true;
+			index++;
+		} else if (firstChar == '+')
+			index++;
+
+		if (String::startsWith(str, "0x", index) || String::startsWith(str, "0X", index)) {
+			radix = 16;
+			index += 2;
+		} else if (String::startsWith(str, "#", index)) {
+			radix = 16;
+			index++;
+		} else if (String::startsWith(str, "0", index) && (len > 1 + index)) {
+			radix = 8;
+			index ++;
+		}
+
+		if (String::startsWith(str, "-", index) || String::startsWith(str, "+", index))
+			throw NumberFormatException("Misplaced sign character");
+
+		int64_t result = 0;
+
+		try {
+			result = parseLong(buffer + index, radix);
+			if (negative)
+				result = -result;
+		} catch (NumberFormatException const&) {
+			result = negative ? parseLong(Ptr(std::string("-") + (buffer + index)), radix) :
+								parseLong(buffer + index, radix);
+		}
+
+		return result;
+	}
+
+	static std::unique_ptr<String> toString(int64_t i) {
 		std::stringstream stream;
 		stream << i;
-		return String(stream.str());
+		return std::make_unique<String>(stream.str());
 	}
 
-	virtual String toString() const override {
+	virtual std::unique_ptr<String> toString() const override {
 		return toString(_value);
 	}
 };
@@ -366,7 +469,7 @@ public:
 private:
 	uint64_t _value;
 public:
-	static const uint64_t MAX_VALUE = UINT64_MAX;
+	static constexpr uint64_t MAX_VALUE = UINT64_MAX;
 
 	ULong(uint64_t value)
 	:_value(value) {}
@@ -529,6 +632,15 @@ public:
 		return equals(other);
 	}
 
+	static bool isInfinite(double v) {
+		return std::isinf(v);
+	}
+
+	bool isInfinite() {
+		return isInfinite(_value);
+	}
+
+	int64_t longValue() const override;
 	virtual double doubleValue() const override;
 
 	static double parseDouble(const char *str) {
@@ -549,8 +661,16 @@ public:
 		return res;
 	}
 
-	static double parseDouble(const std::string& str) {
-		return parseDouble(str.c_str());
+	template <class S>
+	static double parseDouble(S const* str) {
+		const char *buffer = str ? str->c_str() : nullptr;
+		return parseDouble(buffer);
+	}
+
+	static std::unique_ptr<String> toString(double d) {
+		std::stringstream stream;
+		stream << d;
+		return std::make_unique<String>(stream.str());
 	}
 };
 
@@ -591,6 +711,10 @@ public:
 
 	bool operator==(const Boolean& other) const {
 		return equals(other);
+	}
+
+	bool booleanValue() {
+		return _value;
 	}
 
 	static bool parseBoolean(const char *str) {

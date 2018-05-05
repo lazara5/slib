@@ -129,7 +129,8 @@ typedef enum {
 			ASCIICASEINSENSITIVESTRING,
 			STRINGBUILDER,
 		BOOLEAN,
-	DYNAMICSTART
+// Expression evaluator
+		RESOLVER
 } TypeIndex;
 
 constexpr uint64_t OBJECTID = typeId<1>();
@@ -153,7 +154,8 @@ constexpr uint64_t OBJECTID = typeId<1>();
 		constexpr uint64_t ASCIICASEINSENSITIVESTRINGD = typeId<BASEID(ASCIICASEINSENSITIVESTRING), BASICSTRINGID>();
 		constexpr uint64_t STRINGBUILDERID = typeId<BASEID(STRINGBUILDER), BASICSTRINGID>();
 	constexpr uint64_t BOOLEANID = typeId<BASEID(BOOLEAN), OBJECTID>();
-
+// Expression evaluator
+	constexpr uint64_t RESOLVERID = typeId<BASEID(RESOLVER), OBJECTID>();
 class ClassCastException : public Exception {
 public:
 	ClassCastException(const char *where, const char *c1, const char *c2);
@@ -163,8 +165,6 @@ class Class {
 protected:
 	std::string _name;
 	uint64_t _typeId;
-
-	static std::atomic<int> _dynamicIndex;
 public:
 	Class(const char *name, uint64_t typeId)
 	:_name(name)
@@ -197,7 +197,7 @@ public:
 			if (std::is_convertible<typename std::remove_pointer<V*>::type, typename std::remove_pointer<T*>::type>::value == true)
 				return reinterpret_cast<T*>(from);
 
-			bool canCast = T::_class->isAssignableFrom(V::_class);
+			bool canCast = T::_class->isAssignableFrom(from->getClass());
 			if (canCast)
 				return reinterpret_cast<T*>(from);
 
@@ -205,6 +205,13 @@ public:
 		}
 
 		return nullptr;
+	}
+
+	template <class T, class V>
+	static T* cast(std::shared_ptr<V> const& from) {
+		if (!from)
+			return nullptr;
+		return cast<T>(from.get());
 	}
 };
 
@@ -217,6 +224,7 @@ extern const Class* ULONGCLASS();
 extern const Class* DOUBLECLASS();
 extern const Class* PRIORITYQUEUECLASS();
 extern const Class* ARRAYLISTCLASS();
+extern const Class* MAPCLASS();
 extern const Class* HASHMAPCLASS();
 extern const Class* LINKEDHASHMAPCLASS();
 extern const Class* PROPERTIESCLASS();
@@ -224,6 +232,8 @@ extern const Class* BASICSTRINGCLASS();
 extern const Class* STRINGCLASS();
 extern const Class* STRINGBUILDERCLASS();
 extern const Class* BOOLEANCLASS();
+// Expression evaluator
+extern const Class* RESOLVERCLASS();
 
 } // namespace slib
 

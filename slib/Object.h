@@ -35,7 +35,7 @@ public:
 		return (O::_class->isAssignableFrom(getClass()));
 	}
 
-	virtual String toString() const;
+	virtual std::unique_ptr<String> toString() const;
 };
 
 } // namespace slib

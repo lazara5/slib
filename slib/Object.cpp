@@ -4,6 +4,7 @@
 
 #include "slib/Object.h"
 #include "slib/String.h"
+#include "slib/compat/cppbits/make_unique.h"
 
 #include "fmt/format.h"
 
@@ -11,8 +12,8 @@ namespace slib {
 
 Class const* Object::_class = OBJECTCLASS();
 
-String Object::toString() const {
-	return String(fmt::format("{}@{x}", getClass()->getName(), hashCode()));
+std::unique_ptr<String> Object::toString() const {
+	return std::make_unique<String>(fmt::format("{}@{:x}", getClass()->getName(), hashCode()));
 }
 
 } // namespace slib

@@ -213,7 +213,7 @@ std::string Properties::unescape(std::string const& in, size_t offset, size_t le
 void Properties::setVariableProperty(std::string const& name, std::string const& value,
 									 LineProcessor *lineProcessor) {
 	if ((!lineProcessor))
-		put(name, value);
+		emplace(name, value);
 	else {
 		std::shared_ptr<std::string> finalVal;
 		if (lineProcessor)

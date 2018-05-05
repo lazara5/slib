@@ -17,10 +17,28 @@ namespace slib {
 
 Class const* BasicString::_class = BASICSTRINGCLASS();
 
+int BasicString::compareTo(const BasicString &other) const {
+	const char *buffer = c_str();
+	const char *otherBuffer = other.c_str();
+
+	if ((!buffer) || (!otherBuffer))
+		throw NullPointerException(_HERE_);
+
+	return strcmp(buffer, otherBuffer);
+}
+
+bool BasicString::equals(BasicString const& other) const {
+	return String::equals(this, Ptr(other));
+}
+
 Class const* String::_class = STRINGCLASS();
 
 String::String(std::string const& str)
 :_str(str)
+,_hash(0) {}
+
+String::String(const char *buffer)
+:_str(buffer)
 ,_hash(0) {}
 
 String::String(const char *buffer, size_t len)
@@ -98,9 +116,27 @@ std::unique_ptr<ArrayList<String>> String::split(const char *pattern, int limit 
 	return split(_str.c_str(), _str.length(), pattern, limit);
 }
 
+int32_t String::hashCode() const {
+	int h = _hash;
+	if (h == 0) {
+		size_t len = _str.length();
+		if (len > 0) {
+			const char *buffer = _str.c_str();
+			for (size_t i = 0; i < len; i++)
+				h = 31 * h + buffer[i];
+			_hash = h;
+		}
+	}
+	return h;
+}
+
+void format_arg(fmt::BasicFormatter<char> &f, const char *&format_str, String const& s) {
+	f.writer().write("{}", s.c_str());
+}
+
 ASCIICaseInsensitiveString::ASCIICaseInsensitiveString() {
 	_hash = 0;
-	_buffer = (unsigned char*)malloc(1);
+	_buffer = (char*)malloc(1);
 	_buffer[0] = 0;
 	_len = 0;
 }
@@ -112,14 +148,14 @@ ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, ptrdiff_
 			_buffer = nullptr;
 			_len = 0;
 		} else {
-			_buffer = (unsigned char*)malloc(1);
+			_buffer = (char*)malloc(1);
 			_buffer[0] = 0;
 			_len = 0;
 		}
 	} else {
 		if (len < 0)
 			len = (ptrdiff_t)strlen(str);
-		_buffer = (unsigned char*)malloc((size_t)len + 1);
+		_buffer = (char*)malloc((size_t)len + 1);
 		memcpy(_buffer, str, (size_t)len);
 		_len = (size_t)len;
 		_buffer[_len] = 0;
@@ -128,7 +164,7 @@ ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, ptrdiff_
 
 ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, size_t offset, size_t count)
 :_hash(0) {
-	_buffer = (unsigned char*) malloc(count + 1);
+	_buffer = (char*) malloc(count + 1);
 	if (count > 0)
 		memcpy(_buffer, str + offset, count);
 	_len = count;
@@ -139,7 +175,7 @@ ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const ASCIICaseInsensitiv
 	if (other._buffer == nullptr) {
 		_buffer = nullptr;
 	} else {
-		_buffer = (unsigned char*) malloc(other._len + 1);
+		_buffer = (char*) malloc(other._len + 1);
 		memcpy(_buffer, other._buffer, other._len + 1);
 	}
 
@@ -164,15 +200,20 @@ bool ASCIICaseInsensitiveString::equals(const ASCIICaseInsensitiveString& other)
 	return equalsIgnoreCase(other);
 }
 
-bool ASCIICaseInsensitiveString::equalsIgnoreCase(const ASCIICaseInsensitiveString& other) const {
+bool ASCIICaseInsensitiveString::equals(const BasicString& other) const {
+	return equalsIgnoreCase(other);
+}
+
+bool ASCIICaseInsensitiveString::equalsIgnoreCase(const BasicString& other) const {
+	const char *otherBuffer = other.c_str();
 	if (_buffer == nullptr)
-		return (other._buffer == nullptr);
-	if (other._buffer == nullptr)
+		return (otherBuffer == nullptr);
+	if (otherBuffer == nullptr)
 		return _buffer == nullptr;
-	if (_buffer == other._buffer)
+	if (_buffer == otherBuffer)
 		return true;
-	if (_len == other._len)
-		return !strcasecmp((char*)_buffer, (char*)other._buffer);
+	if (_len == other.length())
+		return !strcasecmp(_buffer, otherBuffer);
 	return false;
 }
 
@@ -182,7 +223,7 @@ int32_t ASCIICaseInsensitiveString::hashCode() const {
 	int h = _hash;
 	if (h == 0 && _len > 0) {
 		for (size_t i = 0; i < _len; i++)
-			h = 31 * h + _toLower[_buffer[i]];
+			h = 31 * h + _toLower[(unsigned char)_buffer[i]];
 		_hash = h;
 	}
 	return h;

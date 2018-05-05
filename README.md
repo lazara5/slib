@@ -8,6 +8,7 @@ Application bootstrapping and general utility library. It handles:
   * Runtime type system (class names, instanceof and casts only, limited to string, numeric and collection types)
   * Basic threading and concurrency
   * File manipulation
+  * Expression evaluator (still incomplete)
 
 Currently Linux only. Requires a compiler with C++11 support.
 

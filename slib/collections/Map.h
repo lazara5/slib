@@ -33,8 +33,10 @@ public:
  * @see LinkedHashMap
  */
 template <class K, class V,
-		  class Pred = std::equal_to<K> >
+		  class Pred = std::equal_to<K>>
 class Map : virtual public Object, public ValueProvider<K, V> {
+public:
+	static Class const* _class;
 public:
 	class Entry {
 	public:
@@ -46,8 +48,19 @@ public:
 public:
 	virtual ~Map() {}
 
-	virtual std::shared_ptr<V> put(const K& key, const V& value) = 0;
 	virtual std::shared_ptr<V> put(const K& key, std::shared_ptr<V> const& value) = 0;
+
+	template <class AVT, typename... A>
+	std::shared_ptr<V> emplace(const K& key, A&&... args) {
+		return put(key, std::make_shared<AVT>(std::forward<A>(args)...));
+	}
+
+	template <class AVT>
+	std::shared_ptr<V> emplace(const K& key, AVT const& value) {
+		static_assert(std::is_same<AVT, V>::value, "Only use with the exact value type");
+		return put(key, std::make_shared<V>(value));
+	}
+
 	virtual std::shared_ptr<V> get(const K& key) const override = 0;
 	virtual const Entry *getEntry(const K& key) const = 0;
 	virtual std::shared_ptr<V> remove(const K& key) = 0;
@@ -61,6 +74,9 @@ public:
 public:
 	virtual ConstIterator<Entry> constIterator() const = 0;
 };
+
+template <class K, class V, class Pred>
+Class const* Map<K, V, Pred>::_class = MAPCLASS();
 
 } // namespace
 

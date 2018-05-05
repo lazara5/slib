@@ -19,16 +19,16 @@ namespace slib {
 std::shared_ptr<std::string> ConfigProcessor::processLine(const std::string& name,
 														  const std::string& rawProperty) {
 	std::shared_ptr<std::string> value = StringUtils::interpolate(rawProperty, *this, false);
-	if (String::startsWith(name, '@')) {
+	if (String::startsWith(Ptr(name), '@')) {
 		if (!_vars)
 			_vars = std::make_unique<VarMap>();
-		_vars->put(String::substring(name, 1), value);
+		_vars->put(String::substring(Ptr(name), 1), value);
 		return nullptr;
-	} else if (String::endsWith(name, ']')) {
-		ptrdiff_t openBracket = String::lastIndexOf(name, '[');
+	} else if (String::endsWith(Ptr(name), ']')) {
+		ptrdiff_t openBracket = String::lastIndexOf(Ptr(name), '[');
 		if (openBracket > 0) {
-			std::string mapName = String::trim(String::substring(name, 0, (size_t)openBracket));
-			std::string mapEntry = String::trim(String::substring(name, (size_t)openBracket + 1, name.length() - 1));
+			std::string mapName = String::trim(Ptr(String::substring(Ptr(name), 0, (size_t)openBracket)));
+			std::string mapEntry = String::trim(Ptr(String::substring(Ptr(name), (size_t)openBracket + 1, name.length() - 1)));
 			if ((!mapName.empty()) && (!mapEntry.empty())) {
 				bool sunk = sink(mapName, mapEntry, *value);
 				if (sunk)
@@ -53,9 +53,9 @@ std::shared_ptr<std::string> ConfigProcessor::get(std::string const& name) const
 		value = _vars->get(name);
 	if ((!value) && _sources) {
 		std::ptrdiff_t dotPos;
-		if ((dotPos = String::lastIndexOf(name, '.')) > 0) {
-			std::string providerName = String::substring(name, 0, (size_t)dotPos);
-			std::string propertyName = String::substring(name, (size_t)dotPos + 1);
+		if ((dotPos = String::lastIndexOf(Ptr(name), '.')) > 0) {
+			std::string providerName = String::substring(Ptr(name), 0, (size_t)dotPos);
+			std::string propertyName = String::substring(Ptr(name), (size_t)dotPos + 1);
 			SourceMapConstIter provider = _sources->find(providerName);
 			if (provider != _sources->end())
 				return provider->second->get(propertyName);
@@ -71,9 +71,9 @@ bool ConfigProcessor::containsKey(std::string const& name) const {
 		return true;
 	if (_sources) {
 		std::ptrdiff_t dotPos;
-		if ((dotPos = String::lastIndexOf(name, '.')) > 0) {
-			std::string providerName = String::substring(name, 0, (size_t)dotPos);
-			std::string propertyName = String::substring(name, (size_t)dotPos + 1);
+		if ((dotPos = String::lastIndexOf(Ptr(name), '.')) > 0) {
+			std::string providerName = String::substring(Ptr(name), 0, (size_t)dotPos);
+			std::string propertyName = String::substring(Ptr(name), (size_t)dotPos + 1);
 			SourceMapConstIter provider = _sources->find(providerName);
 			if ((provider != _sources->end()) && (provider->second->containsKey(propertyName)))
 				return true;
@@ -85,10 +85,10 @@ bool ConfigProcessor::containsKey(std::string const& name) const {
 std::shared_ptr<std::string> SimpleConfigProcessor::processLine(const std::string& name,
 																const std::string& rawProperty) {
 	std::shared_ptr<std::string> value = StringUtils::interpolate(rawProperty, *this, true);
-	if (String::startsWith(name, '@')) {
+	if (String::startsWith(Ptr(name), '@')) {
 		if (!_vars)
 			_vars = std::make_unique<VarMap>();
-		_vars->put(String::substring(name, 1), value);
+		_vars->put(String::substring(Ptr(name), 1), value);
 		return nullptr;
 	}
 	return value;

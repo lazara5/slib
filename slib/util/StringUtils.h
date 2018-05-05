@@ -9,7 +9,7 @@
 #include "slib/util/PropertySource.h"
 #include "slib/collections/Map.h"
 #include "slib/StringBuilder.h"
-
+#include "slib/util/TemplateUtils.h"
 
 #include "fmt/format.h"
 
@@ -47,6 +47,32 @@ public:
 
 	static std::string formatErrno() {
 		return formatErrno(errno);
+	}
+
+	static bool isBlank(const char *str, size_t len) {
+		if ((!str) || (len == 0))
+			return true;
+		for (size_t i = 0; i < len; i++) {
+			if (!std::isspace(str[i]))
+				return false;
+		}
+		return true;
+	}
+
+	template <class S>
+	static bool isBlank(S const* str) {
+		const char *buffer = str ? str->c_str() : nullptr;
+		size_t len = str ? str->length() : 0;
+		return isBlank(buffer, len);
+	}
+
+	template <class S>
+	static bool isEmpty(S const* str) {
+		const char *buffer = str ? str->c_str() : nullptr;
+		size_t len = str ? str->length() : 0;
+		if ((!buffer) || (len == 0))
+			return true;
+		return false;
 	}
 
 	static std::shared_ptr<std::string> interpolate(std::string const& src,

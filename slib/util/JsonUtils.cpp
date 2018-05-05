@@ -53,9 +53,9 @@ const Value *getValue(const char *where, const char *path, const Value &v) {
 
 void checkArrayIndex(const char *where, unsigned int index, const Value &v) {
 	if (!v.IsArray())
-		throw InvalidValueException(where, UInt::toString(index).c_str(), "Array params expected");
+		throw InvalidValueException(where, UInt::toString(index)->c_str(), "Array params expected");
 	if (index >= v.Size())
-		throw InvalidValueException(where, UInt::toString(index).c_str(), "Param not present in array");
+		throw InvalidValueException(where, UInt::toString(index)->c_str(), "Param not present in array");
 }
 
 /** @throws InvalidValueException */
@@ -64,7 +64,7 @@ std::string getString(const char *where, unsigned int index, const Value &v) {
 	const Value& value = v[index];
 	if (value.IsString())
 		return value.GetString();
-	throw InvalidValueException(where, UInt::toString(index).c_str(), "String expected");
+	throw InvalidValueException(where, UInt::toString(index)->c_str(), "String expected");
 }
 
 /** @throws InvalidValueException */
@@ -73,7 +73,7 @@ const rapidjson::Value *getStringValue(const char *where, unsigned int index, co
 	const Value& value = v[index];
 	if (value.IsString())
 		return &value;
-	throw InvalidValueException(where, UInt::toString(index).c_str(), "String expected");
+	throw InvalidValueException(where, UInt::toString(index)->c_str(), "String expected");
 }
 
 /** @throws InvalidValueException */
@@ -82,7 +82,7 @@ bool getBool(const char *where, unsigned int index, const Value &v) {
 	const Value& value = v[index];
 	if (value.IsBool())
 		return value.GetBool();
-	throw InvalidValueException(where, UInt::toString(index).c_str(), "Bool expected");
+	throw InvalidValueException(where, UInt::toString(index)->c_str(), "Bool expected");
 }
 
 } // namespace json

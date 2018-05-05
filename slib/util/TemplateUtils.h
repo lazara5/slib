@@ -10,22 +10,27 @@
 namespace slib {
 
 template <typename T>
-T const* constPtr(T const& obj) {
+T const* Ptr(T const& obj) {
 	return &obj;
 }
 
 template <typename T>
-T const* constPtr(T const* obj) {
+T const* Ptr(T const* obj) {
 	return obj;
 }
 
 template <typename T>
-T const* constPtr(std::shared_ptr<T> const& obj) {
+T const* Ptr(T * obj) {
+	return obj;
+}
+
+template <typename T>
+T const* Ptr(std::shared_ptr<T> const& obj) {
 	return obj.get();
 }
 
 template <typename T>
-T const* constPtr(std::unique_ptr<T> const& obj) {
+T const* Ptr(std::unique_ptr<T> const& obj) {
 	return obj.get();
 }
 

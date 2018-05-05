@@ -23,6 +23,7 @@ set(SLIB_SOURCES slib/Class.cpp
                  slib/io/FileInputStream.cpp
                  slib/io/OutputStream.cpp
                  slib/io/FileOutputStream.cpp
+				 slib/text/StringCharacterIterator.cpp
                  slib/util/CmdLine.cpp
                  slib/util/Config.cpp
                  slib/util/FileUtils.cpp
@@ -34,6 +35,9 @@ set(SLIB_SOURCES slib/Class.cpp
                  slib/util/StringUtils.cpp
                  slib/util/System.cpp
                  slib/util/SystemInfo.cpp
+				 slib/util/expr/ExpressionEvaluator.cpp
+				 slib/util/expr/ExpressionInputStream.cpp
+				 slib/util/expr/Resolver.cpp
                  slib/StringBuilder.cpp)
 
 if(WITH_JSON)

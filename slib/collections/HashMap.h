@@ -221,8 +221,8 @@ public:
 		_loadFactor = loadFactor;
 		_threshold = (int)(capacity * loadFactor);
 		_table = (Entry**)malloc(capacity * sizeof(Entry*));
-        if (!_table)
-            throw OutOfMemoryError(_HERE_);
+		if (!_table)
+			throw OutOfMemoryError(_HERE_);
 		_tableLength = capacity;
 		memset(_table, 0, capacity * sizeof(Entry*));
 		_size = 0;
@@ -342,10 +342,6 @@ public:
 	 *		(A <i>'NULL'</i> reference as a return value can also indicate that the map
 	 *		previously associated a <i>'NULL'</i> reference with <i>key</i>.)
 	 */
-	std::shared_ptr<V> put(const K& key, const V& value) {
-		return put(key, std::make_shared<V>(value));
-	}
-
 	std::shared_ptr<V> put(const K& key, std::shared_ptr<V> const& value) {
 		int hash = _smudge(std::hash<K>()(key));
 		int i = indexFor(hash, _tableLength);
@@ -384,7 +380,7 @@ public:
 		addEntry(hash, key, value, i);
 	}
 
-	template<class K1, class V1>
+	/*template<class K1, class V1>
 	void emplace(K1&& k, V1&& v) {
 		V value(std::forward<V1>(v));
 		emplace(k, std::make_shared<V1>(std::move(value)));
@@ -403,11 +399,11 @@ public:
 			}
 		}
 		emplaceEntry(hash, key, v, i);
-	}
+	}*/
 
 	void put(std::initializer_list<std::pair<const K, V> > args) {
 		for (auto i = args.begin(); i != args.end(); ++i)
-			put(i->first, i->second);
+			put(i->first, std::make_shared<V>(i->second));
 	}
 
 	/**

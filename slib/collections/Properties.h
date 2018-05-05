@@ -92,7 +92,7 @@ public:
 	 * @param value the value corresponding to the key
 	 */
 	virtual void setProperty(std::string const& name, std::string const& value) {
-		put(name, value);
+		emplace(name, value);
 	}
 
 	/**
@@ -195,7 +195,7 @@ public:
 	template <int32_t MIN = slib::Integer::MIN_VALUE, int32_t MAX = slib::Integer::MAX_VALUE>
 	int32_t getInt(const std::string& name) const {
 		try {
-			return rangeCheck<int32_t, MIN, MAX>(_HERE_, Integer::parseInt(getString(name)));
+			return rangeCheck<int32_t, MIN, MAX>(_HERE_, Integer::parseInt(Ptr(getString(name))));
 		} catch (NumberFormatException const& e) {
 			throw NumberFormatException(_HERE_, fmt::format("Invalid integer value: {} ({})", name, e.getMessage()).c_str());
 		}

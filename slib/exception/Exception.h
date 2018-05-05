@@ -26,7 +26,9 @@ protected:
 	, _className(className) {
 	}
 	
-	Exception(const char *where, const char *className, const Exception& e);
+	Exception(const char *where, const char *className, Exception const& e);
+
+	Exception(const char *where, const char *className, const char *msg, Exception const& e);
 public:
 	/** 
 	 * Constructs an Exception object with a given location and error message 

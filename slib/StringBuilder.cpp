@@ -101,6 +101,9 @@ StringBuilder::StringBuilder(StringBuilder &&other) {
 	other._hash = 0;
 }
 
+StringBuilder::StringBuilder(BasicString const& other)
+:StringBuilder(other.c_str(), (ptrdiff_t)other.length()) {}
+
 StringBuilder::StringBuilder(std::string const& other)
 :StringBuilder(other.c_str(), (ptrdiff_t)other.length()) {}
 
@@ -159,11 +162,11 @@ bool StringBuilder::operator ==(StringBuilder const& other) const {
 }
 
 bool StringBuilder::equals(StringBuilder const& other) const {
-	return String::equals(*this, other);
+	return String::equals(this, Ptr(other));
 }
 
 bool StringBuilder::equalsIgnoreCase(StringBuilder const& other) const {
-	return String::equalsIgnoreCase(*this, other);
+	return String::equalsIgnoreCase(this, Ptr(other));
 }
 
 bool StringBuilder::operator <(StringBuilder const& other) const {
@@ -187,27 +190,27 @@ ptrdiff_t StringBuilder::indexOf(char ch) const {
 }
 
 ptrdiff_t StringBuilder::indexOf(char ch, size_t fromIndex) const {
-	return String::indexOf(*this, ch, fromIndex);
+	return String::indexOf(this, ch, fromIndex);
 }
 
 ptrdiff_t StringBuilder::indexOf(StringBuilder const& sub) const {
-	return String::indexOf(*this, sub);
+	return String::indexOf(this, Ptr(sub));
 }
 
 ptrdiff_t StringBuilder::indexOf(StringBuilder const& sub, size_t fromIndex) const {
-	return String::indexOf(*this, sub, fromIndex);
+	return String::indexOf(this, Ptr(sub), fromIndex);
 }
 
 ptrdiff_t StringBuilder::lastIndexOf(char ch) const {
-	return String::lastIndexOf(*this, ch);
+	return String::lastIndexOf(this, ch);
 }
 
 ptrdiff_t StringBuilder::lastIndexOf(char ch, ptrdiff_t fromIndex) const {
-	return String::lastIndexOf(*this, ch, fromIndex);
+	return String::lastIndexOf(this, ch, fromIndex);
 }
 
 ptrdiff_t StringBuilder::lastIndexOf(StringBuilder const& sub) const {
-	return String::lastIndexOf(*this, sub);
+	return String::lastIndexOf(this, Ptr(sub));
 }
 
 StringBuilder StringBuilder::substring(size_t beginIndex) const {
@@ -262,23 +265,23 @@ StringBuilder StringBuilder::toUpperCase() const {
 }
 
 bool StringBuilder::startsWith(char prefix) const {
-	return String::startsWith(*this, prefix);
+	return String::startsWith(this, prefix);
 }
 
 bool StringBuilder::startsWith(StringBuilder const& prefix) const {
-	return String::startsWith(*this, prefix);
+	return String::startsWith(this, Ptr(prefix));
 }
 
 bool StringBuilder::startsWith(StringBuilder const& prefix, ptrdiff_t offset) const {
-	return String::startsWith(*this, prefix, offset);
+	return String::startsWith(this, Ptr(prefix), offset);
 }
 
 bool StringBuilder::endsWith(char suffix) const {
-	return String::endsWith(*this, suffix);
+	return String::endsWith(this, suffix);
 }
 
 bool StringBuilder::endsWith(StringBuilder const& suffix) const {
-	return String::endsWith(*this, suffix);
+	return String::endsWith(this, Ptr(suffix));
 }
 
 int32_t StringBuilder::hashCode() const {
@@ -437,15 +440,16 @@ const StringBuilder StringBuilder::operator +(const char* other) const {
 
 // append StringBuilder
 
-StringBuilder& StringBuilder::add(StringBuilder const& src) {
-	if (src.isNull())
+StringBuilder& StringBuilder::add(BasicString const& other) {
+	const char *otherBuffer = other.c_str();
+	if (otherBuffer == nullptr)
 		return *this;
 	_hash = 0;
-	size_t len = src.length();
-	if (_len + len + 1 > _size)
-		grow(_len + len + 1);
-	memcpy(_buffer + _len, src.c_str(), len + 1);
-	_len += len;
+	size_t otherLen = other.length();
+	if (_len + otherLen + 1 > _size)
+		grow(_len + otherLen + 1);
+	memcpy(_buffer + _len, otherBuffer, otherLen + 1);
+	_len += otherLen;
 	_buffer[_len] = 0;
 	
 	return *this;

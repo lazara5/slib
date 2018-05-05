@@ -8,6 +8,7 @@
 #include "slib/Object.h"
 #include "slib/String.h"
 #include "slib/exception/NullPointerException.h"
+#include "slib/compat/cppbits/make_unique.h"
 
 #include <string>
 #include <sstream>
@@ -45,12 +46,13 @@ public:
 	:StringBuilder(std::get<0>(t), std::get<1>(t), std::get<2>(t)) {}
 
 	StringBuilder(StringBuilder const& other);
+	StringBuilder(BasicString const& other);
 	StringBuilder(std::string const& other);
 
 	/** move constructor */
 	StringBuilder(StringBuilder &&other);
 
-	virtual ~StringBuilder();
+	virtual ~StringBuilder() override;
 
 	// conversion constructors
 	StringBuilder(int32_t val);
@@ -99,7 +101,7 @@ public:
 
 	// appenders
 	StringBuilder& add(const char *src, std::ptrdiff_t len = -1);
-	StringBuilder& add(StringBuilder const& src);
+	StringBuilder& add(BasicString const& src);
 	StringBuilder& add(ASCIICaseInsensitiveString const& src);
 	StringBuilder& add(std::string const& src);
 
@@ -405,6 +407,10 @@ public:
 	 */
 	bool isNull() const {
 		return (_buffer == nullptr);
+	}
+
+	virtual std::unique_ptr<String> toString() const override {
+		return std::make_unique<String>((const char *)_buffer, _len);
 	}
 
 	/**

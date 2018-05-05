@@ -98,7 +98,7 @@ int FileUtils::mkdirs(const std::string& path, const std::string& modeSpec) {
 bool FileUtils::isPathAbsolute(const std::string& path) {
 	if (path.empty())
 		return false;
-	if (String::startsWith(path, '/'))
+	if (String::startsWith(Ptr(path), '/'))
 		return true;
 	return false;
 }
@@ -109,7 +109,7 @@ std::string FileUtils::buildPath(const std::string& dir, const std::string& name
 		return name;
 	if (!isPathAbsolute(name)) {
 		size_t l = dir.size();
-		if (l > 0 && String::endsWith(dir, '/'))
+		if (l > 0 && String::endsWith(Ptr(dir), '/'))
 			path = dir + name;
 		else
 			path = dir + '/' + name;
@@ -118,18 +118,18 @@ std::string FileUtils::buildPath(const std::string& dir, const std::string& name
 }
 
 std::string FileUtils::getPath(const std::string& fileName) {
-	std::ptrdiff_t lastSep = String::lastIndexOf(fileName, '/');
+	std::ptrdiff_t lastSep = String::lastIndexOf(Ptr(fileName), '/');
 	if (lastSep < 0)
 		return fileName;
-	return String::substring(fileName, 0, (size_t)lastSep);
+	return String::substring(Ptr(fileName), 0, (size_t)lastSep);
 }
 
 ptrdiff_t indexOfLastSep(const std::string& fileName) {
-	return String::lastIndexOf(fileName, '/');
+	return String::lastIndexOf(Ptr(fileName), '/');
 }
 
 ptrdiff_t indexOfExtSep(const std::string& fileName) {
-	ptrdiff_t extPos = String::lastIndexOf(fileName, '.');
+	ptrdiff_t extPos = String::lastIndexOf(Ptr(fileName), '.');
 	ptrdiff_t lastSep = indexOfLastSep(fileName);
 	if (lastSep > extPos)
 		return -1;
@@ -140,7 +140,7 @@ std::string FileUtils::getExtension(const std::string& fileName) {
 	ptrdiff_t index = indexOfExtSep(fileName);
 	if (index < 0)
 		return "";
-	return String::substring(fileName, (size_t)index + 1);
+	return String::substring(Ptr(fileName), (size_t)index + 1);
 }
 
 bool isSep(char ch) {
@@ -192,8 +192,8 @@ ptrdiff_t getPrefixLength(const std::string& fileName) {
 		return isSep(c0) ? 1 : 0;
 	} else {
 		if (c0 == '~') {
-			ptrdiff_t posUnix = String::indexOf(fileName, UNIX_SEPARATOR, 1);
-			ptrdiff_t posWin = String::indexOf(fileName, WINDOWS_SEPARATOR, 1);
+			ptrdiff_t posUnix = String::indexOf(Ptr(fileName), UNIX_SEPARATOR, 1);
+			ptrdiff_t posWin = String::indexOf(Ptr(fileName), WINDOWS_SEPARATOR, 1);
 			if (posUnix < 0 && posWin < 0)
 				return (ptrdiff_t)len + 1;  // return a length greater than the input
 
@@ -213,8 +213,8 @@ ptrdiff_t getPrefixLength(const std::string& fileName) {
 				return 1;
 			return -1;
 		} else if (isSep(c0) && isSep(c1)) {
-			ptrdiff_t posUnix = String::indexOf(fileName, UNIX_SEPARATOR, 2);
-			ptrdiff_t posWin = String::indexOf(fileName, WINDOWS_SEPARATOR, 2);
+			ptrdiff_t posUnix = String::indexOf(Ptr(fileName), UNIX_SEPARATOR, 2);
+			ptrdiff_t posWin = String::indexOf(Ptr(fileName), WINDOWS_SEPARATOR, 2);
 			if ((posUnix == -1 && posWin == -1) || posUnix == 2 || posWin == 2)
 				return -1;
 			posUnix = posUnix < 0 ? posWin : posUnix;

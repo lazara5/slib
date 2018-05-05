@@ -8,9 +8,15 @@
 
 namespace slib {
 
-Exception::Exception(const char *where, const char *className, const Exception& e)
+Exception::Exception(const char *where, const char *className, Exception const& e)
 	: _where(where)
 	, _errorMessage(fmt::format("caused by {} [{} ({})]", e.getName(), e.getMessage(), e.where()).c_str())
+	, _className(className) {
+	}
+
+Exception::Exception(const char *where, const char *className, const char *msg, Exception const& e)
+	: _where(where)
+	, _errorMessage(fmt::format("{}, caused by {} [{} ({})]", msg, e.getName(), e.getMessage(), e.where()).c_str())
 	, _className(className) {
 	}
 	

@@ -6,6 +6,7 @@
 #define H_SLIB_CLASS_H
 
 #include "slib/exception/NullPointerException.h"
+#include "slib/compat/memory.h"
 
 #include <stdint.h>
 
@@ -109,12 +110,15 @@ constexpr int NPRIMES = sizeof(PRIMES) / sizeof(unsigned int);
 
 typedef enum {
 	OBJECT,
+	VOID,
 		NUMBER,
 			INTEGER,
 			UINT,
 			LONG,
 			ULONG,
 			DOUBLE,
+		CONSTITERABLE,
+			ITERABLE,
 		COLLECTION,
 			QUEUE,
 				PRIORITYQUEUE,
@@ -130,16 +134,21 @@ typedef enum {
 			STRINGBUILDER,
 		BOOLEAN,
 // Expression evaluator
-		RESOLVER
+		RESOLVER,
+		FUNCTION,
+		EXPRESSION
 } TypeIndex;
 
-constexpr uint64_t OBJECTID = typeId<1>();
+constexpr uint64_t OBJECTID = typeId<BASEID(OBJECT)>();
+constexpr uint64_t VOIDID = typeId<BASEID(VOID)>();
 	constexpr uint64_t NUMBERID = typeId<BASEID(NUMBER), OBJECTID>();
 		constexpr uint64_t INTEGERID = typeId<BASEID(INTEGER), NUMBERID>();
 		constexpr uint64_t UINTID = typeId<BASEID(UINT), NUMBERID>();
 		constexpr uint64_t LONGID = typeId<BASEID(LONG), NUMBERID>();
 		constexpr uint64_t ULONGID = typeId<BASEID(ULONG), NUMBERID>();
 		constexpr uint64_t DOUBLEID = typeId<BASEID(DOUBLE), NUMBERID>();
+	constexpr uint64_t CONSTITERABLEID = typeId<BASEID(CONSTITERABLE), OBJECTID>();
+		constexpr uint64_t ITERABLEID = typeId<BASEID(ITERABLE), OBJECTID>();
 	constexpr uint64_t COLLECTIONID = typeId<BASEID(COLLECTION), OBJECTID>();
 		constexpr uint64_t QUEUEID = typeId<BASEID(QUEUE), COLLECTIONID>();
 			constexpr uint64_t PRIORITYQUEUEID = typeId<BASEID(PRIORITYQUEUE), QUEUEID>();
@@ -156,6 +165,8 @@ constexpr uint64_t OBJECTID = typeId<1>();
 	constexpr uint64_t BOOLEANID = typeId<BASEID(BOOLEAN), OBJECTID>();
 // Expression evaluator
 	constexpr uint64_t RESOLVERID = typeId<BASEID(RESOLVER), OBJECTID>();
+	constexpr uint64_t FUNCTIONID = typeId<BASEID(FUNCTION), OBJECTID>();
+	constexpr uint64_t EXPRESSIONID = typeId<BASEID(EXPRESSION), OBJECTID>();
 class ClassCastException : public Exception {
 public:
 	ClassCastException(const char *where, const char *c1, const char *c2);
@@ -174,6 +185,10 @@ public:
 
 	Class(Class const&) = delete;
 	Class& operator=(Class const&) = delete;
+
+	bool operator ==(Class const& other) const {
+		return _typeId == other._typeId;
+	}
 
 	std::string const& getName() const {
 		return _name;
@@ -195,20 +210,61 @@ public:
 		if (from != nullptr) {
 			// Check if it is convertible to the base class or to itself
 			if (std::is_convertible<typename std::remove_pointer<V*>::type, typename std::remove_pointer<T*>::type>::value == true)
-				return reinterpret_cast<T*>(from);
+				return dynamic_cast<T*>(from);
 
-			bool canCast = T::_class->isAssignableFrom(from->getClass());
+			bool canCast = T::CLASS()->isAssignableFrom(from->getClass());
 			if (canCast)
-				return reinterpret_cast<T*>(from);
+				return dynamic_cast<T*>(from);
 
-			throw ClassCastException(_HERE_, V::_class->getName().c_str(), T::_class->getName().c_str());
+			throw ClassCastException(_HERE_, V::CLASS()->getName().c_str(), T::CLASS()->getName().c_str());
 		}
 
 		return nullptr;
 	}
 
 	template <class T, class V>
-	static T* cast(std::shared_ptr<V> const& from) {
+	static T const* constCast(V const* from) {
+		if (from != nullptr) {
+			// Check if it is convertible to the base class or to itself
+			if (std::is_convertible<typename std::remove_pointer<V*>::type, typename std::remove_pointer<T*>::type>::value == true)
+				return dynamic_cast<T const*>(from);
+
+			bool canCast = T::CLASS()->isAssignableFrom(from->getClass());
+			if (canCast)
+				return dynamic_cast<T const*>(from);
+
+			throw ClassCastException(_HERE_, V::CLASS()->getName().c_str(), T::CLASS()->getName().c_str());
+		}
+
+		return nullptr;
+	}
+
+	template <class T, class V>
+	static std::shared_ptr<T> cast(std::shared_ptr<V> const& from) {
+		if (from) {
+			// Check if it is convertible to the base class or to itself
+			if (std::is_convertible<typename std::remove_pointer<V*>::type, typename std::remove_pointer<T*>::type>::value == true)
+				return std::dynamic_pointer_cast<T>(from);
+
+			bool canCast = T::CLASS()->isAssignableFrom(from->getClass());
+			if (canCast)
+				return std::dynamic_pointer_cast<T>(from);
+
+			throw ClassCastException(_HERE_, V::CLASS()->getName().c_str(), T::CLASS()->getName().c_str());
+		}
+
+		return nullptr;
+	}
+
+	template <class T, class V>
+	static T* castPtr(std::shared_ptr<V> const& from) {
+		if (!from)
+			return nullptr;
+		return cast<T>(from.get());
+	}
+
+	template <class T, class V>
+	static T* castPtr(std::unique_ptr<V> const& from) {
 		if (!from)
 			return nullptr;
 		return cast<T>(from.get());
@@ -216,13 +272,16 @@ public:
 };
 
 extern const Class* OBJECTCLASS();
+extern const Class* VOIDCLASS();
 extern const Class* NUMBERCLASS();
 extern const Class* INTEGERCLASS();
 extern const Class* UINTCLASS();
 extern const Class* LONGCLASS();
 extern const Class* ULONGCLASS();
 extern const Class* DOUBLECLASS();
+extern const Class* CONSTITERABLECLASS();
 extern const Class* PRIORITYQUEUECLASS();
+extern const Class* LISTCLASS();
 extern const Class* ARRAYLISTCLASS();
 extern const Class* MAPCLASS();
 extern const Class* HASHMAPCLASS();
@@ -234,6 +293,15 @@ extern const Class* STRINGBUILDERCLASS();
 extern const Class* BOOLEANCLASS();
 // Expression evaluator
 extern const Class* RESOLVERCLASS();
+extern const Class* FUNCTIONCLASS();
+extern const Class* EXPRESSIONCLASS();
+
+class Void {
+public:
+	static Class const* CLASS() {
+		return VOIDCLASS();
+	}
+};
 
 } // namespace slib
 

@@ -61,6 +61,10 @@ public:
 	StringBuilder(uint64_t val);
 	StringBuilder(double val);
 
+	static Class const* CLASS() {
+		return STRINGBUILDERCLASS();
+	}
+
 	virtual Class const* getClass() const override {
 		return STRINGBUILDERCLASS();
 	}

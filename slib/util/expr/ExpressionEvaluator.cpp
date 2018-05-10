@@ -3,9 +3,42 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "slib/util/expr/ExpressionEvaluator.h"
+#include "slib/util/expr/Function.h"
 
 namespace slib {
 namespace expr {
+
+std::shared_ptr<Object> ExpressionEvaluator::InternalResolver::getVar(const String &key) {
+	std::shared_ptr<Object> value = _externalResolver->getVar(key);
+
+	if (!value)
+		value = _builtins->get(key);
+
+	return value;
+}
+
+std::unique_ptr<String> ExpressionEvaluator::strExpressionValue(std::shared_ptr<BasicString> const& input,
+																std::shared_ptr<Resolver> const& resolver) {
+	return strExpressionValue(std::make_shared<ExpressionInputStream>(input),
+							  std::make_shared<InternalResolver>(resolver));
+}
+
+std::shared_ptr<Object> ExpressionEvaluator::expressionValue(const std::shared_ptr<BasicString> &input, const std::shared_ptr<Resolver> &resolver) {
+	std::shared_ptr<Value> val = expressionValue(std::make_shared<ExpressionInputStream>(input),
+												 std::make_shared<InternalResolver>(resolver));
+	if (val->_value) {
+		if (instanceof<Double>(val->_value)) {
+			double d = Class::cast<Double>(val->_value)->doubleValue();
+			if (Number::isMathematicalInteger(d)) {
+				int32_t i = (int32_t)d;
+				if (i == d)
+					return std::make_shared<Integer>(i);
+				return std::make_shared<Long>((uint64_t)d);
+			}
+		}
+	}
+	return val->_value;
+}
 
 // surrogate values for multi-char operators
 static const int OP_LTE = 500;
@@ -17,7 +50,7 @@ std::unique_ptr<String> ExpressionEvaluator::strExpressionValue(const std::share
 																const std::shared_ptr<Resolver> &resolver) {
 	std::shared_ptr<Value> val = expressionValue(input, resolver);
 	Value::checkNil(*val);
-	if (val->_value->instanceof<Number>()) {
+	if (instanceof<Number>(val->_value)) {
 		double d = Class::cast<Number>(val->_value)->doubleValue();
 		if (Number::isMathematicalInteger(d))
 			return Long::toString((long)d);
@@ -36,7 +69,7 @@ std::shared_ptr<Value> ExpressionEvaluator::expressionValue(std::shared_ptr<Expr
 	while (input->peek() == '+' || input->peek() == '-' ||
 		   input->peek() == '&' || input->peek() == '|' ||
 		   input->peek() == '<' || input->peek() == '>' || input->peek() == '~' ||
-		   input->peek() == '=' || input->peek() == '(') {
+		   input->peek() == '=' ) {
 		int op = input->readChar();
 		if (op == '<') {
 			if (input->peek() == '=') {
@@ -61,45 +94,41 @@ std::shared_ptr<Value> ExpressionEvaluator::expressionValue(std::shared_ptr<Expr
 				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '~{}'", input->peek()).c_str());
 		}
 
-		if (op == '(') {
-			// TODO: function
-		} else {
-			input->skipBlanks();
-			std::shared_ptr<Value> nextVal = prefixTermValue(input, resolver);
-			switch (op) {
-				case '+':
-					val = val->add(nextVal);
-					break;
-				case '-':
-					val = val->subtract(nextVal);
-					break;
-				case '&':
-					val = val->logicalAnd(nextVal);
-					break;
-				case '|':
-					val = val->logicalOr(nextVal);
-					break;
-				case '<':
-					val = std::make_shared<Value>(std::make_shared<Integer>(val->lt(nextVal) ? 1 : 0));
-					break;
-				case OP_LTE:
-					val = std::make_shared<Value>(std::make_shared<Integer>(val->lte(nextVal) ? 1 : 0));
-					break;
-				case '>':
-					val = std::make_shared<Value>(std::make_shared<Integer>(val->gt(nextVal) ? 1 : 0));
-					break;
-				case OP_GTE:
-					val = std::make_shared<Value>(std::make_shared<Integer>(val->gte(nextVal) ? 1 : 0));
-					break;
-				case OP_EQ:
-					val = std::make_shared<Value>(std::make_shared<Integer>(val->eq(nextVal) ? 1 : 0));
-					break;
-				case OP_NEQ:
-					val = std::make_shared<Value>(std::make_shared<Integer>(val->eq(nextVal) ? 0 : 1));
-					break;
-				default:
-					throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
-			}
+		input->skipBlanks();
+		std::shared_ptr<Value> nextVal = prefixTermValue(input, resolver);
+		switch (op) {
+			case '+':
+				val = val->add(nextVal);
+				break;
+			case '-':
+				val = val->subtract(nextVal);
+				break;
+			case '&':
+				val = val->logicalAnd(nextVal);
+				break;
+			case '|':
+				val = val->logicalOr(nextVal);
+				break;
+			case '<':
+				val = std::make_shared<Value>(std::make_shared<Integer>(val->lt(nextVal) ? 1 : 0));
+				break;
+			case OP_LTE:
+				val = std::make_shared<Value>(std::make_shared<Integer>(val->lte(nextVal) ? 1 : 0));
+				break;
+			case '>':
+				val = std::make_shared<Value>(std::make_shared<Integer>(val->gt(nextVal) ? 1 : 0));
+				break;
+			case OP_GTE:
+				val = std::make_shared<Value>(std::make_shared<Integer>(val->gte(nextVal) ? 1 : 0));
+				break;
+			case OP_EQ:
+				val = std::make_shared<Value>(std::make_shared<Integer>(val->eq(nextVal) ? 1 : 0));
+				break;
+			case OP_NEQ:
+				val = std::make_shared<Value>(std::make_shared<Integer>(val->eq(nextVal) ? 0 : 1));
+				break;
+			default:
+				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
 		}
 
 		input->skipBlanks();
@@ -170,6 +199,49 @@ std::shared_ptr<Value> ExpressionEvaluator::factorValue(std::shared_ptr<Expressi
 					val = val->index(arg);
 				}
 				break;
+			case '(':
+				{
+					if (!instanceof<Function>(val->_value))
+						throw EvaluationException(_HERE_, "Not a function");
+
+					input->readChar();
+
+					// evaluate function
+					std::shared_ptr<Function> func = Class::cast<Function>(val->_value);
+					std::shared_ptr<String> symbolName = val->getName();
+					if (!symbolName)
+						symbolName = std::make_shared<String>("<unknown>");
+					FunctionArgs params(func, symbolName);
+
+					// check for 0 parameters
+					input->skipBlanks();
+					if (input->peek() == ')')
+						input->readChar();
+					else {
+						do {
+							Class const* argClass = params.peek();
+							if (*argClass == *EXPRESSIONCLASS())
+								params.add(input->readArg());
+							else
+								params.add(expressionValue(input, resolver)->_value);
+							input->skipBlanks();
+							if (input->peek() == ',') {
+								input->readChar();
+								continue;
+							} else if (input->peek() == ')') {
+								input->readChar();
+								break;
+							} else
+								throw SyntaxErrorException(_HERE_, fmt::format("Missing right paranthesis after function arguments ({})", *symbolName).c_str());
+						} while (true);
+					}
+					try {
+						val = func->evaluate(resolver, params);
+					} catch (ClassCastException const& e) {
+						throw CastException(_HERE_, fmt::format("Cast exception in function {}()", *symbolName).c_str(), e);
+					}
+				}
+				break;
 			case '.':
 				{
 					input->readChar();
@@ -223,7 +295,6 @@ std::shared_ptr<Value> ExpressionEvaluator::evaluateSymbol(std::shared_ptr<Expre
 		return std::make_shared<Value>(value, std::move(symbolName));
 	return Value::Nil(std::move(symbolName));
 }
-
 
 } // namespace expr
 } // namespace slib

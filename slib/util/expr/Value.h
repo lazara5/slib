@@ -27,6 +27,10 @@ public:
 	:_value(value)
 	,_name(name) {}
 
+	static std::shared_ptr<Value> of(std::shared_ptr<Object> const& value) {
+		return std::make_shared<Value>(value);
+	}
+
 	static std::shared_ptr<Value> Nil() {
 		return std::make_shared<Value>(nullptr, nullptr);
 	}
@@ -35,12 +39,20 @@ public:
 		return std::make_shared<Value>(nullptr, varName);
 	}
 
+	std::shared_ptr<Object> getValue() const {
+		return _value;
+	}
+
+	std::shared_ptr<String> getName() const {
+		return _name;
+	}
+
 	std::shared_ptr<Value> clone() {
 		return std::make_shared<Value>(_value, _name);
 	}
 
 	bool isNil() const {
-		return (bool)_value;
+		return !_value;
 	}
 
 	/** @throws EvaluationException */
@@ -56,8 +68,8 @@ public:
 	/** @throws EvaluationException */
 	std::shared_ptr<Value> inverse() {
 		checkNil(*this);
-		if (_value->instanceof<Number>()) {
-			Number *n = Class::cast<Number>(_value);
+		if (instanceof<Number>(_value)) {
+			Number *n = Class::castPtr<Number>(_value);
 			return std::make_shared<Value>(std::make_shared<Double>(-n->doubleValue()));
 		}
 		throw EvaluationException(_HERE_, "-", _value->getClass());
@@ -71,10 +83,10 @@ public:
 	static bool isTrue(std::shared_ptr<Object> const& obj) {
 		if (!obj)
 			return false;
-		if (obj->instanceof<Boolean>())
-			return Class::cast<Boolean>(obj)->booleanValue();
-		if (obj->instanceof<Number>())
-			return (Class::cast<Number>(obj)->doubleValue() != 0);
+		if (instanceof<Boolean>(obj))
+			return Class::castPtr<Boolean>(obj)->booleanValue();
+		if (instanceof<Number>(obj))
+			return (Class::castPtr<Number>(obj)->doubleValue() != 0);
 		return true;
 	}
 
@@ -91,17 +103,17 @@ public:
 	std::shared_ptr<Value> add(std::shared_ptr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
-		if (_value->instanceof<Number>()) {
-			Number *v1 = Class::cast<Number>(_value);
-			if (other->_value->instanceof<Number>()) {
-				Number *v2 = Class::cast<Number>(other->_value);
+		if (instanceof<Number>(_value)) {
+			Number *v1 = Class::castPtr<Number>(_value);
+			if (instanceof<Number>(other->_value)) {
+				Number *v2 = Class::castPtr<Number>(other->_value);
 				return std::make_shared<Value>(std::make_shared<Double>(v1->doubleValue() + v2->doubleValue()));
 			} else
 				throw EvaluationException(_HERE_, "+", _value->getClass(), other->_value->getClass());
-		} else if (_value->instanceof<BasicString>()) {
-			BasicString *v1 = Class::cast<BasicString>(_value);
-			if (other->_value->instanceof<BasicString>()) {
-				BasicString *v2 = Class::cast<BasicString>(other->_value);
+		} else if (instanceof<BasicString>(_value)) {
+			BasicString *v1 = Class::castPtr<BasicString>(_value);
+			if (instanceof<BasicString>(other->_value)) {
+				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
 				StringBuilder result(*v1);
 				result += *v2;
 				return std::make_shared<Value>(result.toString());
@@ -115,10 +127,10 @@ public:
 	std::shared_ptr<Value> subtract(std::shared_ptr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
-		if (_value->instanceof<Number>()) {
-			Number *v1 = Class::cast<Number>(_value);
-			if (other->_value->instanceof<Number>()) {
-				Number *v2 = Class::cast<Number>(other->_value);
+		if (instanceof<Number>(_value)) {
+			Number *v1 = Class::castPtr<Number>(_value);
+			if (instanceof<Number>(other->_value)) {
+				Number *v2 = Class::castPtr<Number>(other->_value);
 				return std::make_shared<Value>(std::make_shared<Double>(v1->doubleValue() - v2->doubleValue()));
 			} else
 				throw EvaluationException(_HERE_, "-", _value->getClass(), other->_value->getClass());
@@ -138,10 +150,10 @@ public:
 	std::shared_ptr<Value> multiply(std::shared_ptr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
-		if (_value->instanceof<Number>()) {
-			Number *v1 = Class::cast<Number>(_value);
-			if (other->_value->instanceof<Number>()) {
-				Number *v2 = Class::cast<Number>(other->_value);
+		if (instanceof<Number>(_value)) {
+			Number *v1 = Class::castPtr<Number>(_value);
+			if (instanceof<Number>(other->_value)) {
+				Number *v2 = Class::castPtr<Number>(other->_value);
 				return std::make_shared<Value>(std::make_shared<Double>(v1->doubleValue() * v2->doubleValue()));
 			} else
 				throw EvaluationException(_HERE_, "*", _value->getClass(), other->_value->getClass());
@@ -153,10 +165,10 @@ public:
 	std::shared_ptr<Value> divide(std::shared_ptr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
-		if (_value->instanceof<Number>()) {
-			Number *v1 = Class::cast<Number>(_value);
-			if (other->_value->instanceof<Number>()) {
-				Number *v2 = Class::cast<Number>(other->_value);
+		if (instanceof<Number>(_value)) {
+			Number *v1 = Class::castPtr<Number>(_value);
+			if (instanceof<Number>(other->_value)) {
+				Number *v2 = Class::castPtr<Number>(other->_value);
 				return std::make_shared<Value>(std::make_shared<Double>(v1->doubleValue() / v2->doubleValue()));
 			} else
 				throw EvaluationException(_HERE_, "/", _value->getClass(), other->_value->getClass());
@@ -168,10 +180,10 @@ public:
 	std::shared_ptr<Value> remainder(std::shared_ptr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
-		if (_value->instanceof<Number>()) {
-			Number *v1 = Class::cast<Number>(_value);
-			if (other->_value->instanceof<Number>()) {
-				Number *v2 = Class::cast<Number>(other->_value);
+		if (instanceof<Number>(_value)) {
+			Number *v1 = Class::castPtr<Number>(_value);
+			if (instanceof<Number>(other->_value)) {
+				Number *v2 = Class::castPtr<Number>(other->_value);
 				return std::make_shared<Value>(std::make_shared<Double>(std::fmod(v1->doubleValue(), v2->doubleValue())));
 			} else
 				throw EvaluationException(_HERE_, "%", _value->getClass(), other->_value->getClass());
@@ -183,17 +195,17 @@ public:
 	bool gt(std::shared_ptr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
-		if (_value->instanceof<Number>()) {
-			Number *v1 = Class::cast<Number>(_value);
-			if (other->_value->instanceof<Number>()) {
-				Number *v2 = Class::cast<Number>(other->_value);
+		if (instanceof<Number>(_value)) {
+			Number *v1 = Class::castPtr<Number>(_value);
+			if (instanceof<Number>(other->_value)) {
+				Number *v2 = Class::castPtr<Number>(other->_value);
 				return (v1->doubleValue() > v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, ">", _value->getClass(), other->_value->getClass());
-		} else if (_value->instanceof<BasicString>()) {
-			BasicString *v1 = Class::cast<BasicString>(_value);
-			if (other->_value->instanceof<BasicString>()) {
-				BasicString *v2 = Class::cast<BasicString>(other->_value);
+		} else if (instanceof<BasicString>(_value)) {
+			BasicString *v1 = Class::castPtr<BasicString>(_value);
+			if (instanceof<BasicString>(other->_value)) {
+				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
 				return v1->compareTo(*v2) > 0;
 			} else
 				throw EvaluationException(_HERE_, ">", _value->getClass(), other->_value->getClass());
@@ -205,17 +217,17 @@ public:
 	bool gte(std::shared_ptr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
-		if (_value->instanceof<Number>()) {
-			Number *v1 = Class::cast<Number>(_value);
-			if (other->_value->instanceof<Number>()) {
-				Number *v2 = Class::cast<Number>(other->_value);
+		if (instanceof<Number>(_value)) {
+			Number *v1 = Class::castPtr<Number>(_value);
+			if (instanceof<Number>(other->_value)) {
+				Number *v2 = Class::castPtr<Number>(other->_value);
 				return (v1->doubleValue() >= v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, ">=", _value->getClass(), other->_value->getClass());
-		} else if (_value->instanceof<BasicString>()) {
-			BasicString *v1 = Class::cast<BasicString>(_value);
-			if (other->_value->instanceof<BasicString>()) {
-				BasicString *v2 = Class::cast<BasicString>(other->_value);
+		} else if (instanceof<BasicString>(_value)) {
+			BasicString *v1 = Class::castPtr<BasicString>(_value);
+			if (instanceof<BasicString>(other->_value)) {
+				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
 				return v1->compareTo(*v2) >= 0;
 			} else
 				throw EvaluationException(_HERE_, ">=", _value->getClass(), other->_value->getClass());
@@ -227,17 +239,17 @@ public:
 	bool lt(std::shared_ptr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
-		if (_value->instanceof<Number>()) {
-			Number *v1 = Class::cast<Number>(_value);
-			if (other->_value->instanceof<Number>()) {
-				Number *v2 = Class::cast<Number>(other->_value);
+		if (instanceof<Number>(_value)) {
+			Number *v1 = Class::castPtr<Number>(_value);
+			if (instanceof<Number>(other->_value)) {
+				Number *v2 = Class::castPtr<Number>(other->_value);
 				return (v1->doubleValue() < v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "<", _value->getClass(), other->_value->getClass());
-		} else if (_value->instanceof<BasicString>()) {
-			BasicString *v1 = Class::cast<BasicString>(_value);
-			if (other->_value->instanceof<BasicString>()) {
-				BasicString *v2 = Class::cast<BasicString>(other->_value);
+		} else if (instanceof<BasicString>(_value)) {
+			BasicString *v1 = Class::castPtr<BasicString>(_value);
+			if (instanceof<BasicString>(other->_value)) {
+				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
 				return v1->compareTo(*v2) < 0;
 			} else
 				throw EvaluationException(_HERE_, "<", _value->getClass(), other->_value->getClass());
@@ -249,17 +261,17 @@ public:
 	bool lte(std::shared_ptr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
-		if (_value->instanceof<Number>()) {
-			Number *v1 = Class::cast<Number>(_value);
-			if (other->_value->instanceof<Number>()) {
-				Number *v2 = Class::cast<Number>(other->_value);
+		if (instanceof<Number>(_value)) {
+			Number *v1 = Class::castPtr<Number>(_value);
+			if (instanceof<Number>(other->_value)) {
+				Number *v2 = Class::castPtr<Number>(other->_value);
 				return (v1->doubleValue() <= v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "<=", _value->getClass(), other->_value->getClass());
-		} else if (_value->instanceof<BasicString>()) {
-			BasicString *v1 = Class::cast<BasicString>(_value);
-			if (other->_value->instanceof<BasicString>()) {
-				BasicString *v2 = Class::cast<BasicString>(other->_value);
+		} else if (instanceof<BasicString>(_value)) {
+			BasicString *v1 = Class::castPtr<BasicString>(_value);
+			if (instanceof<BasicString>(other->_value)) {
+				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
 				return v1->compareTo(*v2) <= 0;
 			} else
 				throw EvaluationException(_HERE_, "<=", _value->getClass(), other->_value->getClass());
@@ -271,17 +283,17 @@ public:
 	bool eq(std::shared_ptr<Value> const& other) {
 		if ((!this->_value) || (!other->_value))
 			return ((!this->_value) && (!other->_value));
-		if (_value->instanceof<Number>()) {
-			Number *v1 = Class::cast<Number>(_value);
-			if (other->_value->instanceof<Number>()) {
-				Number *v2 = Class::cast<Number>(other->_value);
+		if (instanceof<Number>(_value)) {
+			Number *v1 = Class::castPtr<Number>(_value);
+			if (instanceof<Number>(other->_value)) {
+				Number *v2 = Class::castPtr<Number>(other->_value);
 				return (v1->doubleValue() == v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "==", _value->getClass(), other->_value->getClass());
-		} else if (_value->instanceof<BasicString>()) {
-			BasicString *v1 = Class::cast<BasicString>(_value);
-			if (other->_value->instanceof<BasicString>()) {
-				BasicString *v2 = Class::cast<BasicString>(other->_value);
+		} else if (instanceof<BasicString>(_value)) {
+			BasicString *v1 = Class::castPtr<BasicString>(_value);
+			if (instanceof<BasicString>(other->_value)) {
+				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
 				return v1->equals(*v2);
 			} else
 				throw EvaluationException(_HERE_, "==", _value->getClass(), other->_value->getClass());
@@ -292,9 +304,9 @@ public:
 private:
 	/** @throws EvaluationException */
 	int64_t getIndex(std::shared_ptr<Value> const& arg) {
-		if (!arg->_value->instanceof<Number>())
+		if (!instanceof<Number>(arg->_value))
 			throw EvaluationException(_HERE_, fmt::format("Operator '[]': expected numeric index, got '{}'", arg->_value->getClass()->getName()).c_str());
-		Number *index = Class::cast<Number>(arg->_value);
+		Number *index = Class::castPtr<Number>(arg->_value);
 		if (!Number::isMathematicalInteger(index->doubleValue()))
 			throw EvaluationException(_HERE_, fmt::format("Operator '[]': expected integer index, got {}", index->doubleValue()).c_str());
 		return index->longValue();
@@ -305,15 +317,15 @@ public:
 	std::shared_ptr<Value> index(std::shared_ptr<Value> const& arg) {
 		checkNil(*this);
 		checkNil(*arg);
-		if (_value->instanceof<Map<String, Object>>()) {
+		if (instanceof<Map<String, Object>>(_value)) {
 			return std::make_shared<Value>(
-				(Class::cast<Map<String, Object>>(_value))->get(*Class::cast<String>(arg->_value))
+				(Class::castPtr<Map<String, Object>>(_value))->get(*Class::castPtr<String>(arg->_value))
 			);
 		// TODO: Array
-		} else if (_value->instanceof<List<Object>>()) {
-			List<Object> *list = Class::cast<List<Object>>(_value);
+		} else if (instanceof<List<Object>>(_value)) {
+			List<Object> *list = Class::castPtr<List<Object>>(_value);
 			int64_t i = getIndex(arg);
-			if ((i < 0) || (i >= list->size()))
+			if ((i < 0) || (i >= (int64_t)list->size()))
 				throw EvaluationException(_HERE_, "Array index out of bounds");
 			return std::make_shared<Value>(list->get((int)i));
 		} else
@@ -334,11 +346,11 @@ public:
 				return std::make_shared<Value>(val);
 			return Nil(dottedName);
 		} else {
-			if (_value->instanceof<Resolver>())
+			if (instanceof<Resolver>(_value))
 				return std::make_shared<Value>((Class::cast<Resolver>(_value))->getVar(*memberName), memberName);
-			else if (_value->instanceof<Map<String, Object>>())
+			else if (instanceof<Map<String, Object>>(_value)) {
 				return std::make_shared<Value>((Class::cast<Map<String, Object>>(_value))->get(*memberName), memberName);
-			else
+			} else
 				throw EvaluationException(_HERE_, ".", _value->getClass());
 		}
 	}

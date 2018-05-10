@@ -148,7 +148,7 @@ std::unique_ptr<String> ExpressionInputStream::readReal() {
 	if (ch == '.') {
 		s.add(readChar());
 		ch = peek();
-		while (ch >= 0 && ch <= '9') {
+		while (ch >= '0' && ch <= '9') {
 			s.add(readChar());
 			ch = peek();
 		}
@@ -169,6 +169,62 @@ std::unique_ptr<String> ExpressionInputStream::readReal() {
 }
 
 enum class ASMODE { SCAN, STRING, ESCAPE };
+
+std::shared_ptr<Expression> ExpressionInputStream::readArg() {
+	char delimiter = '\1';
+	int argDepth = 0;
+	StringBuilder str;
+	bool complete = false;
+	ASMODE mode = ASMODE::SCAN;
+	do {
+		char ch = peek();
+		switch (mode) {
+			case ASMODE::SCAN:
+				{
+					if (((ch == ',') || (ch == ')')) && (argDepth == 0))
+						complete = true;
+					else {
+						readChar();
+						if (ch == CharacterIterator::DONE)
+							throw SyntaxErrorException(_HERE_, "Unexpected EOS reading argument");
+						str.add(ch);
+						if (ch == '"' || ch == '\'') {
+							delimiter = ch;
+							mode = ASMODE::STRING;
+						} else if (ch == '(')
+							argDepth++;
+						else if (ch == ')')
+							argDepth--;
+					}
+				}
+				break;
+			case ASMODE::STRING:
+				{
+					readChar();
+					if (ch == CharacterIterator::DONE)
+						throw SyntaxErrorException(_HERE_, "Unexpected EOS reading argument string");
+					str.add(ch);
+					if (ch == '\\' || ch == '`') {
+						mode = ASMODE::ESCAPE;
+					} else if (ch == delimiter) {
+						delimiter = '\1';
+						mode = ASMODE::SCAN;
+					}
+				}
+				break;
+			case ASMODE::ESCAPE:
+				{
+					readChar();
+					if (ch == CharacterIterator::DONE)
+						throw SyntaxErrorException(_HERE_, "Unexpected EOS reading string escape sequence");
+					str.add(ch);
+					mode = ASMODE::STRING;
+				}
+				break;
+		}
+	} while (!complete);
+	return std::make_shared<Expression>(str.toString());
+}
 
 } // namespace expr
 } // namespace slib

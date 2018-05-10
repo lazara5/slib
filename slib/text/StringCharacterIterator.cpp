@@ -7,8 +7,9 @@
 
 namespace slib {
 
-StringCharacterIterator::StringCharacterIterator(std::shared_ptr<String> const& text, ssize_t begin, ssize_t end, ssize_t pos)
-:_text(text) {
+StringCharacterIterator::StringCharacterIterator(std::shared_ptr<BasicString> const& text, ssize_t begin, ssize_t end, ssize_t pos)
+:_text(text)
+,_buffer(text->c_str()) {
 	if (!text)
 		throw NullPointerException(_HERE_);
 
@@ -45,7 +46,7 @@ char StringCharacterIterator::setIndex(ssize_t position) {
 char StringCharacterIterator::next() {
 	if (_pos < _end - 1) {
 		_pos++;
-		return _text->charAt((size_t)_pos);
+		return _buffer[(size_t)_pos];
 	} else {
 		_pos = _end;
 		return DONE;
@@ -55,7 +56,7 @@ char StringCharacterIterator::next() {
 char StringCharacterIterator::previous() {
 	if (_pos > _begin) {
 		_pos--;
-		return _text->charAt((size_t)_pos);
+		return _buffer[(size_t)_pos];
 	} else
 		return DONE;
 }

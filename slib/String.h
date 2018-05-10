@@ -27,8 +27,10 @@ public:
 
 class BasicString: virtual public Object {
 public:
-	static Class const* _class;
-public:
+	static Class const* CLASS() {
+		return BASICSTRINGCLASS();
+	}
+
 	virtual size_t length() const = 0;
 	virtual const char *c_str() const = 0;
 
@@ -50,8 +52,6 @@ template <class E>
 class ArrayList;
 
 class String : public BasicString {
-public:
-	static Class const* _class;
 protected:
 	std::string _str;
 	mutable volatile int32_t _hash;
@@ -106,6 +106,10 @@ public:
 
 	virtual ~String() override;
 
+	static Class const* CLASS() {
+		return STRINGCLASS();
+	}
+
 	virtual Class const* getClass() const override {
 		return STRINGCLASS();
 	}
@@ -145,6 +149,11 @@ public:
 	template <class S>
 	bool equals(S const* other) const {
 		return equals(Ptr(_str), other);
+	}
+
+	template <class S>
+	bool equals(S const& other) const {
+		return equals(Ptr(_str), Ptr(other));
 	}
 
 	bool operator==(String const& other) const {

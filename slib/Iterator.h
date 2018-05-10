@@ -5,6 +5,7 @@
 #ifndef H_SLIB_ITERATOR_H
 #define H_SLIB_ITERATOR_H
 
+#include "slib/Object.h"
 #include "slib/exception/UnsupportedOperationException.h"
 
 namespace slib {
@@ -244,6 +245,16 @@ public:
 	virtual void remove() {
 		return _instance->remove();
 	}
+};
+
+template <class T>
+class ConstIterable : virtual public Object {
+public:
+	static Class const* CLASS() {
+		return CONSTITERABLECLASS();
+	}
+
+	virtual ConstIterator<std::shared_ptr<T>> constIterator() const = 0;
 };
 
 } // namespace

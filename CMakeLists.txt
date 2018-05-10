@@ -35,8 +35,11 @@ set(SLIB_SOURCES slib/Class.cpp
                  slib/util/StringUtils.cpp
                  slib/util/System.cpp
                  slib/util/SystemInfo.cpp
+				 slib/util/expr/Builtins.cpp
+				 slib/util/expr/Expression.cpp
 				 slib/util/expr/ExpressionEvaluator.cpp
 				 slib/util/expr/ExpressionInputStream.cpp
+				 slib/util/expr/Function.cpp
 				 slib/util/expr/Resolver.cpp
                  slib/StringBuilder.cpp)
 

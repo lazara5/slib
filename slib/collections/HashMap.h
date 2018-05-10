@@ -11,6 +11,8 @@
 #include "slib/Numeric.h"
 #include "slib/exception/IllegalStateException.h"
 
+#include <inttypes.h>
+
 namespace slib {
 
 #define HASH_DEFAULT_LOAD_FACTOR (0.75f)
@@ -241,6 +243,10 @@ public:
 		copyFrom(other);
 	}
 
+	HashMap(std::initializer_list<std::pair<K, std::shared_ptr<V>>> args) {
+		put(args);
+	}
+
 	/** Removes all mappings from this map. */
 	virtual void clear() {
 		for (int i = 0; i <_tableLength; i++) {
@@ -263,7 +269,12 @@ public:
 		_table = NULL;
 	}
 
+	static Class const* CLASS() {
+		return HASHMAPCLASS();
+	}
+
 	virtual Class const* getClass() const override {
+		printf("HM %" PRIu64 "\n", HASHMAPCLASS()->getTypeId());
 		return HASHMAPCLASS();
 	}
 
@@ -401,9 +412,14 @@ public:
 		emplaceEntry(hash, key, v, i);
 	}*/
 
-	void put(std::initializer_list<std::pair<const K, V> > args) {
+	void put(std::initializer_list<std::pair<const K, V>> args) {
 		for (auto i = args.begin(); i != args.end(); ++i)
 			put(i->first, std::make_shared<V>(i->second));
+	}
+
+	void put(std::initializer_list<std::pair<const K, std::shared_ptr<V>>> args) {
+		for (auto i = args.begin(); i != args.end(); ++i)
+			put(i->first, i->second);
 	}
 
 	/**
@@ -459,7 +475,6 @@ public:
 			}
 		}
 	}
-
 
 private:
 	// iterator
@@ -552,6 +567,6 @@ public:
 	}
 };
 
-} // namespace
+} // namespace slib
 
 #endif // H_SLIB_COLLECTIONS_HASHMAP_H

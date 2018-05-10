@@ -13,7 +13,7 @@ namespace slib {
 template <class E>
 class AbstractQueue: public Queue<E> {
 public:
-	virtual ssize_t size() const override = 0;
+	virtual size_t size() const override = 0;
 
 	virtual bool isEmpty() const override {
 		return size() == 0;

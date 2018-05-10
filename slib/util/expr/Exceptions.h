@@ -61,6 +61,16 @@ public:
 	:EvaluationException(where, "NilValueException", "Nil value") {}
 };
 
+class CastException : public EvaluationException {
+public:
+		CastException(const char *where, const char *msg)
+		:EvaluationException(where, "CastException", msg) {}
+
+		CastException(const char *where, const char *msg, ClassCastException e)
+		:EvaluationException(where, "CastException", msg, e) {}
+
+};
+
 } // namespace expr
 } // namespace slib
 

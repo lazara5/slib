@@ -13,14 +13,15 @@ namespace slib {
 
 class StringCharacterIterator : public CharacterIterator {
 private:
-	std::shared_ptr<String> _text;
+	std::shared_ptr<BasicString> _text;
+	const char *_buffer;
 	ssize_t _begin;
 	ssize_t _end;
 	ssize_t _pos;
 public:
-	StringCharacterIterator(std::shared_ptr<String> const& text, ssize_t begin, ssize_t end, ssize_t pos);
+	StringCharacterIterator(std::shared_ptr<BasicString> const& text, ssize_t begin, ssize_t end, ssize_t pos);
 
-	StringCharacterIterator(std::shared_ptr<String> const& text)
+	StringCharacterIterator(std::shared_ptr<BasicString> const& text)
 	:StringCharacterIterator(text, 0, (ssize_t)text->length(), 0) {}
 
 	virtual char first() override;
@@ -31,7 +32,7 @@ public:
 
 	virtual char current() override {
 		if ((_pos >= _begin) && (_pos < _end))
-			return _text->charAt((size_t)_pos);
+			return _buffer[(size_t)_pos];
 
 		return DONE;
 	}

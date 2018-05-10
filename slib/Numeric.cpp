@@ -9,8 +9,6 @@ namespace slib {
 
 Number::~Number() {}
 
-Class const* Number::_class = NUMBERCLASS();
-
 static std::unique_ptr<String> getMantissa(std::unique_ptr<String> const& str, size_t stopPos) {
 	char firstChar = str->charAt(0);
 	bool hasSign = (firstChar == '-' || firstChar == '+');
@@ -169,8 +167,6 @@ bool Number::isMathematicalInteger(double val) {
 	return std::trunc(val) == val;
 }
 
-Class const* Integer::_class = INTEGERCLASS();
-
 int64_t Integer::longValue() const {
 	return (int64_t)_value;
 }
@@ -179,13 +175,9 @@ double Integer::doubleValue() const {
 	return (double)_value;
 }
 
-Class const* UInt::_class = UINTCLASS();
-
 double UInt::doubleValue() const {
 	return (double)_value;
 }
-
-Class const* Long::_class = LONGCLASS();
 
 int64_t Long::longValue() const {
 	return _value;
@@ -195,13 +187,9 @@ double Long::doubleValue() const {
 	return (double)_value;
 }
 
-Class const* ULong::_class = ULONGCLASS();
-
 double ULong::doubleValue() const {
 	return (double)_value;
 }
-
-Class const* Double::_class = DOUBLECLASS();
 
 int64_t Double::longValue() const {
 	return (int64_t)_value;
@@ -210,8 +198,6 @@ int64_t Double::longValue() const {
 double Double::doubleValue() const {
 	return _value;
 }
-
-Class const* Boolean::_class = BOOLEANCLASS();
 
 Boolean::~Boolean() {}
 

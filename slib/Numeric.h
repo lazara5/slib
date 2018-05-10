@@ -25,9 +25,11 @@ namespace slib {
 
 class Number : virtual public Object {
 public:
-	static Class const* _class;
-public:
 	virtual ~Number();
+
+	static Class const* CLASS() {
+		return NUMBERCLASS();
+	}
 
 	virtual int64_t longValue() const = 0;
 
@@ -40,8 +42,6 @@ public:
 
 /** 32-bit signed integer */
 class Integer : public Number {
-public:
-	static Class const* _class;
 private:
 	int32_t _value;
 public:
@@ -56,6 +56,10 @@ public:
 
 	Integer(const Integer& other)
 	: _value(other._value) {}
+
+	static Class const* CLASS() {
+		return INTEGERCLASS();
+	}
 
 	virtual Class const* getClass() const override {
 		return INTEGERCLASS();
@@ -72,6 +76,13 @@ public:
 
 	bool equals(const Integer& other) const {
 		return (_value == other._value);
+	}
+
+	virtual bool equals(Object const& other) const override {
+		//return (_value == other->_value);
+		if (instanceof<Integer>(other))
+			return _value == Class::constCast<Integer>(&other)->_value;
+		return false;
 	}
 
 	bool equals(std::shared_ptr<Integer> const& other) const {
@@ -208,8 +219,6 @@ public:
 
 /** 32-bit unsigned integer */
 class UInt : public Number {
-public:
-	static Class const* _class;
 private:
 	uint32_t _value;
 public:
@@ -224,6 +233,10 @@ public:
 
 	UInt(const UInt& other)
 	: _value(other._value) {}
+
+	static Class const* CLASS() {
+		return UINTCLASS();
+	}
 
 	virtual Class const* getClass() const override {
 		return UINTCLASS();
@@ -323,8 +336,6 @@ public:
 
 /** 64-bit signed integer */
 class Long : public Number {
-public:
-	static Class const* _class;
 private:
 	int64_t _value;
 public:
@@ -336,6 +347,10 @@ public:
 
 	Long(int64_t value)
 	:_value(value) {}
+
+	static Class const* CLASS() {
+		return LONGCLASS();
+	}
 
 	virtual Class const* getClass() const override {
 		return LONGCLASS();
@@ -464,8 +479,6 @@ public:
 
 /** 64-bit unsigned integer */
 class ULong : public Number {
-public:
-	static Class const* _class;
 private:
 	uint64_t _value;
 public:
@@ -473,6 +486,10 @@ public:
 
 	ULong(uint64_t value)
 	:_value(value) {}
+
+	static Class const* CLASS() {
+		return ULONGCLASS();
+	}
 
 	virtual Class const* getClass() const override {
 		return ULONGCLASS();
@@ -574,8 +591,6 @@ public:
 
 /** Double value */
 class Double : public Number {
-public:
-	static Class const* _class;
 private:
 	double _value;
 protected:
@@ -592,6 +607,10 @@ protected:
 public:
 	Double(double value)
 	:_value(value) {}
+
+	static Class const* CLASS() {
+		return DOUBLECLASS();
+	}
 
 	virtual Class const* getClass() const override {
 		return DOUBLECLASS();
@@ -676,8 +695,6 @@ public:
 
 /** Boolean value */
 class Boolean : virtual public Object {
-public:
-	static Class const* _class;
 private:
 	bool _value;
 public:
@@ -685,6 +702,10 @@ public:
 	:_value(value) {}
 
 	virtual ~Boolean() override;
+
+	static Class const* CLASS() {
+		return BOOLEANCLASS();
+	}
 
 	virtual Class const* getClass() const override {
 		return BOOLEANCLASS();

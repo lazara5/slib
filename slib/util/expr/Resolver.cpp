@@ -7,12 +7,9 @@
 namespace slib {
 namespace expr {
 
-Class const* Resolver::_class = RESOLVERCLASS();
-
 Resolver::~Resolver() {}
 
 MapResolver::~MapResolver() {}
 
 } // namespace expr
 } // namespace slib
-

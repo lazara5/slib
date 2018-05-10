@@ -17,9 +17,11 @@ class String;
 
 class Object {
 public:
-	static Class const* _class;
-public:
 	virtual ~Object() {}
+
+	static Class const* CLASS() {
+		return OBJECTCLASS();
+	}
 
 	virtual Class const* getClass() const {
 		return OBJECTCLASS();
@@ -30,13 +32,38 @@ public:
 		return (int32_t)(value ^ (value >> 32));
 	}
 
-	template <class O>
-	bool instanceof() {
-		return (O::_class->isAssignableFrom(getClass()));
+	virtual std::unique_ptr<String> toString() const;
+
+	virtual bool equals(Object const& other) const {
+		return this == &other;
 	}
 
-	virtual std::unique_ptr<String> toString() const;
+	bool operator==(Object const& other) const {
+		return equals(other);
+	}
 };
+
+template <class T>
+bool instanceof(Object const* obj) {
+	if (!obj)
+		return false;
+	return (T::CLASS()->isAssignableFrom(obj->getClass()));
+}
+
+template <class T>
+bool instanceof(std::shared_ptr<Object> const& obj) {
+	return instanceof<T>(obj.get());
+}
+
+template <class T>
+bool instanceof(std::unique_ptr<Object> const& obj) {
+	return instanceof<T>(obj.get());
+}
+
+template <class T>
+bool instanceof(Object const& obj) {
+	return instanceof<T>(&obj);
+}
 
 } // namespace slib
 

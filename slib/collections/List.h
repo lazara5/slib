@@ -18,7 +18,11 @@ class List : public Collection<E> {
 public:
 	virtual ~List() {}
 
-	virtual ssize_t size() const override = 0;
+	static Class const* CLASS() {
+		return LISTCLASS();
+	}
+
+	virtual size_t size() const override = 0;
 
 	virtual bool isEmpty() const override = 0;
 
@@ -44,7 +48,7 @@ public:
 	
 	virtual int indexOf(const E& o) = 0;
 
-	virtual std::shared_ptr<E> get(int index) const = 0;
+	virtual std::shared_ptr<E> get(size_t index) const = 0;
 public:
 	virtual ConstIterator<std::shared_ptr<E> > constIterator() const override = 0;
 };

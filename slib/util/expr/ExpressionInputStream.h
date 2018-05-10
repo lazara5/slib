@@ -9,6 +9,7 @@
 #include "slib/StringBuilder.h"
 #include "slib/util/expr/Exceptions.h"
 #include "slib/util/expr/Value.h"
+#include "slib/util/expr/Expression.h"
 
 #include <cctype>
 
@@ -26,7 +27,7 @@ private:
 
 	std::unique_ptr<String> readReal();
 public:
-	ExpressionInputStream(std::shared_ptr<String> const& s)
+	ExpressionInputStream(std::shared_ptr<BasicString> const& s)
 	:_iter(s) {
 		_currentChar = _iter.first();
 	}
@@ -70,6 +71,9 @@ public:
 
 	/** @throws SyntaxErrorException */
 	std::shared_ptr<Value> readString();
+
+	/** @throws SyntaxErrorException */
+	std::shared_ptr<Expression> readArg();
 
 	/** @throws EvaluationException */
 	std::shared_ptr<Value> readNumber();

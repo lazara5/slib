@@ -10,8 +10,6 @@
 
 namespace slib {
 
-Class const* Object::_class = OBJECTCLASS();
-
 std::unique_ptr<String> Object::toString() const {
 	return std::make_unique<String>(fmt::format("{}@{:x}", getClass()->getName(), hashCode()));
 }

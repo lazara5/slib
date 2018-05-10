@@ -82,8 +82,8 @@ public:
 		return PRIORITYQUEUECLASS();
 	}
 
-	virtual ssize_t size() const override {
-		return (ssize_t)_size;
+	virtual size_t size() const override {
+		return _size;
 	}
 
 	using AbstractQueue<E>::isEmpty;

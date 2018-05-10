@@ -36,8 +36,6 @@ template <class K, class V,
 		  class Pred = std::equal_to<K>>
 class Map : virtual public Object, public ValueProvider<K, V> {
 public:
-	static Class const* _class;
-public:
 	class Entry {
 	public:
 		virtual const K& getKey() const = 0;
@@ -47,6 +45,10 @@ public:
 
 public:
 	virtual ~Map() {}
+
+	static Class const* CLASS() {
+		return MAPCLASS();
+	}
 
 	virtual std::shared_ptr<V> put(const K& key, std::shared_ptr<V> const& value) = 0;
 
@@ -74,9 +76,6 @@ public:
 public:
 	virtual ConstIterator<Entry> constIterator() const = 0;
 };
-
-template <class K, class V, class Pred>
-Class const* Map<K, V, Pred>::_class = MAPCLASS();
 
 } // namespace
 

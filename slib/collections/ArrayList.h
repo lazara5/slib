@@ -27,14 +27,14 @@ private:
 	static const int MAX_ARRAY_SIZE = Integer::MAX_VALUE - 1;
 
 	/** Checks if the given index is in range. If not, throws IndexOutOfBoundsException */
-	void accessRangeCheck(int index) const {
-		if (index < 0 || index >= size())
+	void accessRangeCheck(size_t index) const {
+		if (index >= size())
 			throw IndexOutOfBoundsException(_HERE_, fmt::format("Index: {:d}, Size: {:d}", index, size()).c_str());
 	}
 
 	/** Special version of rangeCheck used by add() */
-	void addRangeCheck(int index) const {
-		if (index > size() || index < 0)
+	void addRangeCheck(size_t index) const {
+		if (index > size())
 			throw IndexOutOfBoundsException(_HERE_, fmt::format("Index: {:d}, Size: {:d}", index, size()).c_str());
 	}
 
@@ -75,7 +75,7 @@ public:
 	 * Returns the number of elements in this list.
 	 * @return the number of elements in this list
 	 */
-	ssize_t size() const override {
+	size_t size() const override {
 		return _elements.size();
 	}
 
@@ -111,7 +111,7 @@ public:
 	}
 
 	bool remove(const E& o) override {
-		for (int index = 0; index < size(); index++) {
+		for (size_t index = 0; index < size(); index++) {
 			if (_elements[index] && (o == (*_elements[index]))) {
 				internalRemove(index);
 				return true;
@@ -122,7 +122,7 @@ public:
 	}
 
 	int indexOf(const E& o) {
-		for (int index = 0; index < size(); index++) {
+		for (size_t index = 0; index < size(); index++) {
 			if (_elements[index] && (o == (*_elements[index])))
 				return index;
 		}
@@ -132,7 +132,7 @@ public:
 
 	// Positional Access Operations
 
-	std::shared_ptr<E> get(int index) const {
+	virtual std::shared_ptr<E> get(size_t index) const override {
 		accessRangeCheck(index);
 		return _elements[index];
 	}
@@ -148,7 +148,7 @@ private:
 	private:
 		const ArrayList *_list;
 	protected:
-		int _cursor;
+		size_t _cursor;
 		int _lastRet;
 		int _expectedModCount;
 	protected:
@@ -164,7 +164,7 @@ private:
 				throw ConcurrentModificationException(where);
 		}
 	public:
-		ConstArrayListIterator(const ArrayList *list, int index) {
+		ConstArrayListIterator(const ArrayList *list, size_t index) {
 			_list = list;
 			_cursor = index;
 			_lastRet = -1;
@@ -177,7 +177,7 @@ private:
 
 		virtual const std::shared_ptr<E>& next() {
 			checkForComodification(_HERE_);
-			int i = _cursor;
+			size_t i = _cursor;
 			if (i >= _list->size())
 				throw NoSuchElementException(_HERE_);
 			_cursor = i + 1;

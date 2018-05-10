@@ -14,9 +14,16 @@ namespace expr {
 
 class Resolver : virtual public Object {
 public:
-	static Class const* _class;
-public:
-	virtual ~Resolver();
+	virtual ~Resolver() override;
+
+	static Class const* CLASS() {
+		return RESOLVERCLASS();
+	}
+
+	virtual Class const* getClass() const override {
+		return RESOLVERCLASS();
+	}
+
 	/**
 	 * Resolves a variable
 	 *

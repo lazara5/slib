@@ -15,8 +15,6 @@ using std::ptrdiff_t;
 
 namespace slib {
 
-Class const* BasicString::_class = BASICSTRINGCLASS();
-
 int BasicString::compareTo(const BasicString &other) const {
 	const char *buffer = c_str();
 	const char *otherBuffer = other.c_str();
@@ -30,8 +28,6 @@ int BasicString::compareTo(const BasicString &other) const {
 bool BasicString::equals(BasicString const& other) const {
 	return String::equals(this, Ptr(other));
 }
-
-Class const* String::_class = STRINGCLASS();
 
 String::String(std::string const& str)
 :_str(str)

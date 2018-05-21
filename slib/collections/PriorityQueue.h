@@ -20,7 +20,7 @@ class PriorityQueue : public AbstractQueue<E> {
 private:
 	static const int DEFAULT_CAPACITY = 10;
 
-	std::vector<std::shared_ptr<E> > _queue;
+	std::vector<SPtr<E>> _queue;
 
 	/** The number of elements in the priority queue */
 	size_t _size;
@@ -30,7 +30,7 @@ private:
 	void percolate(size_t childIndex) {
 		Cmp less;
 		Eq eq;
-		std::shared_ptr<E> target = std::move(_queue[childIndex]);
+		SPtr<E> target = std::move(_queue[childIndex]);
 		size_t parentIndex;
 		while (childIndex > 0) {
 			parentIndex = (childIndex - 1) / 2;
@@ -45,7 +45,7 @@ private:
 	void siftDown(size_t rootIndex) {
 		Cmp less;
 		Eq eq;
-		std::shared_ptr<E> target = _queue[rootIndex];
+		SPtr<E> target = _queue[rootIndex];
 		size_t childIndex;
 		while ((childIndex = rootIndex * 2 + 1) < _size) {
 			if (childIndex + 1 < _size && less(*_queue[childIndex + 1], *_queue[childIndex]))
@@ -90,7 +90,7 @@ public:
 
 	using Collection<E>::add;
 
-	virtual bool offer(std::shared_ptr<E> const& e) override {
+	virtual bool offer(SPtr<E> const& e) override {
 		if (!e)
 			throw NullPointerException(_HERE_);
 
@@ -101,10 +101,10 @@ public:
 		return true;
 	}
 
-	std::shared_ptr<E> poll() override {
+	SPtr<E> poll() override {
 		if (isEmpty())
 			return nullptr;
-		std::shared_ptr<E> result = _queue[0];
+		SPtr<E> result = _queue[0];
 		removeAt(0);
 		return result;
 	}
@@ -126,7 +126,7 @@ public:
 private:
 
 	// iterator
-	class ConstPriorityIterator : public ConstIterator<std::shared_ptr<E> >::ConstIteratorImpl {
+	class ConstPriorityIterator : public ConstIterator<SPtr<E> >::ConstIteratorImpl {
 	private:
 		const PriorityQueue<E> *_pq;
 	protected:
@@ -154,22 +154,22 @@ private:
 			return _crtIndex < _pq->size() - 1;
 		}
 
-		virtual const std::shared_ptr<E>& next() {
+		virtual SPtr<E> const& next() {
 			checkForComodification(_HERE_);
 			if (!hasNext())
 				throw NoSuchElementException(_HERE_);
 			return _pq->_queue[++_crtIndex];
 		}
 
-		virtual typename ConstIterator<std::shared_ptr<E> >::ConstIteratorImpl *clone() {
+		virtual typename ConstIterator<SPtr<E> >::ConstIteratorImpl *clone() {
 			return new ConstPriorityIterator(this);
 		}
 	};
 
 public:
 
-	virtual ConstIterator<std::shared_ptr<E> > constIterator() const {
-		return ConstIterator<std::shared_ptr<E> >(new ConstPriorityIterator(this));
+	virtual ConstIterator<SPtr<E>> constIterator() const {
+		return ConstIterator<SPtr<E>>(new ConstPriorityIterator(this));
 	}
 };
 

@@ -12,7 +12,7 @@ option(WITH_JSON "build JSON utils" ON)
 set(SLIB_SOURCES slib/Class.cpp
 	             slib/Numeric.cpp
 				 slib/Object.cpp
-                 slib/String.cpp
+				 slib/String.cpp
                  slib/collections/Properties.cpp
                  slib/concurrent/Semaphore.cpp
                  slib/concurrent/Thread.cpp
@@ -35,9 +35,11 @@ set(SLIB_SOURCES slib/Class.cpp
                  slib/util/StringUtils.cpp
                  slib/util/System.cpp
                  slib/util/SystemInfo.cpp
+				 slib/util/TemplateUtils.cpp
 				 slib/util/expr/Builtins.cpp
 				 slib/util/expr/Expression.cpp
 				 slib/util/expr/ExpressionEvaluator.cpp
+				 slib/util/expr/ExpressionFormatter.cpp
 				 slib/util/expr/ExpressionInputStream.cpp
 				 slib/util/expr/Function.cpp
 				 slib/util/expr/Resolver.cpp

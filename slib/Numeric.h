@@ -184,7 +184,7 @@ public:
 		return result;
 	}
 
-	static std::unique_ptr<String> toString(int32_t i) {
+	static UPtr<String> toString(int32_t i) {
 		std::stringstream stream;
 		stream << i;
 		return std::make_unique<String>(stream.str());
@@ -212,7 +212,7 @@ public:
 		return String(fmt::format("{:x}", i));
 	}
 
-	virtual std::unique_ptr<String> toString() const override {
+	virtual UPtr<String> toString() const override {
 		return toString(_value);
 	}
 };
@@ -255,7 +255,7 @@ public:
 		return (_value == other._value);
 	}
 
-	bool equals(std::shared_ptr<UInt> const& other) const {
+	bool equals(SPtr<UInt> const& other) const {
 		if (!other)
 			return false;
 		return (_value == other->_value);

@@ -26,9 +26,10 @@ public:
 
 	virtual bool isEmpty() const override = 0;
 
-	virtual bool add(std::shared_ptr<E> const& e) override = 0;
+	virtual bool add(SPtr<E> const& e) override = 0;
 
 	using Collection<E>::add;
+	using Collection<E>::emplace;
 
 	/**
 	 * Inserts the specified element at the specified position in this list
@@ -42,15 +43,26 @@ public:
 	 * @throws IndexOutOfBoundsException if the index is out of range
 	 *         (index < 0 || index > size())
 	 */
-	virtual void add(int index, const E& e) {
+	virtual void add(int index, SPtr<E> const& e) {
 		throw UnsupportedOperationException(_HERE_);
+	}
+
+	template <class AVT, typename... A>
+	void emplace(int index, A&&... args) {
+		return add(index, std::make_shared<AVT>(std::forward<A>(args)...));
+	}
+
+	template <class AVT>
+	void emplace(int index, AVT const& value) {
+		static_assert(std::is_same<AVT, E>::value, "Only use with the exact value type");
+		return add(index, std::make_shared<E>(value));
 	}
 	
 	virtual int indexOf(const E& o) = 0;
 
-	virtual std::shared_ptr<E> get(size_t index) const = 0;
+	virtual SPtr<E> get(size_t index) const = 0;
 public:
-	virtual ConstIterator<std::shared_ptr<E> > constIterator() const override = 0;
+	virtual ConstIterator<SPtr<E> > constIterator() const override = 0;
 };
 
 } // namespace

@@ -18,8 +18,8 @@ public:
 		typedef Map<std::string, std::string> Props;
 	public:
 		virtual ~LineProcessor();
-		virtual std::shared_ptr<std::string> processLine(const std::string& name,
-														 const std::string& rawProperty) = 0;
+		virtual SPtr<std::string> processLine(const std::string& name,
+											  const std::string& rawProperty) = 0;
 	};
 
 private:
@@ -66,21 +66,21 @@ public:
 	 * The method returns the default value argument if the property is not found.
 	 * @param name the key
 	 */
-	virtual std::shared_ptr<std::string> getProperty(std::string const& name) const {
+	virtual SPtr<std::string> getProperty(std::string const& name) const {
 		return get(name);
 	}
 
-	virtual std::shared_ptr<std::string> getProperty(std::string const& name,
-													 std::shared_ptr<std::string> defaultValue) const {
-		std::shared_ptr<std::string> value = get(name);
+	virtual SPtr<std::string> getProperty(std::string const& name,
+										  SPtr<std::string> defaultValue) const {
+		SPtr<std::string> value = get(name);
 		if (value)
 			return value;
 		return defaultValue;
 	}
 
-	virtual std::shared_ptr<std::string> getProperty(std::string const& name,
-													 std::string const& defaultValue) const {
-		std::shared_ptr<std::string> value = get(name);
+	virtual SPtr<std::string> getProperty(std::string const& name,
+										  std::string const& defaultValue) const {
+		SPtr<std::string> value = get(name);
 		if (value)
 			return value;
 		return std::make_shared<std::string>(defaultValue);
@@ -100,7 +100,7 @@ public:
 	 * @param name the key
 	 * @param value the value corresponding to the key
 	 */
-	virtual void setProperty(std::string const& name, std::shared_ptr<std::string> const& value) {
+	virtual void setProperty(std::string const& name, SPtr<std::string> const& value) {
 		put(name, value);
 	}
 
@@ -174,7 +174,7 @@ public:
 
 	/** @throws MissingValueException */
 	std::string getString(std::string const& name) const {
-		std::shared_ptr<std::string> val = getProperty(name);
+		SPtr<std::string> val = getProperty(name);
 		if (val)
 			return *val;
 		throw MissingValueException(_HERE_, name.c_str());

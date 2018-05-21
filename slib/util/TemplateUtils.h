@@ -9,6 +9,12 @@
 
 namespace slib {
 
+template <class T>
+using SPtr = std::shared_ptr<T>;
+
+template <class T>
+using UPtr = std::unique_ptr<T>;
+
 template <typename T>
 T const* Ptr(T const& obj) {
 	return &obj;
@@ -33,6 +39,15 @@ template <typename T>
 T const* Ptr(std::unique_ptr<T> const& obj) {
 	return obj.get();
 }
+
+template<int = sizeof(size_t)>
+int32_t sizeTHash(size_t h);
+
+template<>
+int32_t sizeTHash<8>(size_t h);
+
+template<>
+int32_t sizeTHash<4>(size_t h);
 
 } // namespace slib
 

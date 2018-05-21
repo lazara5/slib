@@ -134,8 +134,8 @@ bool dmp(void *data, const std::string& k, const std::string& v) {
 
 std::string Config::locateConfigFile(const std::string& fileName) const {
 	ArrayList<std::string> confList;
-	confList.add("/etc");
-	confList.add(FileUtils::buildPath(_rootDir, "conf"));
+	confList.emplace<std::string>("/etc");
+	confList.emplace<std::string>(FileUtils::buildPath(_rootDir, "conf"));
 	onBeforeSearch(confList);
 
 	return searchConfigFile(confList, fileName);
@@ -155,7 +155,7 @@ void Config::internalInit(bool minimal) {
 
 	if (pathBuf[0] == '\0') {
 		// cannot get exe dir, attempt to use current directory
-		if (getcwd(pathBuf, sizeof(pathBuf)) == NULL)
+		if (getcwd(pathBuf, sizeof(pathBuf)) == nullptr)
 			throw InitException(_HERE_, fmt::format("getcwd() failed, errno={:d}", errno).c_str());
 	} else {
 		char *r = strrchr(pathBuf, '/');

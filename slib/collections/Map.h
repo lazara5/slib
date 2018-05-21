@@ -39,7 +39,7 @@ public:
 	class Entry {
 	public:
 		virtual const K& getKey() const = 0;
-		virtual const std::shared_ptr<V> getValue() const = 0;
+		virtual const SPtr<V> getValue() const = 0;
 		virtual ~Entry() {}
 	};
 
@@ -50,26 +50,26 @@ public:
 		return MAPCLASS();
 	}
 
-	virtual std::shared_ptr<V> put(const K& key, std::shared_ptr<V> const& value) = 0;
+	virtual SPtr<V> put(const K& key, SPtr<V> const& value) = 0;
 
 	template <class AVT, typename... A>
-	std::shared_ptr<V> emplace(const K& key, A&&... args) {
+	SPtr<V> emplace(const K& key, A&&... args) {
 		return put(key, std::make_shared<AVT>(std::forward<A>(args)...));
 	}
 
 	template <class AVT>
-	std::shared_ptr<V> emplace(const K& key, AVT const& value) {
+	SPtr<V> emplace(const K& key, AVT const& value) {
 		static_assert(std::is_same<AVT, V>::value, "Only use with the exact value type");
 		return put(key, std::make_shared<V>(value));
 	}
 
-	virtual std::shared_ptr<V> get(const K& key) const override = 0;
+	virtual SPtr<V> get(const K& key) const override = 0;
 	virtual const Entry *getEntry(const K& key) const = 0;
-	virtual std::shared_ptr<V> remove(const K& key) = 0;
+	virtual SPtr<V> remove(const K& key) = 0;
 
 	virtual bool containsKey(const K& key) const override = 0;
 
-	virtual ssize_t size() const = 0;
+	virtual size_t size() const = 0;
 	virtual bool isEmpty() const = 0;
 
 	virtual void clear() = 0;

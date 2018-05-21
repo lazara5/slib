@@ -43,14 +43,14 @@ public:
 
 class MissingSymbolException : public EvaluationException {
 private:
-	std::shared_ptr<String> _name;
+	SPtr<String> _name;
 public:
-	MissingSymbolException(const char *where, std::shared_ptr<String> const& name)
+	MissingSymbolException(const char *where, SPtr<String> const& name)
 	:EvaluationException(where, "MissingSymbolException",
 						 fmt::format("Symbol '{}' could not be located", name->c_str()).c_str())
 	,_name(name) {}
 
-	std::shared_ptr<String> getSymbolName() const {
+	SPtr<String> getSymbolName() const {
 		return _name;
 	}
 };

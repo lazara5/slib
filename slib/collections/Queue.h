@@ -12,16 +12,16 @@ namespace slib {
 template <class E>
 class Queue : public Collection<E> {
 public:
-	virtual bool offer(std::shared_ptr<E> const& e) = 0;
+	virtual bool offer(SPtr<E> const& e) = 0;
 
 	virtual bool offer(const E& e) {
 		return offer(std::make_shared<E>(e));
 	}
 
 	/** @throws NoSuchElementException */
-	virtual std::shared_ptr<E> remove() = 0;
+	virtual SPtr<E> remove() = 0;
 
-	virtual std::shared_ptr<E> poll() = 0;
+	virtual SPtr<E> poll() = 0;
 };
 
 } // namespace slib

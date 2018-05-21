@@ -16,9 +16,9 @@ class Resolver;
 
 class Expression : virtual public Object {
 private:
-	std::shared_ptr<String> _text;
+	SPtr<String> _text;
 public:
-	Expression(std::shared_ptr<String> const& text)
+	Expression(SPtr<String> const& text)
 	:_text(text) {}
 
 	virtual ~Expression() override;
@@ -32,7 +32,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	std::shared_ptr<Value> evaluate(std::shared_ptr<Resolver> resolver);
+	std::shared_ptr<Value> evaluate(SPtr<Resolver> resolver);
 };
 
 } // namespace expr

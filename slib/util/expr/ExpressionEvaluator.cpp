@@ -8,8 +8,8 @@
 namespace slib {
 namespace expr {
 
-std::shared_ptr<Object> ExpressionEvaluator::InternalResolver::getVar(const String &key) {
-	std::shared_ptr<Object> value = _externalResolver->getVar(key);
+SPtr<Object> ExpressionEvaluator::InternalResolver::getVar(const String &key) {
+	SPtr<Object> value = _externalResolver->getVar(key);
 
 	if (!value)
 		value = _builtins->get(key);
@@ -17,15 +17,17 @@ std::shared_ptr<Object> ExpressionEvaluator::InternalResolver::getVar(const Stri
 	return value;
 }
 
-std::unique_ptr<String> ExpressionEvaluator::strExpressionValue(std::shared_ptr<BasicString> const& input,
-																std::shared_ptr<Resolver> const& resolver) {
+ExpressionEvaluator::LoopResolver::~LoopResolver() {}
+
+UPtr<String> ExpressionEvaluator::strExpressionValue(SPtr<BasicString> const& input,
+													 SPtr<Resolver> const& resolver) {
 	return strExpressionValue(std::make_shared<ExpressionInputStream>(input),
 							  std::make_shared<InternalResolver>(resolver));
 }
 
-std::shared_ptr<Object> ExpressionEvaluator::expressionValue(const std::shared_ptr<BasicString> &input, const std::shared_ptr<Resolver> &resolver) {
-	std::shared_ptr<Value> val = expressionValue(std::make_shared<ExpressionInputStream>(input),
-												 std::make_shared<InternalResolver>(resolver));
+SPtr<Object> ExpressionEvaluator::expressionValue(const SPtr<BasicString> &input, const SPtr<Resolver> &resolver) {
+	SPtr<Value> val = expressionValue(std::make_shared<ExpressionInputStream>(input),
+									  std::make_shared<InternalResolver>(resolver));
 	if (val->_value) {
 		if (instanceof<Double>(val->_value)) {
 			double d = Class::cast<Double>(val->_value)->doubleValue();
@@ -46,9 +48,9 @@ static const int OP_GTE = 501;
 static const int OP_EQ = 502;
 static const int OP_NEQ = 503;
 
-std::unique_ptr<String> ExpressionEvaluator::strExpressionValue(const std::shared_ptr<ExpressionInputStream> &input,
-																const std::shared_ptr<Resolver> &resolver) {
-	std::shared_ptr<Value> val = expressionValue(input, resolver);
+UPtr<String> ExpressionEvaluator::strExpressionValue(const SPtr<ExpressionInputStream> &input,
+													 const SPtr<Resolver> &resolver) {
+	SPtr<Value> val = expressionValue(input, resolver);
 	Value::checkNil(*val);
 	if (instanceof<Number>(val->_value)) {
 		double d = Class::cast<Number>(val->_value)->doubleValue();
@@ -60,11 +62,11 @@ std::unique_ptr<String> ExpressionEvaluator::strExpressionValue(const std::share
 		return val->_value->toString();
 }
 
-std::shared_ptr<Value> ExpressionEvaluator::expressionValue(std::shared_ptr<ExpressionInputStream> const& input,
-															std::shared_ptr<Resolver> const& resolver) {
+SPtr<Value> ExpressionEvaluator::expressionValue(SPtr<ExpressionInputStream> const& input,
+												 SPtr<Resolver> const& resolver) {
 	input->skipBlanks();
 
-	std::shared_ptr<Value> val = prefixTermValue(input, resolver);
+	SPtr<Value> val = prefixTermValue(input, resolver);
 	input->skipBlanks();
 	while (input->peek() == '+' || input->peek() == '-' ||
 		   input->peek() == '&' || input->peek() == '|' ||
@@ -95,7 +97,7 @@ std::shared_ptr<Value> ExpressionEvaluator::expressionValue(std::shared_ptr<Expr
 		}
 
 		input->skipBlanks();
-		std::shared_ptr<Value> nextVal = prefixTermValue(input, resolver);
+		SPtr<Value> nextVal = prefixTermValue(input, resolver);
 		switch (op) {
 			case '+':
 				val = val->add(nextVal);
@@ -137,8 +139,8 @@ std::shared_ptr<Value> ExpressionEvaluator::expressionValue(std::shared_ptr<Expr
 	return val;
 }
 
-std::shared_ptr<Value> ExpressionEvaluator::prefixTermValue(std::shared_ptr<ExpressionInputStream> const& input,
-															std::shared_ptr<Resolver> const& resolver) {
+SPtr<Value> ExpressionEvaluator::prefixTermValue(SPtr<ExpressionInputStream> const& input,
+												 SPtr<Resolver> const& resolver) {
 	bool negative = false;
 	bool negate = false;
 
@@ -150,7 +152,7 @@ std::shared_ptr<Value> ExpressionEvaluator::prefixTermValue(std::shared_ptr<Expr
 		negate = true;
 	}
 
-	std::shared_ptr<Value> val = termValue(input, resolver);
+	SPtr<Value> val = termValue(input, resolver);
 	if (negative)
 		val = val->inverse();
 	else if (negate)
@@ -159,14 +161,14 @@ std::shared_ptr<Value> ExpressionEvaluator::prefixTermValue(std::shared_ptr<Expr
 	return val;
 }
 
-std::shared_ptr<Value> ExpressionEvaluator::termValue(std::shared_ptr<ExpressionInputStream> const& input,
-													  std::shared_ptr<Resolver> const& resolver) {
+SPtr<Value> ExpressionEvaluator::termValue(SPtr<ExpressionInputStream> const& input,
+										   SPtr<Resolver> const& resolver) {
 	input->skipBlanks();
-	std::shared_ptr<Value> val = factorValue(input, resolver);
+	SPtr<Value> val = factorValue(input, resolver);
 	input->skipBlanks();
 	while (input->peek() == '*' || input->peek() == '/' || input->peek() == '%') {
 		char op = input->readChar();
-		std::shared_ptr<Value> nextVal = factorValue(input, resolver);
+		SPtr<Value> nextVal = factorValue(input, resolver);
 		if (op == '*')
 			val = val->multiply(nextVal);
 		else if (op == '/')
@@ -178,10 +180,10 @@ std::shared_ptr<Value> ExpressionEvaluator::termValue(std::shared_ptr<Expression
 	return val;
 }
 
-std::shared_ptr<Value> ExpressionEvaluator::factorValue(std::shared_ptr<ExpressionInputStream> const& input,
-														std::shared_ptr<Resolver> const& resolver) {
+SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& input,
+											 SPtr<Resolver> const& resolver) {
 	input->skipBlanks();
-	std::shared_ptr<Value> val = primaryValue(input, resolver);
+	SPtr<Value> val = primaryValue(input, resolver);
 
 	bool inFactor = true;
 	while (inFactor) {
@@ -191,7 +193,7 @@ std::shared_ptr<Value> ExpressionEvaluator::factorValue(std::shared_ptr<Expressi
 			case '[':
 				{
 					input->readChar();
-					std::shared_ptr<Value> arg = expressionValue(input, resolver);
+					SPtr<Value> arg = expressionValue(input, resolver);
 					input->skipBlanks();
 					if (input->peek() != ']')
 						throw SyntaxErrorException(_HERE_, "Missing right bracket after array argument");
@@ -207,8 +209,8 @@ std::shared_ptr<Value> ExpressionEvaluator::factorValue(std::shared_ptr<Expressi
 					input->readChar();
 
 					// evaluate function
-					std::shared_ptr<Function> func = Class::cast<Function>(val->_value);
-					std::shared_ptr<String> symbolName = val->getName();
+					SPtr<Function> func = Class::cast<Function>(val->_value);
+					SPtr<String> symbolName = val->getName();
 					if (!symbolName)
 						symbolName = std::make_shared<String>("<unknown>");
 					FunctionArgs params(func, symbolName);
@@ -245,7 +247,7 @@ std::shared_ptr<Value> ExpressionEvaluator::factorValue(std::shared_ptr<Expressi
 			case '.':
 				{
 					input->readChar();
-					std::shared_ptr<String> name = input->readName();
+					SPtr<String> name = input->readName();
 					val = val->member(name, resolver);
 				}
 				break;
@@ -258,8 +260,8 @@ std::shared_ptr<Value> ExpressionEvaluator::factorValue(std::shared_ptr<Expressi
 	return val;
 }
 
-std::shared_ptr<Value> ExpressionEvaluator::primaryValue(std::shared_ptr<ExpressionInputStream> const& input,
-														 std::shared_ptr<Resolver> const& resolver) {
+SPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const& input,
+											  SPtr<Resolver> const& resolver) {
 	input->skipBlanks();
 	char ch = input->peek();
 	if (std::isdigit(ch))
@@ -269,7 +271,7 @@ std::shared_ptr<Value> ExpressionEvaluator::primaryValue(std::shared_ptr<Express
 		return evaluateSymbol(input, resolver);
 	} else if (ch == '(') {
 		input->readChar();
-		std::shared_ptr<Value> val = expressionValue(input, resolver);
+		SPtr<Value> val = expressionValue(input, resolver);
 		input->skipBlanks();
 		if (input->peek() != ')')
 			throw SyntaxErrorException(_HERE_, "Missing right paranthesis");
@@ -287,10 +289,10 @@ std::shared_ptr<Value> ExpressionEvaluator::primaryValue(std::shared_ptr<Express
 		throw SyntaxErrorException(_HERE_, fmt::format("Unexpected character '{}' encountered", ch).c_str());
 }
 
-std::shared_ptr<Value> ExpressionEvaluator::evaluateSymbol(std::shared_ptr<ExpressionInputStream> const& input,
-														   std::shared_ptr<Resolver> const& resolver) {
-	std::unique_ptr<String> symbolName = input->readName();
-	std::shared_ptr<Object> value = resolver->getVar(*symbolName);
+SPtr<Value> ExpressionEvaluator::evaluateSymbol(SPtr<ExpressionInputStream> const& input,
+												SPtr<Resolver> const& resolver) {
+	UPtr<String> symbolName = input->readName();
+	SPtr<Object> value = resolver->getVar(*symbolName);
 	if (value)
 		return std::make_shared<Value>(value, std::move(symbolName));
 	return Value::Nil(std::move(symbolName));

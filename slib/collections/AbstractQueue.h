@@ -21,15 +21,15 @@ public:
 
 	using Queue<E>::offer;
 
-	virtual bool add(std::shared_ptr<E> const& e) override {;
+	virtual bool add(SPtr<E> const& e) override {;
 		if (offer(e))
 			return true;
 		else
 			throw new IllegalStateException("Queue full");
 	}
 
-	virtual std::shared_ptr<E> remove() override {
-		std::shared_ptr<E> e = poll();
+	virtual SPtr<E> remove() override {
+		SPtr<E> e = poll();
 		if (e)
 			return e;
 
@@ -40,7 +40,7 @@ public:
 		while (poll());
 	}
 
-	std::shared_ptr<E> poll() override = 0;
+	SPtr<E> poll() override = 0;
 };
 
 } // namespace slib

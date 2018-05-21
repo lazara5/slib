@@ -16,15 +16,26 @@ namespace slib {
 template <class E>
 class Collection : virtual public Object, public ConstIterable<E> {
 public:
+	static Class const* CLASS() {
+		return COLLECTIONCLASS();
+	}
+
 	virtual size_t size() const = 0;
 
 	virtual bool isEmpty() const = 0;
 
-	virtual ConstIterator<std::shared_ptr<E> > constIterator() const = 0;
+	virtual ConstIterator<SPtr<E>> constIterator() const = 0;
 
-	virtual bool add(std::shared_ptr<E> const& e) = 0;
+	virtual bool add(SPtr<E> const& e) = 0;
 
-	virtual bool add(E const& e) {
+	template <class AVT, typename... A>
+	bool emplace(A&&... args) {
+		return add(std::make_shared<AVT>(std::forward<A>(args)...));
+	}
+
+	template <class AVT>
+	bool emplace(AVT const& e) {
+		static_assert(std::is_same<AVT, E>::value, "Only use with the exact value type");
 		return add(std::make_shared<E>(e));
 	}
 

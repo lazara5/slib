@@ -22,7 +22,7 @@ using AbstractList<E>::_modCount;
 private:
 	static const int DEFAULT_CAPACITY = 10;
 
-	std::vector<std::shared_ptr<E> > _elements;
+	std::vector<SPtr<E>> _elements;
 
 	static const int MAX_ARRAY_SIZE = Integer::MAX_VALUE - 1;
 
@@ -39,9 +39,9 @@ private:
 	}
 
 	/** Skips bounds checking */
-	std::shared_ptr<E> internalRemove(int index) {
+	SPtr<E> internalRemove(int index) {
 		_modCount++;
-		std::shared_ptr<E> removed = _elements[index];
+		SPtr<E> removed = _elements[index];
 		_elements.erase(_elements.begin() + index);
 		return removed;
 	}
@@ -88,7 +88,7 @@ public:
 	 *
 	 * @param e element to be appended to this list
 	 */
-	virtual bool add(std::shared_ptr<E> const& e) override {
+	virtual bool add(SPtr<E> const& e) override {
 		_modCount++;
 		try {
 			_elements.push_back(e);
@@ -100,11 +100,11 @@ public:
 
 	using Collection<E>::add;
 
-	void add(int index, const E& e) {
+	void add(int index, SPtr<E> const& e) override {
 		addRangeCheck(index);
 		_modCount++;
 		try {
-			_elements.insert(_elements.begin() + index, std::make_shared<E>(e));
+			_elements.insert(_elements.begin() + index, e);
 		} catch (std::bad_alloc const &) {
 			throw OutOfMemoryError(_HERE_);
 		}
@@ -132,19 +132,19 @@ public:
 
 	// Positional Access Operations
 
-	virtual std::shared_ptr<E> get(size_t index) const override {
+	virtual SPtr<E> get(size_t index) const override {
 		accessRangeCheck(index);
 		return _elements[index];
 	}
 
-	std::shared_ptr<E> remove(int index) {
+	SPtr<E> remove(int index) {
 		accessRangeCheck(index);
 		return internalRemove(index);
 	}
 
 private:
 	// iterator
-	class ConstArrayListIterator : public ConstIterator<std::shared_ptr<E> >::ConstIteratorImpl {
+	class ConstArrayListIterator : public ConstIterator<SPtr<E>>::ConstIteratorImpl {
 	private:
 		const ArrayList *_list;
 	protected:
@@ -175,7 +175,7 @@ private:
 			return _cursor != _list->size();
 		}
 
-		virtual const std::shared_ptr<E>& next() {
+		virtual SPtr<E> const& next() {
 			checkForComodification(_HERE_);
 			size_t i = _cursor;
 			if (i >= _list->size())
@@ -184,12 +184,12 @@ private:
 			return _list->_elements[_lastRet = i];
 		}
 
-		virtual typename ConstIterator<std::shared_ptr<E> >::ConstIteratorImpl *clone() {
+		virtual typename ConstIterator<SPtr<E>>::ConstIteratorImpl *clone() {
 			return new ConstArrayListIterator(this);
 		}
 	};
 
-	class ArrayListIterator : public Iterator<std::shared_ptr<E> >::IteratorImpl, public ConstArrayListIterator {
+	class ArrayListIterator : public Iterator<SPtr<E>>::IteratorImpl, public ConstArrayListIterator {
 	private:
 		ArrayList *_ncList;
 	protected:
@@ -226,7 +226,7 @@ private:
 			}
 		}
 
-		virtual typename Iterator<std::shared_ptr<E> >::IteratorImpl *clone() {
+		virtual typename Iterator<SPtr<E>>::IteratorImpl *clone() {
 			return new ArrayListIterator(this);
 		}
 	};
@@ -239,12 +239,12 @@ public:
 	 *
 	 * @return an iterator over the elements in this list in proper sequence
 	 */
-	virtual ConstIterator<std::shared_ptr<E> > constIterator() const {
-		return ConstIterator<std::shared_ptr<E> >(new ConstArrayListIterator(this, 0));
+	virtual ConstIterator<SPtr<E>> constIterator() const {
+		return ConstIterator<SPtr<E>>(new ConstArrayListIterator(this, 0));
 	}
 
-	virtual Iterator<std::shared_ptr<E> > iterator() {
-		return Iterator<std::shared_ptr<E> >(new ArrayListIterator(this, 0));
+	virtual Iterator<SPtr<E>> iterator() {
+		return Iterator<SPtr<E>>(new ArrayListIterator(this, 0));
 	}
 };
 

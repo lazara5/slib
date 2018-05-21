@@ -20,34 +20,34 @@ namespace expr {
 class Value {
 friend class ExpressionEvaluator;
 private:
-	std::shared_ptr<Object> _value;
-	std::shared_ptr<String> _name;
+	SPtr<Object> _value;
+	SPtr<String> _name;
 public:
-	Value(std::shared_ptr<Object> const& value, std::shared_ptr<String> const& name = nullptr)
+	Value(SPtr<Object> const& value, SPtr<String> const& name = nullptr)
 	:_value(value)
 	,_name(name) {}
 
-	static std::shared_ptr<Value> of(std::shared_ptr<Object> const& value) {
+	static SPtr<Value> of(SPtr<Object> const& value) {
 		return std::make_shared<Value>(value);
 	}
 
-	static std::shared_ptr<Value> Nil() {
+	static SPtr<Value> Nil() {
 		return std::make_shared<Value>(nullptr, nullptr);
 	}
 
-	static std::shared_ptr<Value> Nil(std::shared_ptr<String> const& varName) {
+	static SPtr<Value> Nil(SPtr<String> const& varName) {
 		return std::make_shared<Value>(nullptr, varName);
 	}
 
-	std::shared_ptr<Object> getValue() const {
+	SPtr<Object> getValue() const {
 		return _value;
 	}
 
-	std::shared_ptr<String> getName() const {
+	SPtr<String> getName() const {
 		return _name;
 	}
 
-	std::shared_ptr<Value> clone() {
+	SPtr<Value> clone() {
 		return std::make_shared<Value>(_value, _name);
 	}
 
@@ -66,7 +66,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	std::shared_ptr<Value> inverse() {
+	SPtr<Value> inverse() {
 		checkNil(*this);
 		if (instanceof<Number>(_value)) {
 			Number *n = Class::castPtr<Number>(_value);
@@ -80,7 +80,7 @@ public:
 	 * @param obj  the object
 	 * @return Boolean: boolean value; Number: true if not 0; Object: true if not null
 	 */
-	static bool isTrue(std::shared_ptr<Object> const& obj) {
+	static bool isTrue(SPtr<Object> const& obj) {
 		if (!obj)
 			return false;
 		if (instanceof<Boolean>(obj))
@@ -90,17 +90,17 @@ public:
 		return true;
 	}
 
-	static bool isTrue(std::shared_ptr<Value> const& v) {
+	static bool isTrue(SPtr<Value> const& v) {
 		return isTrue(v->_value);
 	}
 
 	/** @throws EvaluationException */
-	std::shared_ptr<Value> logicalNegate() {
+	SPtr<Value> logicalNegate() {
 		return std::make_shared<Value>(std::make_shared<Integer>(isTrue(_value) ? 0 : 1));
 	}
 
 	/** @throws EvaluationException */
-	std::shared_ptr<Value> add(std::shared_ptr<Value> const& other) {
+	SPtr<Value> add(SPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -124,7 +124,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	std::shared_ptr<Value> subtract(std::shared_ptr<Value> const& other) {
+	SPtr<Value> subtract(SPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -138,16 +138,16 @@ public:
 			throw EvaluationException(_HERE_, "-", _value->getClass(), other->_value->getClass());
 	}
 
-	std::shared_ptr<Value> logicalAnd(std::shared_ptr<Value> const& other) {
+	SPtr<Value> logicalAnd(SPtr<Value> const& other) {
 		return (isTrue(_value) ? other : clone());
 	}
 
-	std::shared_ptr<Value> logicalOr(std::shared_ptr<Value> const& other) {
+	SPtr<Value> logicalOr(SPtr<Value> const& other) {
 		return (isTrue(_value) ? clone() : other);
 	}
 
 	/** @throws EvaluationException */
-	std::shared_ptr<Value> multiply(std::shared_ptr<Value> const& other) {
+	SPtr<Value> multiply(SPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -162,7 +162,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	std::shared_ptr<Value> divide(std::shared_ptr<Value> const& other) {
+	SPtr<Value> divide(SPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -177,7 +177,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	std::shared_ptr<Value> remainder(std::shared_ptr<Value> const& other) {
+	SPtr<Value> remainder(SPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -192,7 +192,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool gt(std::shared_ptr<Value> const& other) {
+	bool gt(SPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -214,7 +214,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool gte(std::shared_ptr<Value> const& other) {
+	bool gte(SPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -236,7 +236,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool lt(std::shared_ptr<Value> const& other) {
+	bool lt(SPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -258,7 +258,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool lte(std::shared_ptr<Value> const& other) {
+	bool lte(SPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -280,7 +280,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool eq(std::shared_ptr<Value> const& other) {
+	bool eq(SPtr<Value> const& other) {
 		if ((!this->_value) || (!other->_value))
 			return ((!this->_value) && (!other->_value));
 		if (instanceof<Number>(_value)) {
@@ -303,7 +303,7 @@ public:
 
 private:
 	/** @throws EvaluationException */
-	int64_t getIndex(std::shared_ptr<Value> const& arg) {
+	int64_t getIndex(SPtr<Value> const& arg) {
 		if (!instanceof<Number>(arg->_value))
 			throw EvaluationException(_HERE_, fmt::format("Operator '[]': expected numeric index, got '{}'", arg->_value->getClass()->getName()).c_str());
 		Number *index = Class::castPtr<Number>(arg->_value);
@@ -314,7 +314,7 @@ private:
 
 public:
 	/** @throws EvaluationException */
-	std::shared_ptr<Value> index(std::shared_ptr<Value> const& arg) {
+	SPtr<Value> index(SPtr<Value> const& arg) {
 		checkNil(*this);
 		checkNil(*arg);
 		if (instanceof<Map<String, Object>>(_value)) {
@@ -333,15 +333,15 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	std::shared_ptr<Value> member(std::shared_ptr<String> const& memberName, std::shared_ptr<Resolver> const& resolver) {
+	SPtr<Value> member(SPtr<String> const& memberName, SPtr<Resolver> const& resolver) {
 		if (isNil()) {
 			// maybe it is a dotted variable name
 			if (!_name) {
 				// this is not a named variable, no dotted expression possible
 				checkNil(*this);
 			}
-			std::shared_ptr<String> dottedName = std::make_shared<String>(fmt::format("{}.{}", *_name, *memberName));
-			std::shared_ptr<Object> val = resolver->getVar(*dottedName);
+			SPtr<String> dottedName = std::make_shared<String>(fmt::format("{}.{}", *_name, *memberName));
+			SPtr<Object> val = resolver->getVar(*dottedName);
 			if (val)
 				return std::make_shared<Value>(val);
 			return Nil(dottedName);

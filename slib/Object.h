@@ -6,6 +6,7 @@
 #define H_SLIB_OBJECT_H
 
 #include "slib/Class.h"
+#include "slib/util/TemplateUtils.h"
 
 #include <stdint.h>
 
@@ -32,7 +33,7 @@ public:
 		return (int32_t)(value ^ (value >> 32));
 	}
 
-	virtual std::unique_ptr<String> toString() const;
+	virtual UPtr<String> toString() const;
 
 	virtual bool equals(Object const& other) const {
 		return this == &other;
@@ -51,12 +52,12 @@ bool instanceof(Object const* obj) {
 }
 
 template <class T>
-bool instanceof(std::shared_ptr<Object> const& obj) {
+bool instanceof(SPtr<Object> const& obj) {
 	return instanceof<T>(obj.get());
 }
 
 template <class T>
-bool instanceof(std::unique_ptr<Object> const& obj) {
+bool instanceof(UPtr<Object> const& obj) {
 	return instanceof<T>(obj.get());
 }
 

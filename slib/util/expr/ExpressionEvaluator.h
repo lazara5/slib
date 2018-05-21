@@ -16,35 +16,37 @@ namespace expr {
 class ExpressionEvaluator {
 friend class Expression;
 private:
-	static std::unique_ptr<Map<String, Object>> _builtins;
+	static UPtr<Map<String, Object>> _builtins;
 
 	class InternalResolver : public Resolver {
 	private:
-		std::shared_ptr<Resolver> _externalResolver;
+		SPtr<Resolver> _externalResolver;
 	public:
-		InternalResolver(std::shared_ptr<Resolver> const& externalResolver)
+		InternalResolver(SPtr<Resolver> const& externalResolver)
 		:_externalResolver(externalResolver) {}
 
-		virtual std::shared_ptr<Object> getVar(const String &key) override;
+		virtual SPtr<Object> getVar(const String &key) override;
 	};
 public:
 	/** Resolver that provides the for loop variable */
 	class LoopResolver : public Resolver {
 	private:
-		std::shared_ptr<String> _varName;
-		std::shared_ptr<Object> _value;
-		std::shared_ptr<Resolver> _parentResolver;
+		SPtr<String> _varName;
+		SPtr<Object> _value;
+		SPtr<Resolver> _parentResolver;
 	public:
-		LoopResolver(std::shared_ptr<String> const& varName,
-					 std::shared_ptr<Resolver> const& parentResolver)
+		virtual ~LoopResolver() override;
+
+		LoopResolver(SPtr<String> const& varName,
+					 SPtr<Resolver> const& parentResolver)
 		:_varName(varName)
 		,_parentResolver(parentResolver) {}
 
-		void setVar(std::shared_ptr<Object> const& value) {
+		void setVar(SPtr<Object> const& value) {
 			_value = value;
 		}
 
-		virtual std::shared_ptr<Object> getVar(const String &key) override {
+		virtual SPtr<Object> getVar(const String &key) override {
 			if (_varName->equals(key))
 				return _value;
 
@@ -53,27 +55,22 @@ public:
 	};
 public:
 	/** @throws EvaluationException */
-	static std::unique_ptr<String> strExpressionValue(std::shared_ptr<BasicString> const& input,
-													  std::shared_ptr<Resolver> const& resolver);
+	static UPtr<String> strExpressionValue(SPtr<BasicString> const& input, SPtr<Resolver> const& resolver);
 
 	/** @throws EvaluationException */
-	static std::shared_ptr<Object> expressionValue(std::shared_ptr<BasicString> const& input,
-												   std::shared_ptr<Resolver> const& resolver);
+	static SPtr<Object> expressionValue(SPtr<BasicString> const& input, SPtr<Resolver> const& resolver);
 protected:
 	/** @throws EvaluationException */
-	static std::unique_ptr<String> strExpressionValue(std::shared_ptr<ExpressionInputStream> const& input,
-													  std::shared_ptr<Resolver> const& resolver);
-	/** @throws EvaluationException */
-	static std::shared_ptr<Value> expressionValue(std::shared_ptr<ExpressionInputStream> const& input,
-												  std::shared_ptr<Resolver> const& resolver);
+	static UPtr<String> strExpressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
 
 	/** @throws EvaluationException */
-	static std::shared_ptr<Value> prefixTermValue(std::shared_ptr<ExpressionInputStream> const& input,
-												  std::shared_ptr<Resolver> const& resolver);
+	static SPtr<Value> expressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
 
 	/** @throws EvaluationException */
-	static std::shared_ptr<Value> termValue(std::shared_ptr<ExpressionInputStream> const& input,
-											std::shared_ptr<Resolver> const& resolver);
+	static SPtr<Value> prefixTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+
+	/** @throws EvaluationException */
+	static SPtr<Value> termValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
 
 	/** @throws EvaluationException */
 	static std::shared_ptr<Value> factorValue(std::shared_ptr<ExpressionInputStream> const& input,

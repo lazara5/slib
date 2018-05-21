@@ -9,6 +9,7 @@
 #include "slib/compat/memory.h"
 
 #include <stdint.h>
+#include <inttypes.h>
 
 #include <string>
 #include <atomic>
@@ -149,7 +150,7 @@ constexpr uint64_t VOIDID = typeId<BASEID(VOID)>();
 		constexpr uint64_t DOUBLEID = typeId<BASEID(DOUBLE), NUMBERID>();
 	constexpr uint64_t CONSTITERABLEID = typeId<BASEID(CONSTITERABLE), OBJECTID>();
 		constexpr uint64_t ITERABLEID = typeId<BASEID(ITERABLE), OBJECTID>();
-	constexpr uint64_t COLLECTIONID = typeId<BASEID(COLLECTION), OBJECTID>();
+	constexpr uint64_t COLLECTIONID = typeId<BASEID(COLLECTION), CONSTITERABLEID>();
 		constexpr uint64_t QUEUEID = typeId<BASEID(QUEUE), COLLECTIONID>();
 			constexpr uint64_t PRIORITYQUEUEID = typeId<BASEID(PRIORITYQUEUE), QUEUEID>();
 		constexpr uint64_t LISTID = typeId<BASEID(LIST), COLLECTIONID>();
@@ -179,7 +180,9 @@ protected:
 public:
 	Class(const char *name, uint64_t typeId)
 	:_name(name)
-	,_typeId(typeId) {}
+	,_typeId(typeId) {
+		printf("Class %s: %" PRIu64 "\n", name, typeId);
+	}
 
 	Class(const char *name);
 
@@ -213,8 +216,11 @@ public:
 				return dynamic_cast<T*>(from);
 
 			bool canCast = T::CLASS()->isAssignableFrom(from->getClass());
-			if (canCast)
-				return dynamic_cast<T*>(from);
+			if (canCast) {
+				T* ret = dynamic_cast<T*>(from);
+				if (ret)
+					return ret;
+			}
 
 			throw ClassCastException(_HERE_, V::CLASS()->getName().c_str(), T::CLASS()->getName().c_str());
 		}
@@ -230,8 +236,11 @@ public:
 				return dynamic_cast<T const*>(from);
 
 			bool canCast = T::CLASS()->isAssignableFrom(from->getClass());
-			if (canCast)
-				return dynamic_cast<T const*>(from);
+			if (canCast) {
+				T const* ret =  dynamic_cast<T const*>(from);
+				if (ret)
+					return ret;
+			}
 
 			throw ClassCastException(_HERE_, V::CLASS()->getName().c_str(), T::CLASS()->getName().c_str());
 		}
@@ -247,8 +256,11 @@ public:
 				return std::dynamic_pointer_cast<T>(from);
 
 			bool canCast = T::CLASS()->isAssignableFrom(from->getClass());
-			if (canCast)
-				return std::dynamic_pointer_cast<T>(from);
+			if (canCast) {
+				T* ret = dynamic_cast<T*>(from.get());
+				if (ret)
+					return std::shared_ptr<T>(from, ret);
+			}
 
 			throw ClassCastException(_HERE_, V::CLASS()->getName().c_str(), T::CLASS()->getName().c_str());
 		}
@@ -280,6 +292,7 @@ extern const Class* LONGCLASS();
 extern const Class* ULONGCLASS();
 extern const Class* DOUBLECLASS();
 extern const Class* CONSTITERABLECLASS();
+extern const Class* COLLECTIONCLASS();
 extern const Class* PRIORITYQUEUECLASS();
 extern const Class* LISTCLASS();
 extern const Class* ARRAYLISTCLASS();

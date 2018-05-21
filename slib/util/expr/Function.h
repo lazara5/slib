@@ -65,7 +65,7 @@ private:
 	std::shared_ptr<Function> const& _function;
 	ArrayList<Object> _args;
 public:
-	FunctionArgs(std::shared_ptr<Function> const& function, std::shared_ptr<String> const& symbolName)
+	FunctionArgs(SPtr<Function> const& function, std::shared_ptr<String> const& symbolName)
 	:ArgList(symbolName)
 	,_function(function) {}
 
@@ -75,7 +75,7 @@ public:
 		return _args.size();
 	}
 
-	virtual std::shared_ptr<Object> getNullable(size_t index) const override {
+	virtual SPtr<Object> getNullable(size_t index) const override {
 		if (_args.size() <= index)
 			throw EvaluationException(_HERE_, fmt::format("Function {}(): invalid argument index: ", *_symbolName, index).c_str());
 		return _args.get(index);
@@ -88,7 +88,7 @@ public:
 };
 
 /** @throws EvaluationException */
-typedef std::function<std::shared_ptr<Value>(std::shared_ptr<Resolver> const& resolver, ArgList const& args)> Evaluate;
+typedef std::function<SPtr<Value>(SPtr<Resolver> const& resolver, ArgList const& args)> Evaluate;
 
 class Function : virtual public Object {
 private:
@@ -96,7 +96,7 @@ private:
 	size_t _fixedParams;
 
 	/** Parameter types for fixed params */
-	std::unique_ptr<std::vector<Class const*>> _paramTypes;
+	UPtr<std::vector<Class const*>> _paramTypes;
 protected:
 	Evaluate _evaluate;
 public:
@@ -116,8 +116,7 @@ public:
 	}
 
 	template <typename ...Args>
-	static std::shared_ptr<Function> impl(Evaluate evaluate) {
-		printf("impl\n");
+	static SPtr<Function> impl(Evaluate evaluate) {
 		return std::make_shared<Function>(true, std::initializer_list<Class const*>({Args::CLASS()...}), evaluate);
 	}
 
@@ -140,7 +139,7 @@ public:
 	}
 
 	/** @throws EvaluationException; */
-	std::shared_ptr<Value> evaluate(std::shared_ptr<Resolver> const& resolver, ArgList const& args) {
+	SPtr<Value> evaluate(SPtr<Resolver> const& resolver, ArgList const& args) {
 		return _evaluate(resolver, args);
 	}
 };

@@ -37,7 +37,7 @@ std::unique_ptr<String> ExpressionInputStream::readDottedNameRemainder() {
 enum class SSMODE { SCAN, ESCAPE, ESCAPE2 };
 
 /** @throws SyntaxErrorException */
-std::shared_ptr<Value> ExpressionInputStream::readString() {
+SPtr<Value> ExpressionInputStream::readString() {
 	// read ' or "
 	char delimiter = readChar();
 	StringBuilder str;

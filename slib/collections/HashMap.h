@@ -99,7 +99,7 @@ protected:
 	}
 
 	/** Returns the index for hash code h. */
-	static int indexFor(int32_t h, int32_t length) {
+	static int32_t indexFor(int32_t h, int32_t length) {
 		// note: only works when len is power of two !
 		return h & (length - 1);
 	}
@@ -162,8 +162,8 @@ protected:
 	 * for this key.
 	 */
 	SPtr<V> removeEntryForKey(const K& key) {
-		int hash = _smudge(std::hash<K>()(key));
-		int i = indexFor(hash, _tableLength);
+		int32_t hash = _smudge(std::hash<K>()(key));
+		int32_t i = indexFor(hash, _tableLength);
 		Entry* prev = _table[i];
 		Entry* e = prev;
 		Pred eq;
@@ -193,8 +193,8 @@ protected:
 	 * in the HashMap.
 	 */
 	void eraseEntryForKey(const K& key) {
-		int hash = _smudge(std::hash<K>()(key));
-		int i = indexFor(hash, _tableLength);
+		int32_t hash = _smudge(std::hash<K>()(key));
+		int32_t i = indexFor(hash, _tableLength);
 		Entry* prev = _table[i];
 		Entry* e = prev;
 		Pred eq;
@@ -301,8 +301,9 @@ public:
 	 * HashMap::containsKey may be used to distinguish between these two cases.
 	 */
 	SPtr<V> get(const K& key) const {
-		int hash = _smudge(std::hash<K>()(key));
+		int32_t hash = _smudge(sizeTHash(std::hash<K>()(key)));
 		Pred eq;
+		fmt::print("<-h: {}->{}, if: {}\n", std::hash<K>()(key), hash, indexFor(hash, _tableLength));
 		for (Entry *e = _table[indexFor(hash, _tableLength)]; e != nullptr; e = e->_next) {
 			if ((e->_keyHash == hash) && (eq(e->_key, key)))
 				return e->_value;
@@ -311,7 +312,7 @@ public:
 	}
 
 	const typename Map<K, V>::Entry *getEntry(const K& key) const {
-		int hash = _smudge(std::hash<K>()(key));
+		int32_t hash = _smudge(sizeTHash(std::hash<K>()(key)));
 		Pred eq;
 		for (const Entry *e = _table[indexFor(hash, _tableLength)]; e != nullptr; e = e->_next) {
 			if ((e->_keyHash == hash) && (eq(e->_key, key)))
@@ -326,7 +327,7 @@ public:
 	 * @return <i>true</i> if this map contains a mapping for the specified key.
 	 */
 	bool containsKey(const K& key) const {
-		int hash = _smudge(std::hash<K>()(key));
+		int32_t hash = _smudge(sizeTHash(std::hash<K>()(key)));
 		Pred eq;
 		for (Entry *e = _table[indexFor(hash, _tableLength)]; e != nullptr; e = e->_next) {
 			if ((e->_keyHash == hash) && (eq(e->_key, key)))
@@ -345,9 +346,10 @@ public:
 	 *		(A <i>'NULL'</i> reference as a return value can also indicate that the map
 	 *		previously associated a <i>'NULL'</i> reference with <i>key</i>.)
 	 */
-	SPtr<V> put(const K& key, SPtr<V> const& value) {
+	virtual SPtr<V> put(const K& key, SPtr<V> const& value) {
 		int32_t hash = _smudge(sizeTHash(std::hash<K>()(key)));
-		int i = indexFor(hash, _tableLength);
+		int32_t i = indexFor(hash, _tableLength);
+		fmt::print("->h: {}->{}, if: {}\n", sizeTHash(std::hash<K>()(key)), hash, i);
 		Pred eq;
 		for (Entry *e = _table[i]; e != nullptr; e = e->_next) {
 			if ((e->_keyHash == hash) && (eq(e->_key, key))) {
@@ -371,8 +373,8 @@ public:
 	 *		previously associated a <i>'NULL'</i> reference with <i>key</i>.)
 	 */
 	void insert(const K& key, const V& value) {
-		int hash = _smudge(std::hash<K>()(key));
-		int i = indexFor(hash, _tableLength);
+		int32_t hash = _smudge(sizeTHash(std::hash<K>()(key)));
+		int32_t i = indexFor(hash, _tableLength);
 		Pred eq;
 		for (Entry *e = _table[i]; e != nullptr; e = e->_next) {
 			if ((e->_keyHash == hash) && (eq(e->_key, key))) {
@@ -394,7 +396,7 @@ public:
 	void copyFrom(const InternalHashMap& other) {
 		for (int32_t i = 0; i < other._tableLength; i++) {
 			Entry *e = other._table[i];
-			while (e != NULL) {
+			while (e != nullptr) {
 				put(e->_key, e->_value);
 				e = e->_next;
 			}
@@ -402,9 +404,9 @@ public:
 	}
 
 	virtual void forEach(bool (*callback)(void*, const K&, const SPtr<V>&), void *data) const {
-		for (int i = 0; i < _tableLength; i++) {
+		for (int32_t i = 0; i < _tableLength; i++) {
 			Entry *e = _table[i];
-			while (e != NULL) {
+			while (e != nullptr) {
 				bool cont = callback(data, e->_key, e->_value);
 				if (!cont)
 					return;
@@ -414,9 +416,9 @@ public:
 	}
 
 	virtual void forEach(std::function<bool(const K&, const SPtr<V>&)> callback) const {
-		for (int i = 0; i < _tableLength; i++) {
+		for (int32_t i = 0; i < _tableLength; i++) {
 			Entry *e = _table[i];
-			while (e != NULL) {
+			while (e != nullptr) {
 				bool cont = callback(e->_key, e->_value);
 				if (!cont)
 					return;
@@ -672,7 +674,7 @@ public:
 		_internalMap->forEach(callback, data);
 	}
 
-	void forEach(std::function<bool(const K&, const V&)> callback) const {
+	void forEach(std::function<bool(const K&, SPtr<V> const&)> callback) const {
 		_internalMap->forEach(callback);
 	}
 

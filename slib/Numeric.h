@@ -747,6 +747,10 @@ public:
 	static bool parseBoolean(const std::string& str) {
 		return parseBoolean(str.c_str());
 	}
+
+	virtual UPtr<String> toString() const override {
+		return _value ? std::make_unique<String>("true") : std::make_unique<String>("false");
+	}
 };
 
 } // namespace

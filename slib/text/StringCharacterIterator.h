@@ -12,16 +12,17 @@
 namespace slib {
 
 class StringCharacterIterator : public CharacterIterator {
-private:
+protected:
 	std::shared_ptr<BasicString> _text;
+	ptrdiff_t _pos;
+private:
 	const char *_buffer;
-	ssize_t _begin;
-	ssize_t _end;
-	ssize_t _pos;
+	ptrdiff_t _begin;
+	ptrdiff_t _end;
 public:
-	StringCharacterIterator(std::shared_ptr<BasicString> const& text, ssize_t begin, ssize_t end, ssize_t pos);
+	StringCharacterIterator(SPtr<BasicString> const& text, ptrdiff_t begin, ptrdiff_t end, ptrdiff_t pos);
 
-	StringCharacterIterator(std::shared_ptr<BasicString> const& text)
+	StringCharacterIterator(SPtr<BasicString> const& text)
 	:StringCharacterIterator(text, 0, (ssize_t)text->length(), 0) {}
 
 	virtual char first() override;
@@ -41,16 +42,16 @@ public:
 
 	virtual char previous() override;
 
-	virtual ssize_t getBeginIndex() const override {
+	virtual ptrdiff_t getBeginIndex() const override {
 		return _begin;
 	}
 
 
-	virtual ssize_t getEndIndex() const override {
+	virtual ptrdiff_t getEndIndex() const override {
 		return _end;
 	}
 
-	virtual ssize_t getIndex() const override {
+	virtual ptrdiff_t getIndex() const override {
 		return _pos;
 	}
 };

@@ -21,6 +21,9 @@ namespace slib {
 /** Thrown by String methods to indicate that an index is either negative or greater than the size of the string. */
 class StringIndexOutOfBoundsException : public IndexOutOfBoundsException {
 public:
+	StringIndexOutOfBoundsException(const char *where)
+	:IndexOutOfBoundsException(where) {}
+
 	StringIndexOutOfBoundsException(const char *where, std::ptrdiff_t index)
 	:IndexOutOfBoundsException(where, fmt::format("String index out of range: {:d}", index).c_str()) {}
 };
@@ -103,6 +106,8 @@ public:
 	String(const char *buffer, size_t len);
 
 	String(String const& other);
+
+	String(char c);
 
 	virtual ~String() override;
 
@@ -586,10 +591,10 @@ public:
 
 
 
-	static std::unique_ptr<ArrayList<std::string>> simpleSplit(const char *buffer, size_t len, const char delim, int limit = 65535);
+	static UPtr<ArrayList<std::string>> simpleSplit(const char *buffer, size_t len, const char delim, int limit = 65535);
 
 	template <class S>
-	static std::unique_ptr<ArrayList<std::string>> simpleSplit(S const* str, const char delim, int limit = 65535) {
+	static UPtr<ArrayList<std::string>> simpleSplit(S const* str, const char delim, int limit = 65535) {
 		if (!str)
 			throw NullPointerException(_HERE_);
 		return simpleSplit(str->c_str(), str->length(), delim, limit);
@@ -600,6 +605,20 @@ public:
 	std::unique_ptr<ArrayList<String>> split(const char *pattern, int limit = 65535);
 
 	virtual int32_t hashCode() const override;
+
+	static UPtr<String> valueOf(char c);
+
+	static UPtr<String> valueOf(Object const* obj) {
+		return (!obj) ? std::make_unique<String>("null") : obj->toString();
+	}
+
+	static UPtr<String> valueOf(SPtr<Object> const& obj) {
+		return valueOf(obj.get());
+	}
+
+	static UPtr<String> valueOf(UPtr<Object> const& obj) {
+		return valueOf(obj.get());
+	}
 
 	virtual std::unique_ptr<String> toString() const override {
 		return std::make_unique<String>(_str);

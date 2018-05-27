@@ -180,6 +180,21 @@ bool StringBuilder::operator <(StringBuilder const& other) const {
 	return (strcmp((char*)_buffer, (char*)other._buffer) < 0);
 }
 
+const StringBuilder &StringBuilder::remove(size_t start, size_t end) {
+	if (!_buffer)
+		return *this;
+	if (end > _len)
+		end = _len;
+	if (start > end)
+		throw StringIndexOutOfBoundsException(_HERE_);
+	size_t len = end - start;
+	if (len > 0) {
+		memmove(_buffer + start, _buffer + end + 1, _len - end + 2);
+		_len -= len;
+	}
+	return *this;
+}
+
 char StringBuilder::charAt(size_t pos) const {
 	return (char)_buffer[pos];
 }

@@ -30,19 +30,19 @@ public:
 	 * @param key  variable name
 	 * @return variable value or nullptr if not defined
 	 */
-	virtual std::shared_ptr<Object> getVar(String const& key) = 0;
+	virtual SPtr<Object> getVar(String const& key) = 0;
 };
 
 class MapResolver : public Resolver {
 private:
-	std::shared_ptr<Map<String, Object>> _map;
+	SPtr<Map<String, Object>> _map;
 public:
-	MapResolver(std::shared_ptr<Map<String, Object>> map)
+	MapResolver(SPtr<Map<String, Object>> map)
 	:_map(map) {}
 
 	virtual ~MapResolver() override;
 
-	virtual std::shared_ptr<Object> getVar(const String &key) override {
+	virtual SPtr<Object> getVar(const String &key) override {
 		return _map->get(key);
 	}
 };

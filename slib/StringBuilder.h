@@ -129,6 +129,14 @@ public:
 		return *this;
 	}
 
+	StringBuilder& add(Object const* obj) {
+		return add(*String::valueOf(obj));
+	}
+
+	StringBuilder& add(SPtr<Object> const& obj) {
+		return add(obj.get());
+	}
+
 	/** for std container compatibility */
 	void push_back(char c) {
 		add(c);
@@ -161,6 +169,26 @@ public:
 	const StringBuilder operator+(double other) const;
 
 	bool operator <(StringBuilder const& other) const;
+
+	template <class S>
+	const StringBuilder& insert(size_t offset, S const* str) {
+		if (offset > _len)
+			throw StringIndexOutOfBoundsException(_HERE_, (ptrdiff_t)offset);
+
+		const char *strBuffer = str ? str->c_str() : "null";
+		size_t strLen = str ? str->length() : 4;
+		if (!_buffer) {
+			grow(strLen + 1);
+			_buffer[0] = 0;
+		} else
+			grow(_size + strLen);
+		memmove(_buffer + offset + strLen, _buffer + offset, _len - offset + 1);
+		memcpy(_buffer + offset, strBuffer, strLen);
+		_len += strLen;
+		return *this;
+	}
+
+	const StringBuilder& remove(size_t start, size_t end);
 
 	/** bool operator */
 	explicit operator bool() const {

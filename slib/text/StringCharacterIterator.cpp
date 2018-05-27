@@ -7,7 +7,7 @@
 
 namespace slib {
 
-StringCharacterIterator::StringCharacterIterator(std::shared_ptr<BasicString> const& text, ssize_t begin, ssize_t end, ssize_t pos)
+StringCharacterIterator::StringCharacterIterator(SPtr<BasicString> const& text, ptrdiff_t begin, ptrdiff_t end, ptrdiff_t pos)
 :_text(text)
 ,_buffer(text->c_str()) {
 	if (!text)

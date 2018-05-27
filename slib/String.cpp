@@ -45,6 +45,10 @@ String::String(String const& other)
 :_str(other._str)
 ,_hash(other._hash) {}
 
+String::String(char c)
+:_str(1, c)
+,_hash(0) {}
+
 String::~String() {}
 
 std::unique_ptr<ArrayList<std::string>> String::simpleSplit(const char *buffer, size_t len, const char delim, int limit /* = 65535 */) {
@@ -124,6 +128,10 @@ int32_t String::hashCode() const {
 		}
 	}
 	return h;
+}
+
+UPtr<String> String::valueOf(char c) {
+	return std::make_unique<String>(c);
 }
 
 void format_arg(fmt::BasicFormatter<char> &f, const char *&format_str, String const& s) {

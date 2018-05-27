@@ -11,8 +11,16 @@ namespace expr {
 SPtr<Object> ExpressionEvaluator::InternalResolver::getVar(const String &key) {
 	SPtr<Object> value = _externalResolver->getVar(key);
 
+	HashMap<String, Object> *b = (HashMap<String, Object>*)_builtins.get();
+	b->forEach([](String const& key1, SPtr<Object> const& val) {
+		fmt::print("b[{}, {}] = {}\n", key1, key1.hashCode(), val ? val->getClass()->getName().c_str() : "null");
+		return true;
+	});
+
 	if (!value)
 		value = _builtins->get(key);
+
+	fmt::print("{}, {} -> {}\n", key, key.hashCode(), value ? value->getClass()->getName().c_str() : "null");
 
 	return value;
 }

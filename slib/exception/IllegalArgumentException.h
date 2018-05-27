@@ -14,14 +14,15 @@ namespace slib {
  * inappropriate argument.
  */
 class IllegalArgumentException : public Exception {
-	public:
+protected:
+	IllegalArgumentException(const char *where, const char *className, const char *msg)
+	:Exception(where, className, msg) {}
+public:
 	IllegalArgumentException(const char *where, const char *msg) 
-	: Exception(where, "IllegalArgumentException", msg) {
-	}
+	:Exception(where, "IllegalArgumentException", msg) {}
 
 	IllegalArgumentException(const char *where) 
-	: Exception(where, "IllegalArgumentException", "") {
-	}
+	:Exception(where, "IllegalArgumentException", "") {}
 };
 	
 } // namespace slib

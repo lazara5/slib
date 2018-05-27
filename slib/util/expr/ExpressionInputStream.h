@@ -27,7 +27,7 @@ private:
 
 	std::unique_ptr<String> readReal();
 public:
-	ExpressionInputStream(std::shared_ptr<BasicString> const& s)
+	ExpressionInputStream(SPtr<BasicString> const& s)
 	:_iter(s) {
 		_currentChar = _iter.first();
 	}
@@ -70,7 +70,7 @@ public:
 	std::unique_ptr<String> readDottedNameRemainder();
 
 	/** @throws SyntaxErrorException */
-	std::shared_ptr<Value> readString();
+	SPtr<Value> readString();
 
 	/** @throws SyntaxErrorException */
 	std::shared_ptr<Expression> readArg();

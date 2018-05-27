@@ -5,7 +5,7 @@
 #ifndef H_SLIB_TEXT_CHARACTERITERATOR_H
 #define H_SLIB_TEXT_CHARACTERITERATOR_H
 
-#include <sys/types.h>
+#include <stddef.h>
 
 namespace slib {
 
@@ -66,26 +66,26 @@ public:
 	 * @return the character at the specified position or DONE if the specified position is equal to getEndIndex()
 	 * @throws IllegalArgumentException
 	 */
-	virtual char setIndex(ssize_t position) = 0;
+	virtual char setIndex(ptrdiff_t position) = 0;
 
 	/**
 	 * Returns the start index of the text.
 	 * @return the index at which the text begins.
 	 */
-	virtual ssize_t getBeginIndex() const = 0;
+	virtual ptrdiff_t getBeginIndex() const = 0;
 
 	/**
 	 * Returns the end index of the text.  This index is the index of the first
 	 * character following the end of the text.
 	 * @return the index after the last character in the text
 	 */
-	virtual ssize_t getEndIndex() const = 0;
+	virtual ptrdiff_t getEndIndex() const = 0;
 
 	/**
 	 * Returns the current index.
 	 * @return the current index.
 	 */
-	virtual ssize_t getIndex() const = 0;
+	virtual ptrdiff_t getIndex() const = 0;
 };
 
 } // namespace slib

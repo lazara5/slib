@@ -48,7 +48,8 @@ public:
 	}
 
 	template <class AVT, typename... A>
-	void emplace(int index, A&&... args) {
+	typename std::enable_if<sizeof...(A) != 0, void>::type
+	emplace(int index, A&&... args) {
 		return add(index, std::make_shared<AVT>(std::forward<A>(args)...));
 	}
 

@@ -4,6 +4,7 @@
 
 #include "slib/util/expr/ExpressionEvaluator.h"
 #include "slib/util/expr/Function.h"
+#include "slib/util/expr/ExpressionFormatter.h"
 
 #include <cmath>
 
@@ -34,6 +35,14 @@ public:
 		math->put("abs", Function::impl<Double>(
 			[](SPtr<Resolver> const& resolver, ArgList const& args) {
 				return Value::of(std::make_shared<Double>(abs(args.get<Double>(0)->doubleValue())));
+			}
+		));
+
+		put("format", Function::impl<String>(
+			[](SPtr<Resolver> const& resolver, ArgList const& args) {
+				SPtr<StringBuilder> result = std::make_shared<StringBuilder>();
+				ExpressionFormatter(result).format(args, resolver);
+				return Value::of(result->toString());
 			}
 		));
 

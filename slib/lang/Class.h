@@ -6,7 +6,6 @@
 #define H_SLIB_CLASS_H
 
 #include "slib/exception/NullPointerException.h"
-#include "slib/compat/memory.h"
 
 #include <stdint.h>
 #include <inttypes.h>
@@ -113,11 +112,13 @@ typedef enum {
 	OBJECT,
 	VOID,
 		NUMBER,
+			SHORT,
 			INTEGER,
 			UINT,
 			LONG,
 			ULONG,
 			DOUBLE,
+		CHARACTER,
 		CONSTITERABLE,
 			ITERABLE,
 		COLLECTION,
@@ -143,11 +144,13 @@ typedef enum {
 constexpr uint64_t OBJECTID = typeId<BASEID(OBJECT)>();
 constexpr uint64_t VOIDID = typeId<BASEID(VOID)>();
 	constexpr uint64_t NUMBERID = typeId<BASEID(NUMBER), OBJECTID>();
+		constexpr uint64_t SHORTID = typeId<BASEID(SHORT), NUMBERID>();
 		constexpr uint64_t INTEGERID = typeId<BASEID(INTEGER), NUMBERID>();
 		constexpr uint64_t UINTID = typeId<BASEID(UINT), NUMBERID>();
 		constexpr uint64_t LONGID = typeId<BASEID(LONG), NUMBERID>();
 		constexpr uint64_t ULONGID = typeId<BASEID(ULONG), NUMBERID>();
 		constexpr uint64_t DOUBLEID = typeId<BASEID(DOUBLE), NUMBERID>();
+	constexpr uint64_t CHARACTERID = typeId<BASEID(CHARACTER), OBJECTID>();
 	constexpr uint64_t CONSTITERABLEID = typeId<BASEID(CONSTITERABLE), OBJECTID>();
 		constexpr uint64_t ITERABLEID = typeId<BASEID(ITERABLE), OBJECTID>();
 	constexpr uint64_t COLLECTIONID = typeId<BASEID(COLLECTION), CONSTITERABLEID>();
@@ -286,11 +289,13 @@ public:
 extern const Class* OBJECTCLASS();
 extern const Class* VOIDCLASS();
 extern const Class* NUMBERCLASS();
+extern const Class* SHORTCLASS();
 extern const Class* INTEGERCLASS();
 extern const Class* UINTCLASS();
 extern const Class* LONGCLASS();
 extern const Class* ULONGCLASS();
 extern const Class* DOUBLECLASS();
+extern const Class* CHARACTERCLASS();
 extern const Class* CONSTITERABLECLASS();
 extern const Class* COLLECTIONCLASS();
 extern const Class* PRIORITYQUEUECLASS();

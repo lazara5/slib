@@ -3,11 +3,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "slib/util/Log.h"
-#include "slib/Numeric.h"
+#include "slib/lang/Numeric.h"
 #include "slib/collections/ArrayList.h"
 #include "slib/util/Config.h"
 #include "slib/util/FileUtils.h"
-#include "slib/String.h"
+#include "slib/lang/String.h"
 
 #include "fmt/format.h"
 
@@ -112,22 +112,22 @@ char *Log::fmtb(char *staticBuffer, size_t bufferLen, const char *format, va_lis
 
 const std::string getNextParam(ConstIterator<std::shared_ptr<std::string> > &params) {
 	if (params.hasNext())
-		return String::trim(Ptr(*params.next()));
+		return String::trim(CPtr(*params.next()));
 	throw InitException(_HERE_, "Missing log parameter");
 }
 
 const std::string getNextParam(ConstIterator<std::shared_ptr<std::string> > &params, const std::string& defaultValue) {
 	if (params.hasNext())
-		return String::trim(Ptr(*params.next()));
+		return String::trim(CPtr(*params.next()));
 	else
 		return defaultValue;
 }
 
 int getNextIntParam(ConstIterator<std::shared_ptr<std::string> > &params, int defaultValue) {
 	if (params.hasNext()) {
-		const std::string& strValue = String::trim(Ptr(*params.next()));
+		const std::string& strValue = String::trim(CPtr(*params.next()));
 		try {
-			return Integer::parseInt(Ptr(strValue));
+			return Integer::parseInt(CPtr(strValue));
 		} catch (NumberFormatException const&) {
 			throw InitException(_HERE_, fmt::format("Invalid int parameter: {}", strValue).c_str());
 		}
@@ -137,7 +137,7 @@ int getNextIntParam(ConstIterator<std::shared_ptr<std::string> > &params, int de
 
 bool getNextBoolParam(ConstIterator<std::string> &params, bool defaultValue) {
 	if (params.hasNext()) {
-		const std::string& strValue = String::trim(Ptr(params.next()));
+		const std::string& strValue = String::trim(CPtr(params.next()));
 		return Boolean::parseBoolean(strValue);
 	} else
 		return defaultValue;
@@ -207,7 +207,7 @@ void Log::init(const Config& cfg, const std::string& name, const std::string& de
 	if (logCfg.empty())
 		throw InitException(_HERE_, fmt::format("Log config not found ({})", name).c_str());
 
-	std::unique_ptr<ArrayList<std::string>> logParams = String::simpleSplit(Ptr(logCfg), ',');
+	std::unique_ptr<ArrayList<std::string>> logParams = String::simpleSplit(CPtr(logCfg), ',');
 	
 	init(cfg, logParams->constIterator());
 }

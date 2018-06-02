@@ -5,7 +5,7 @@
 #ifndef H_SLIB_ITERATOR_H
 #define H_SLIB_ITERATOR_H
 
-#include "slib/Object.h"
+#include "slib/lang/Object.h"
 #include "slib/exception/UnsupportedOperationException.h"
 
 namespace slib {

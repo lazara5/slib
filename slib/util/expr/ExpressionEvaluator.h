@@ -7,7 +7,7 @@
 
 #include "slib/util/expr/ExpressionInputStream.h"
 #include "slib/util/expr/Resolver.h"
-#include "slib/String.h"
+#include "slib/lang/String.h"
 #include "slib/collections/HashMap.h"
 
 namespace slib {
@@ -59,12 +59,12 @@ public:
 
 	/** @throws EvaluationException */
 	static SPtr<Object> expressionValue(SPtr<BasicString> const& input, SPtr<Resolver> const& resolver);
-protected:
-	/** @throws EvaluationException */
-	static UPtr<String> strExpressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
 
 	/** @throws EvaluationException */
 	static SPtr<Value> expressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+protected:
+	/** @throws EvaluationException */
+	static UPtr<String> strExpressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
 
 	/** @throws EvaluationException */
 	static SPtr<Value> prefixTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);

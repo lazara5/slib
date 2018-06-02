@@ -5,8 +5,8 @@
 #ifndef H_SLIB_STRINGBUILDER_H
 #define H_SLIB_STRINGBUILDER_H
 
-#include "slib/Object.h"
-#include "slib/String.h"
+#include "slib/lang/Object.h"
+#include "slib/lang/String.h"
 #include "slib/exception/NullPointerException.h"
 #include "slib/compat/cppbits/make_unique.h"
 
@@ -414,8 +414,6 @@ public:
 	 * @return a copy of the string, with leading and trailing whitespace omitted.
 	 */
 	StringBuilder trim() const;
-	StringBuilder toLowerCase() const;
-	StringBuilder toUpperCase() const;
 
 	/**
 	 * Returns a hash code for this string. The hash code for a StringBuilder object is

@@ -6,7 +6,7 @@
 #define H_SLIB_COLLECTIONS_LIST_H
 
 #include "slib/collections/Collection.h"
-#include "slib/Iterator.h"
+#include "slib/util/Iterator.h"
 #include "slib/exception/UnsupportedOperationException.h"
 
 #include <memory>

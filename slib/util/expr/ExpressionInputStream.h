@@ -6,7 +6,7 @@
 #define H_SLIB_UTIL_EXPR_EXPRESSIONINPUTSTREAM_H
 
 #include "slib/text/StringCharacterIterator.h"
-#include "slib/StringBuilder.h"
+#include "slib/lang/StringBuilder.h"
 #include "slib/util/expr/Exceptions.h"
 #include "slib/util/expr/Value.h"
 #include "slib/util/expr/Expression.h"

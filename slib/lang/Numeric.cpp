@@ -2,37 +2,37 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "slib/Numeric.h"
+#include "slib/lang/Numeric.h"
 #include "slib/util/StringUtils.h"
 
 namespace slib {
 
 Number::~Number() {}
 
-static std::unique_ptr<String> getMantissa(std::unique_ptr<String> const& str, size_t stopPos) {
+static UPtr<String> getMantissa(UPtr<String> const& str, size_t stopPos) {
 	char firstChar = str->charAt(0);
 	bool hasSign = (firstChar == '-' || firstChar == '+');
 
 	return hasSign ? str->substring(1, stopPos) : str->substring(0, stopPos);
 }
 
-static std::unique_ptr<String> getMantissa(std::unique_ptr<String> const& str) {
+static UPtr<String> getMantissa(UPtr<String> const& str) {
 	return getMantissa(str, str->length());
 }
 
-static bool isAllZeros(std::unique_ptr<String> const& str) {
+static bool isAllZeros(UPtr<String> const& str) {
 	if (!str)
 		return true;
 
 	for (ssize_t i = (ssize_t)str->length() - 1; i >= 0; i--) {
 		if (str->charAt((size_t)i) != '0')
-				return false;
+			return false;
 	}
 	return (str->length() > 0);
 }
 
-static bool isDigits(std::unique_ptr<String> const& str) {
-	if (StringUtils::isEmpty(Ptr(str)))
+static bool isDigits(UPtr<String> const& str) {
+	if (StringUtils::isEmpty(CPtr(str)))
 		return false;
 	for (size_t i = 0; i < str->length(); i++) {
 		if (!std::isdigit(str->charAt(i)))
@@ -41,18 +41,18 @@ static bool isDigits(std::unique_ptr<String> const& str) {
 	return true;
 }
 
-/* adapted from Apache Commons Lang3 Numberutils, under Apache License-2.0 */
-std::unique_ptr<Number> Number::createNumber(std::unique_ptr<String> const& str) {
+/** adapted from Apache Commons Lang3 Numberutils, under Apache License-2.0 */
+UPtr<Number> Number::createNumber(UPtr<String> const& str) {
 	if (!str)
 		return nullptr;
-	if (StringUtils::isBlank(Ptr(str)))
+	if (StringUtils::isBlank(CPtr(str)))
 		throw NumberFormatException(_HERE_, "Cannot convert blank string to number");
 
 	static const std::vector<std::string> hexPrefixes {"0x", "0X", "-0x", "-0X", "#", "-#"};
 
 	size_t prefixLen = 0;
 	for (std::string const& prefix : hexPrefixes) {
-		if (str->startsWith(Ptr(prefix))) {
+		if (str->startsWith(CPtr(prefix))) {
 			prefixLen += prefix.length();
 			break;
 		}
@@ -74,15 +74,15 @@ std::unique_ptr<Number> Number::createNumber(std::unique_ptr<String> const& str)
 			throw NumberFormatException("Overflow");
 		}
 		if (hexDigits > 8 || (hexDigits == 8 && firstNzDigit > '7'))
-			return std::make_unique<Long>(Long::decode(Ptr(str)));
-		return std::make_unique<Integer>(Integer::decode(Ptr(str)));
+			return std::make_unique<Long>(Long::decode(CPtr(str)));
+		return std::make_unique<Integer>(Integer::decode(CPtr(str)));
 	}
 
 	char lastChar = str->charAt(str->length() - 1);
 
-	std::unique_ptr<String> mantissa;
-	std::unique_ptr<String> decimal;
-	std::unique_ptr<String> exponent;
+	UPtr<String> mantissa;
+	UPtr<String> decimal;
+	UPtr<String> exponent;
 
 	ptrdiff_t decPos = str->indexOf('.');
 	ptrdiff_t expPos = str->indexOf('e') + str->indexOf('E') + 1; // assumes both not present
@@ -119,7 +119,7 @@ std::unique_ptr<Number> Number::createNumber(std::unique_ptr<String> const& str)
 			case 'L':
 				if ((!decimal) && (!exponent) &&
 					(((numeric->charAt(0) == '-') && (isDigits(numeric->substring(1)))) || isDigits(numeric))) {
-					return std::make_unique<Long>(Long::decode(Ptr(str)));
+					return std::make_unique<Long>(Long::decode(CPtr(str)));
 					//we don't have a BigInteger yet, if we crash so be it
 				}
 				throw NumberFormatException(_HERE_, "Invalid number");
@@ -129,7 +129,7 @@ std::unique_ptr<Number> Number::createNumber(std::unique_ptr<String> const& str)
 			case 'd':
 			case 'D':
 				{
-					double d = Double::parseDouble(Ptr(numeric));
+					double d = Double::parseDouble(CPtr(numeric));
 					if (!(Double::isInfinite(d) || (d == 0.0 && !allZeros)))
 						return std::make_unique<Double>(d);
 				}
@@ -144,17 +144,17 @@ std::unique_ptr<Number> Number::createNumber(std::unique_ptr<String> const& str)
 		exponent = str->substring((size_t)expPos + 1, str->length());
 	if ((!decimal) && (!exponent)) {
 		try {
-			return std::make_unique<Integer>(Integer::decode(Ptr(str)));
+			return std::make_unique<Integer>(Integer::decode(CPtr(str)));
 		} catch (NumberFormatException const&) {
 			// ignore
 		}
-		return std::make_unique<Long>(Long::decode(Ptr(str)));
+		return std::make_unique<Long>(Long::decode(CPtr(str)));
 		//we don't have a BigInteger yet, if we crash so be it
 	}
 
 	bool allZeros = isAllZeros(mantissa) && isAllZeros(exponent);
 	if (numDecimals <= 16) {
-		double d = Double::parseDouble(Ptr(str));
+		double d = Double::parseDouble(CPtr(str));
 		if (!(Double::isInfinite(d) || (d == 0.0 && !allZeros)))
 			return std::make_unique<Double>(d);
 		throw NumberFormatException(_HERE_, "Invalid number");

@@ -6,7 +6,7 @@
 #define H_SLIB_TEXT_STRINGCHARACTERITERATOR_H
 
 #include "slib/text/CharacterIterator.h"
-#include "slib/String.h"
+#include "slib/lang/String.h"
 #include "slib/exception/IllegalArgumentException.h"
 
 namespace slib {

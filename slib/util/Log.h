@@ -6,7 +6,7 @@
 #define H_SLIB_UTIL_LOG_H
 
 #include "slib/util/Config.h"
-#include "slib/Iterator.h"
+#include "slib/util/Iterator.h"
 
 #include "spdlog/spdlog.h"
 

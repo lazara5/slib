@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "slib/Class.h"
+#include "slib/lang/Class.h"
 #include "slib/compat/cppbits/make_unique.h"
 
 #include "fmt/format.h"
@@ -17,11 +17,13 @@ ClassCastException::ClassCastException(const char *where, const char *c1, const 
 CLASSDEF(OBJECT, Object)
 CLASSDEF(VOID, Void)
 CLASSDEF(NUMBER, Number)
+CLASSDEF(SHORT, Short)
 CLASSDEF(INTEGER, Integer)
 CLASSDEF(UINT, UInt)
 CLASSDEF(LONG, Long)
 CLASSDEF(ULONG, ULong)
 CLASSDEF(DOUBLE, Double)
+CLASSDEF(CHARACTER, Character)
 CLASSDEF(CONSTITERABLE, ConstIterable)
 CLASSDEF(COLLECTION, Collection)
 CLASSDEF(PRIORITYQUEUE, PriorityQueue)

@@ -5,9 +5,9 @@
 #ifndef H_SLIB_NUMERIC_H
 #define H_SLIB_NUMERIC_H
 
-#include "slib/Object.h"
+#include "slib/lang/Object.h"
 #include "slib/exception/NumericExceptions.h"
-#include "slib/String.h"
+#include "slib/lang/String.h"
 #include "slib/compat/cppbits/make_unique.h"
 
 #include "fmt/format.h"
@@ -35,7 +35,7 @@ public:
 
 	virtual double doubleValue() const = 0;
 
-	static std::unique_ptr<Number> createNumber(std::unique_ptr<String> const& str);
+	static UPtr<Number> createNumber(UPtr<String> const& str);
 
 	static bool isMathematicalInteger(double val);
 };
@@ -85,7 +85,7 @@ public:
 		return false;
 	}
 
-	bool equals(std::shared_ptr<Integer> const& other) const {
+	bool equals(SPtr<Integer> const& other) const {
 		if (!other)
 			return false;
 		return (_value == other->_value);
@@ -177,7 +177,7 @@ public:
 			if (negative)
 				result = -result;
 		} catch (NumberFormatException const&) {
-			result = negative ? parseInt(Ptr(std::string("-") + (buffer + index)), radix) :
+			result = negative ? parseInt(CPtr(std::string("-") + (buffer + index)), radix) :
 								parseInt(buffer + index, radix);
 		}
 
@@ -334,6 +334,51 @@ public:
 	}
 };
 
+class Short : public Number {
+private:
+	short _value;
+public:
+	static constexpr short MIN_VALUE = INT16_MIN;
+	static constexpr short MAX_VALUE = INT16_MAX;
+
+	Short()
+	:_value(0) {}
+
+	Short(short value)
+	:_value(value) {}
+
+	Short(const Short& other)
+	: _value(other._value) {}
+
+	static Class const* CLASS() {
+		return SHORTCLASS();
+	}
+
+	virtual Class const* getClass() const override {
+		return SHORTCLASS();
+	}
+
+	static UPtr<String> toString(short s) {
+		return Integer::toString(s);
+	}
+
+	virtual int32_t hashCode() const override {
+		return (int32_t)_value;
+	}
+
+	short shortValue() const {
+		return _value;
+	}
+
+	/** @throws NumberFormatException */
+	static short parseShort(const char *str, int radix) {
+		int i = Integer::parseInt(str, radix);
+		if (i < MIN_VALUE || i > MAX_VALUE)
+			throw NumericOverflowException(_HERE_, "Out of range");
+		return (short)i;
+	}
+};
+
 /** 64-bit signed integer */
 class Long : public Number {
 private:
@@ -459,7 +504,7 @@ public:
 			if (negative)
 				result = -result;
 		} catch (NumberFormatException const&) {
-			result = negative ? parseLong(Ptr(std::string("-") + (buffer + index)), radix) :
+			result = negative ? parseLong(CPtr(std::string("-") + (buffer + index)), radix) :
 								parseLong(buffer + index, radix);
 		}
 

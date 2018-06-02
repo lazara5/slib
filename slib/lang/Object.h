@@ -5,7 +5,7 @@
 #ifndef H_SLIB_OBJECT_H
 #define H_SLIB_OBJECT_H
 
-#include "slib/Class.h"
+#include "slib/lang/Class.h"
 #include "slib/util/TemplateUtils.h"
 
 #include <stdint.h>

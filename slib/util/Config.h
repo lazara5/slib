@@ -7,7 +7,7 @@
 
 #include "slib/util/Log.h"
 #include "slib/util/StringUtils.h"
-#include "slib/Numeric.h"
+#include "slib/lang/Numeric.h"
 #include "slib/collections/List.h"
 #include "slib/collections/Properties.h"
 #include "slib/compat/cppbits/make_unique.h"
@@ -24,7 +24,7 @@ public:
 private:
 	typedef HashMap<std::string, std::string> VarMap;
 
-	typedef std::unordered_map<std::string, std::shared_ptr<PropertySource>> SourceMap;
+	typedef std::unordered_map<std::string, SPtr<PropertySource>> SourceMap;
 	typedef SourceMap::const_iterator SourceMapConstIter;
 
 	typedef std::unordered_map<std::string, PropertySink> SinkMap;
@@ -43,7 +43,7 @@ public:
 	virtual std::shared_ptr<std::string> processLine(const std::string& name,
 													 const std::string& rawProperty) override;
 
-	void registerSource(const std::string& name, std::shared_ptr<PropertySource> const& src) {
+	void registerSource(const std::string& name, SPtr<PropertySource> const& src) {
 		if (!_sources)
 			_sources = std::make_unique<SourceMap>();
 		(*_sources)[name] = src;

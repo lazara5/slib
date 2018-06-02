@@ -5,7 +5,7 @@
 #ifndef H_SLIB_STRING_H
 #define H_SLIB_STRING_H
 
-#include "slib/Object.h"
+#include "slib/lang/Object.h"
 #include "slib/exception/Exception.h"
 #include "slib/util/TemplateUtils.h"
 #include "slib/compat/cppbits/make_unique.h"
@@ -49,12 +49,16 @@ public:
 	 *		equivalent to this String, <i>false</i> otherwise.
 	 */
 	virtual bool equals(BasicString const& other) const;
+
+	UPtr<String> toUpperCase() const;
+	UPtr<String> toLowerCase() const;
 };
 
 template <class E>
 class ArrayList;
 
 class String : public BasicString {
+friend class BasicString;
 protected:
 	std::string _str;
 	mutable volatile int32_t _hash;
@@ -130,6 +134,10 @@ public:
 	const char *c_str() const override {
 		return _str.c_str();
 	}
+protected:
+	char *str() {
+		return &_str[0];
+	}
 public:
 	template <class S1, class S2>
 	static bool equals(S1 const* str, S2 const* other) {
@@ -153,16 +161,16 @@ public:
 
 	template <class S>
 	bool equals(S const* other) const {
-		return equals(Ptr(_str), other);
+		return equals(CPtr(_str), other);
 	}
 
 	template <class S>
 	bool equals(S const& other) const {
-		return equals(Ptr(_str), Ptr(other));
+		return equals(CPtr(_str), CPtr(other));
 	}
 
 	bool operator==(String const& other) const {
-		return equals(Ptr(other));
+		return equals(CPtr(other));
 	}
 
 	template <class S1, class S2>
@@ -187,7 +195,7 @@ public:
 
 	template <class S>
 	bool equalsIgnoreCase(S const* other) {
-		return equalsIgnoreCase(Ptr(_str), Ptr(other));
+		return equalsIgnoreCase(CPtr(_str), CPtr(other));
 	}
 
 	char charAt(size_t pos) const {
@@ -227,7 +235,7 @@ public:
 
 	template <class S>
 	bool startsWith(S const* prefix) {
-		return startsWith(Ptr(_str), prefix);
+		return startsWith(CPtr(_str), prefix);
 	}
 
 	template <class S1, class S2>
@@ -242,7 +250,7 @@ public:
 
 	template <class S>
 	bool startsWithIgnoreCase(S const* prefix) {
-		return startsWithIgnoreCase(Ptr(_str), prefix);
+		return startsWithIgnoreCase(CPtr(_str), prefix);
 	}
 
 	template <class S1, class S2>
@@ -287,7 +295,7 @@ public:
 
 	template <class S>
 	bool startsWith(S const* prefix, ptrdiff_t offset) {
-		return startsWith(Ptr(_str), prefix, offset);
+		return startsWith(CPtr(_str), prefix, offset);
 	}
 
 	template <typename S1, typename S2>
@@ -327,7 +335,7 @@ public:
 	}
 
 	bool endsWith(char suffix) {
-		return endsWith(Ptr(_str), suffix);
+		return endsWith(CPtr(_str), suffix);
 	}
 
 	template <class S1, class S2>
@@ -366,7 +374,7 @@ public:
 	}
 
 	String trim() {
-		return trim(Ptr(_str));
+		return trim(CPtr(_str));
 	}
 
 	static std::string trim(const char *str) {
@@ -386,7 +394,7 @@ public:
 	}
 
 	ptrdiff_t indexOf(char ch) {
-		return indexOf(Ptr(_str), ch);
+		return indexOf(CPtr(_str), ch);
 	}
 
 	template <class S>
@@ -406,7 +414,7 @@ public:
 	}
 
 	ptrdiff_t indexOf(char ch, size_t fromIndex) {
-		return indexOf(Ptr(_str), ch, fromIndex);
+		return indexOf(CPtr(_str), ch, fromIndex);
 	}
 
 	template <class S1, class S2>
@@ -423,7 +431,7 @@ public:
 
 	template <class S>
 	ptrdiff_t indexOf(S const* sub) {
-		return indexOf(Ptr(_str), sub);
+		return indexOf(CPtr(_str), sub);
 	}
 
 	template <class S1, class S2>
@@ -445,7 +453,7 @@ public:
 
 	template <class S>
 	ptrdiff_t indexOf(S const* sub, size_t fromIndex) {
-		return indexOf(Ptr(_str), sub, fromIndex);
+		return indexOf(CPtr(_str), sub, fromIndex);
 	}
 
 	template <class S>
@@ -458,7 +466,7 @@ public:
 	}
 
 	ptrdiff_t lastIndexOf(char ch) {
-		return lastIndexOf(Ptr(_str), ch);
+		return lastIndexOf(CPtr(_str), ch);
 	}
 
 	template <class S>
@@ -486,7 +494,7 @@ public:
 	}
 
 	ptrdiff_t lastIndexOf(char ch, ptrdiff_t fromIndex) {
-		return lastIndexOf(Ptr(_str), ch, fromIndex);
+		return lastIndexOf(CPtr(_str), ch, fromIndex);
 	}
 
 	template <class S1, class S2>
@@ -524,7 +532,7 @@ public:
 	}
 
 	std::unique_ptr<String> substring(size_t beginIndex, size_t endIndex) {
-		return std::make_unique<String>(substring(Ptr(_str), beginIndex, endIndex));
+		return std::make_unique<String>(substring(CPtr(_str), beginIndex, endIndex));
 	}
 
 	template <class S>
@@ -535,7 +543,7 @@ public:
 	}
 
 	std::unique_ptr<String> substring(size_t beginIndex) {
-		return std::make_unique<String>(substring(Ptr(_str), beginIndex));
+		return std::make_unique<String>(substring(CPtr(_str), beginIndex));
 	}
 
 	/*static void simpleSplit(const std::string& str, List<std::string> &results, const char delim, int limit = 65535) {

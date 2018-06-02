@@ -17,9 +17,10 @@
 #ifndef H_SLIB_UTIL_EXPR_EXPRESSIONFORMATTER_H
 #define H_SLIB_UTIL_EXPR_EXPRESSIONFORMATTER_H
 
-#include "slib/StringBuilder.h"
+#include "slib/lang/StringBuilder.h"
 #include "slib/util/expr/Function.h"
 #include "slib/text/StringCharacterIterator.h"
+#include "slib/lang/Character.h"
 
 namespace slib {
 namespace expr {
@@ -72,7 +73,7 @@ public:
 
 	UPtr<String> toString() const {
 		const char *text = _text->c_str();
-		return std::make_unique<String>(text + _pos, getEndIndex() - _pos + 1);
+		return std::make_unique<String>(text + _pos, getEndIndex() - _pos);
 	}
 };
 
@@ -108,13 +109,9 @@ public:
 	:IllegalFormatException(where, "MissingFormatArgumentException", fmt::format("Format specifier = '{}'", *s).c_str())
 	,_s(std::make_shared<String>(s)) {}
 
-	MissingFormatArgumentException(const char *where, UPtr<String> s)
-	:IllegalFormatException(where, "MissingFormatArgumentException", fmt::format("Format specifier = '{}'", *s).c_str())
-	,_s(std::make_shared<String>(*s)) {}
-
-	MissingFormatArgumentException(const char *where, SPtr<String> s)
-	:IllegalFormatException(where, "MissingFormatArgumentException", fmt::format("Format specifier = '{}'", *s).c_str())
-	,_s(s) {}
+	MissingFormatArgumentException(const char *where, String const& s)
+	:IllegalFormatException(where, "MissingFormatArgumentException", fmt::format("Format specifier = '{}'", s).c_str())
+	,_s(std::make_shared<String>(s)) {}
 };
 
 class MissingFormatWidthException : public IllegalFormatException {
@@ -135,6 +132,35 @@ public:
 	:IllegalFormatException(where, "FormatFlagsConversionMismatchException", fmt::format("Conversion = {}, Flags = {}", c, *f).c_str())
 	,_f(std::make_shared<String>(*f))
 	,_c(c) {}
+};
+
+class IllegalFormatCodePointException : public IllegalFormatException {
+private:
+	int32_t _c;
+public:
+	IllegalFormatCodePointException(const char *where, int32_t c)
+	:IllegalFormatException(where, "IllegalFormatCodePointException", fmt::format("Code point = {:#x}", c).c_str())
+	,_c(c) {}
+};
+
+class IllegalFormatConversionException : public IllegalFormatException {
+private:
+	char _c;
+	Class const* _arg;
+public:
+	IllegalFormatConversionException(const char *where, char c, Class const* arg)
+	:IllegalFormatException(where, "IllegalFormatConversionException", fmt::format("{} != {}", c, arg->getName()).c_str())
+	,_c(c)
+	,_arg(arg) {}
+};
+
+class IllegalFormatPrecisionException : public IllegalFormatException {
+private:
+	int32_t _p;
+public:
+	IllegalFormatPrecisionException(const char *where, int32_t p)
+	:IllegalFormatException(where, "IllegalFormatPrecisionException", Integer::toString(p)->c_str())
+	,_p(p) {}
 };
 
 class FormatToken {
@@ -164,6 +190,7 @@ private:
 	static constexpr size_t FLAG_TYPE_COUNT = 6;
 	ptrdiff_t _formatStringStartIndex;
 	SPtr<String> _plainText;
+	UPtr<String> _format;
 	int32_t _argIndex;
 	int32_t _flags;
 	int32_t _width;
@@ -199,12 +226,20 @@ public:
 		_argIndex = index;
 	}
 
-	SPtr<String> getPlainText() {
+	SPtr<String> getPlainText() const {
 		return _plainText;
 	}
 
-	void setPlainText(SPtr<String> plainText) {
+	void setPlainText(SPtr<String> const& plainText) {
 		_plainText = plainText;
+	}
+
+	String const* getFormat() const {
+		return _format.get();
+	}
+
+	void setFormat(UPtr<String> format) {
+		_format = std::move(format);
 	}
 
 	int32_t getWidth() {
@@ -276,6 +311,7 @@ private:
 	static constexpr int SUFFIX_STATE = 7;
 
 	SPtr<FormatToken> _token;
+	StringBuilder _rawToken;
 	int32_t _state;
 	char _currentChar;
 	SPtr<CharBuffer> _format;
@@ -289,6 +325,7 @@ public:
 		_currentChar = FormatToken::UNSET;
 		_state = ENTRY_STATE;
 		_token = nullptr;
+		_rawToken.clear();
 	}
 
 	/**
@@ -327,7 +364,7 @@ public:
 					break;
 				}
 				case ParserStateMachine::FLAGS_STATE: {
-					process_FlAGS_STATE();
+					process_FLAGS_STATE();
 					break;
 				}
 				case ParserStateMachine::WIDTH_STATE: {
@@ -340,10 +377,6 @@ public:
 				}
 				case ParserStateMachine::CONVERSION_TYPE_STATE: {
 					process_CONVERSION_TYPE_STATE();
-					break;
-				}
-				case ParserStateMachine::SUFFIX_STATE: {
-					process_SUFFIX_STATE();
 					break;
 				}
 			}
@@ -370,12 +403,13 @@ private:
 		else if ('%' == _currentChar) {
 			// change to conversion type state
 			_state = START_CONVERSION_STATE;
+			_rawToken.add('%');
 		}
 		// else remains in ENTRY_STATE
 	}
 
 	void process_START_CONVERSION_STATE() {
-		if (std::isdigit(_currentChar)) {
+		if (Character::isDigit(_currentChar)) {
 			ptrdiff_t position = _format->position() - 1;
 			int32_t number = parseInt(_format);
 			char nextChar = 0;
@@ -390,7 +424,7 @@ private:
 				if (argIndex > 0)
 					_token->setArgIndex(argIndex - 1);
 				else if (argIndex == FormatToken::UNSET) {
-					throw MissingFormatArgumentException(_HERE_, getFormatString());
+					throw MissingFormatArgumentException(_HERE_, *getFormatString());
 				}
 				_state = FLAGS_STATE;
 			} else {
@@ -417,14 +451,15 @@ private:
 		}
 	}
 
-	void process_FlAGS_STATE() {
+	void process_FLAGS_STATE() {
 		if (_token->setFlag(_currentChar)) {
 			// remains in FLAGS_STATE
-		} else if (std::isdigit(_currentChar)) {
+		} else if (Character::isDigit(_currentChar)) {
 			_token->setWidth(parseInt(_format));
 			_state = WIDTH_STATE;
 		} else if ('.' == _currentChar) {
 			_state = PRECISION_STATE;
+			_rawToken.add('.');
 		} else {
 			_state = CONVERSION_TYPE_STATE;
 			// do not get the next char.
@@ -435,6 +470,7 @@ private:
 	void process_WIDTH_STATE() {
 		if ('.' == _currentChar) {
 			_state = PRECISION_STATE;
+			_rawToken.add('.');
 		} else {
 			_state = CONVERSION_TYPE_STATE;
 			// do not get the next char
@@ -443,7 +479,7 @@ private:
 	}
 
 	void process_PRECISION_STATE() {
-		if (std::isdigit(_currentChar)) {
+		if (Character::isDigit(_currentChar)) {
 			_token->setPrecision(parseInt(_format));
 		} else {
 			// the precision is required but not given by the format string
@@ -454,21 +490,13 @@ private:
 
 	void process_CONVERSION_TYPE_STATE() {
 		_token->setConversionType(_currentChar);
-		if ('t' == _currentChar || 'T' == _currentChar) {
-			_state = SUFFIX_STATE;
-		} else {
-			_state = EXIT_STATE;
-		}
-
-	}
-
-	void process_SUFFIX_STATE() {
-		//_token->setDateSuffix(_currentChar);
+		_rawToken.add((char)tolower(_currentChar));
 		_state = EXIT_STATE;
 	}
 
 	void process_EXIT_STATE() {
 		_token->setPlainText(getFormatString());
+		_token->setFormat(_rawToken.toString());
 	}
 
 	/**
@@ -478,7 +506,7 @@ private:
 		ptrdiff_t start = buffer->position() - 1;
 		ptrdiff_t end = buffer->limit();
 		while (buffer->hasRemaining()) {
-			if (!std::isdigit(buffer->get())) {
+			if (!Character::isDigit(buffer->get())) {
 				end = buffer->position() - 1;
 				break;
 			}
@@ -487,7 +515,9 @@ private:
 		UPtr<String> intStr = buffer->subSequence(start, end)->toString();
 		buffer->position(end);
 		try {
-			return Integer::parseInt(Ptr(intStr));
+			int32_t res = Integer::parseInt(CPtr(intStr));
+			_rawToken.add(*intStr);
+			return res;
 		} catch (NumberFormatException e) {
 			return FormatToken::UNSET;
 		}
@@ -499,16 +529,11 @@ private:
  * ExpressionEvaluator.
  */
 class ExpressionFormatter {
-private:
-	SPtr<StringBuilder> _out;
 public:
-	ExpressionFormatter(SPtr<StringBuilder> const& out)
-	:_out(out) {}
-
 	/**
 	 * @throws EvaluationException
 	 */
-	void format(ArgList const& args, SPtr<Resolver> const& resolver);
+	static void format(StringBuilder &out, ArgList const& args, SPtr<Resolver> const& resolver);
 };
 
 } // namespace expr

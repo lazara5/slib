@@ -6,7 +6,7 @@
 #define H_SLIB_UTIL_EXPR_EXCEPTIONS_H
 
 #include "slib/exception/Exception.h"
-#include "slib/String.h"
+#include "slib/lang/String.h"
 
 #include <memory>
 

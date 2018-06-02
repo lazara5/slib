@@ -16,27 +16,27 @@ template <class T>
 using UPtr = std::unique_ptr<T>;
 
 template <typename T>
-T const* Ptr(T const& obj) {
+T const* CPtr(T const& obj) {
 	return &obj;
 }
 
 template <typename T>
-T const* Ptr(T const* obj) {
+T const* CPtr(T const* obj) {
 	return obj;
 }
 
 template <typename T>
-T const* Ptr(T * obj) {
+T const* CPtr(T * obj) {
 	return obj;
 }
 
 template <typename T>
-T const* Ptr(std::shared_ptr<T> const& obj) {
+T const* CPtr(std::shared_ptr<T> const& obj) {
 	return obj.get();
 }
 
 template <typename T>
-T const* Ptr(std::unique_ptr<T> const& obj) {
+T const* CPtr(std::unique_ptr<T> const& obj) {
 	return obj.get();
 }
 

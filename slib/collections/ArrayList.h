@@ -8,7 +8,7 @@
 #include "slib/collections/AbstractList.h"
 #include "slib/exception/IllegalStateException.h"
 #include "slib/exception/IllegalArgumentException.h"
-#include "slib/Numeric.h"
+#include "slib/lang/Numeric.h"
 
 #include "fmt/format.h"
 

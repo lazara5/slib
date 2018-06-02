@@ -5,8 +5,8 @@
 #ifndef H_SLIB_UTIL_EXPR_EXPRESSION_H
 #define H_SLIB_UTIL_EXPR_EXPRESSION_H
 
-#include "slib/Object.h"
-#include "slib/String.h"
+#include "slib/lang/Object.h"
+#include "slib/lang/String.h"
 
 namespace slib {
 namespace expr {

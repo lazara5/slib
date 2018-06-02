@@ -195,7 +195,7 @@ public:
 	template <int32_t MIN = slib::Integer::MIN_VALUE, int32_t MAX = slib::Integer::MAX_VALUE>
 	int32_t getInt(const std::string& name) const {
 		try {
-			return rangeCheck<int32_t, MIN, MAX>(_HERE_, Integer::parseInt(Ptr(getString(name))));
+			return rangeCheck<int32_t, MIN, MAX>(_HERE_, Integer::parseInt(CPtr(getString(name))));
 		} catch (NumberFormatException const& e) {
 			throw NumberFormatException(_HERE_, fmt::format("Invalid integer value: {} ({})", name, e.getMessage()).c_str());
 		}

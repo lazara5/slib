@@ -8,7 +8,7 @@
 
 
 #include "slib/collections/Map.h"
-#include "slib/Numeric.h"
+#include "slib/lang/Numeric.h"
 #include "slib/exception/IllegalStateException.h"
 
 #include <inttypes.h>

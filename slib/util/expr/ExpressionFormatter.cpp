@@ -15,6 +15,10 @@
  */
 
 #include "slib/util/expr/ExpressionFormatter.h"
+#include "slib/lang/Character.h"
+#include "slib/lang/Numeric.h"
+
+#include "fmt/printf.h"
 
 namespace slib {
 namespace expr {
@@ -70,7 +74,7 @@ static SPtr<Object> getArgument(ArgList const& args, int32_t index, SPtr<FormatT
 		throw MissingFormatArgumentException(_HERE_, "<");
 
 	if (index >= (ptrdiff_t)args.size() - 1) {
-		throw MissingFormatArgumentException(_HERE_, token->getPlainText());
+		throw MissingFormatArgumentException(_HERE_, *token->getPlainText());
 	}
 
 	if (index == FormatToken::LAST_ARGUMENT_INDEX) {
@@ -108,7 +112,7 @@ static SPtr<String> padding(SPtr<FormatToken> const& token, StringBuilder &sourc
 	if (paddingRight) {
 		source.add(insertString);
 	} else {
-		source.insert((size_t)start, Ptr(insertString));
+		source.insert((size_t)start, CPtr(insertString));
 	}
 	return source.toString();
 }
@@ -116,7 +120,7 @@ static SPtr<String> padding(SPtr<FormatToken> const& token, StringBuilder &sourc
 static SPtr<String> formatBool(SPtr<FormatToken> const& token, SPtr<Object> const& arg) {
 	StringBuilder result;
 	int startIndex = 0;
-	int flags = token->getFlags();
+	int32_t flags = token->getFlags();
 
 	if (token->isFlagSet(FormatToken::FLAG_MINUS) && !token->isWidthSet())
 		throw MissingFormatWidthException(_HERE_, fmt::format("-{}", token->getConversionType()).c_str());
@@ -138,7 +142,7 @@ static SPtr<String> formatBool(SPtr<FormatToken> const& token, SPtr<Object> cons
 static SPtr<String> formatString(SPtr<FormatToken> const& token, SPtr<Object> const& arg) {
 	StringBuilder result;
 	int startIndex = 0;
-	int flags = token->getFlags();
+	int32_t flags = token->getFlags();
 
 	if (token->isFlagSet(FormatToken::FLAG_MINUS) && !token->isWidthSet())
 		throw MissingFormatWidthException(_HERE_, fmt::format("-{}", token->getConversionType()).c_str());
@@ -149,6 +153,99 @@ static SPtr<String> formatString(SPtr<FormatToken> const& token, SPtr<Object> co
 
 	result.add(arg);
 	return padding(token, result, startIndex);
+}
+
+static SPtr<String> formatCharacter(SPtr<FormatToken> const& token, SPtr<Object> const& arg) {
+	StringBuilder result;
+
+	int startIndex = 0;
+	int32_t flags = token->getFlags();
+
+	if (token->isFlagSet(FormatToken::FLAG_MINUS) && !token->isWidthSet())
+		throw MissingFormatWidthException(_HERE_, fmt::format("-{}", token->getConversionType()).c_str());
+
+	// only '-' is valid for flags
+	if (FormatToken::FLAGS_UNSET != flags && FormatToken::FLAG_MINUS != flags)
+		throw FormatFlagsConversionMismatchException(_HERE_, token->getStrFlags(), token->getConversionType());
+
+	if (token->isPrecisionSet())
+		throw IllegalFormatPrecisionException(_HERE_, token->getPrecision());
+
+	if (!arg)
+		result.add("null");
+	else {
+		if (instanceof<Character>(arg)) {
+			result.add(arg);
+		} else if (instanceof<Short>(arg)) {
+			short s = Class::cast<Short>(arg)->shortValue();
+			if (!std::isprint(s))
+				throw IllegalFormatCodePointException(_HERE_, s);
+			result.add((char) s);
+		} else if (instanceof<Integer>(arg)) {
+			int codePoint = Class::cast<Integer>(arg)->intValue();
+			if (!std::isprint(codePoint))
+				throw IllegalFormatCodePointException(_HERE_, codePoint);
+			result.add((char)codePoint);
+		} else {
+			// argument of other class is not acceptable.
+			throw IllegalFormatConversionException(_HERE_, token->getConversionType(), arg->getClass());
+		}
+	}
+	return padding(token, result, startIndex);
+}
+
+static SPtr<String> formatNull(SPtr<FormatToken> const& token) {
+	token->setFlags(token->getFlags() & (~FormatToken::FLAG_ZERO));
+	StringBuilder result("null");
+	return padding(token, result, 0);
+}
+
+static SPtr<String> formatInteger(SPtr<FormatToken> const& token, SPtr<Object> const& arg) {
+	if (!arg)
+		return formatNull(token);
+
+	int64_t value;
+
+	if (instanceof<Double>(arg))
+		value = Class::cast<Double>(arg)->longValue();
+	else if (instanceof<Long>(arg))
+		value = Class::cast<Long>(arg)->longValue();
+	else if (instanceof<ULong>(arg))
+		value = Class::cast<ULong>(arg)->longValue();
+	else if (instanceof<Integer>(arg))
+		value = Class::cast<Integer>(arg)->longValue();
+	else if (instanceof<UInt>(arg))
+		value = Class::cast<UInt>(arg)->longValue();
+	else if (instanceof<Short>(arg))
+		value = Class::cast<Short>(arg)->longValue();
+	else
+		throw IllegalFormatConversionException(_HERE_, token->getConversionType(), arg->getClass());
+
+	return std::make_shared<String>(fmt::sprintf(token->getFormat()->c_str(), value));
+}
+
+static SPtr<String> formatFloat(SPtr<FormatToken> const& token, SPtr<Object> const& arg) {
+	if (!arg)
+		return formatNull(token);
+
+	double value;
+
+	if (instanceof<Double>(arg))
+		value = Class::cast<Double>(arg)->doubleValue();
+	else if (instanceof<Long>(arg))
+		value = Class::cast<Long>(arg)->doubleValue();
+	else if (instanceof<ULong>(arg))
+		value = Class::cast<ULong>(arg)->doubleValue();
+	else if (instanceof<Integer>(arg))
+		value = Class::cast<Integer>(arg)->doubleValue();
+	else if (instanceof<UInt>(arg))
+		value = Class::cast<UInt>(arg)->doubleValue();
+	else if (instanceof<Short>(arg))
+		value = Class::cast<Short>(arg)->doubleValue();
+	else
+		throw IllegalFormatConversionException(_HERE_, token->getConversionType(), arg->getClass());
+
+	return std::make_shared<String>(fmt::sprintf(token->getFormat()->c_str(), value));
 }
 
 static SPtr<String> formatArg(SPtr<FormatToken> const& token, SPtr<Object> const& arg) {
@@ -162,11 +259,35 @@ static SPtr<String> formatArg(SPtr<FormatToken> const& token, SPtr<Object> const
 		case 's':
 			result = formatString(token, arg);
 			break;
+		case 'C':
+		case 'c':
+			result = formatCharacter(token, arg);
+			break;
+		case 'd':
+		case 'o':
+		case 'x':
+		case 'X':
+			result = formatInteger(token, arg);
+			break;
+		case 'e':
+		case 'E':
+		case 'g':
+		case 'G':
+		case 'f':
+		case 'a':
+		case 'A':
+			result = formatFloat(token, arg);
+			break;
+		default:
+			throw UnknownFormatConversionException(_HERE_, String::valueOf(token->getConversionType()));
 	}
+	if (Character::isUpperCase(token->getConversionType()))
+		if (result)
+			result = result->toUpperCase();
 	return result;
 }
 
-void ExpressionFormatter::format(ArgList const& args, SPtr<Resolver> const& resolver) {
+void ExpressionFormatter::format(StringBuilder &out, ArgList const& args, SPtr<Resolver> const& resolver) {
 	SPtr<String> format = args.get<String>(0);
 	SPtr<CharBuffer> formatBuffer = std::make_shared<CharBuffer>(format);
 	ParserStateMachine parser(formatBuffer);
@@ -196,9 +317,8 @@ void ExpressionFormatter::format(ArgList const& args, SPtr<Resolver> const& reso
 			result = result ? ((StringBuilder(*plainText) + (*result)).toString()) : plainText;
 		}
 		if (result)
-			_out->add(*result);
+			out.add(*result);
 	}
-
 }
 
 } // namespace expr

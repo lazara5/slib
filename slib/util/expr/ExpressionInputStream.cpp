@@ -3,12 +3,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "slib/util/expr/ExpressionInputStream.h"
-#include "slib/Numeric.h"
+#include "slib/lang/Numeric.h"
 
 namespace slib {
 namespace expr {
 
-std::unique_ptr<String> ExpressionInputStream::readName() {
+UPtr<String> ExpressionInputStream::readName() {
 	skipBlanks();
 	char ch = peek();
 	if (!isIdentifierStart(ch))
@@ -22,7 +22,7 @@ std::unique_ptr<String> ExpressionInputStream::readName() {
 	return str.toString();
 }
 
-std::unique_ptr<String> ExpressionInputStream::readDottedNameRemainder() {
+UPtr<String> ExpressionInputStream::readDottedNameRemainder() {
 	skipBlanks();
 	char ch = peek();
 	StringBuilder str;

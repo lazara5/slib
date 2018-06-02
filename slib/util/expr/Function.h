@@ -5,9 +5,9 @@
 #ifndef H_SLIB_UTIL_EXPR_FUNCTION_H
 #define H_SLIB_UTIL_EXPR_FUNCTION_H
 
-#include "slib/Object.h"
-#include "slib/Class.h"
-#include "slib/Iterator.h"
+#include "slib/lang/Object.h"
+#include "slib/lang/Class.h"
+#include "slib/util/Iterator.h"
 #include "slib/util/expr/Value.h"
 #include "slib/collections/ArrayList.h"
 

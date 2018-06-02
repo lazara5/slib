@@ -5,14 +5,14 @@
 #ifndef H_SLIB_UTIL_EXPR_VALUE_H
 #define H_SLIB_UTIL_EXPR_VALUE_H
 
-#include "slib/Object.h"
-#include "slib/String.h"
-#include "slib/StringBuilder.h"
+#include "slib/lang/Object.h"
+#include "slib/lang/String.h"
+#include "slib/lang/StringBuilder.h"
 #include "slib/util/expr/Exceptions.h"
 #include "slib/util/expr/Resolver.h"
 #include "slib/collections/Map.h"
 #include "slib/collections/List.h"
-#include "slib/Numeric.h"
+#include "slib/lang/Numeric.h"
 
 namespace slib {
 namespace expr {
@@ -29,6 +29,10 @@ public:
 
 	static SPtr<Value> of(SPtr<Object> const& value) {
 		return std::make_shared<Value>(value);
+	}
+
+	static SPtr<Value> of(SPtr<Object> const& value, SPtr<String> const& varName) {
+		return std::make_shared<Value>(value, varName);
 	}
 
 	static SPtr<Value> Nil() {

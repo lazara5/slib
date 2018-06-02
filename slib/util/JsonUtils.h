@@ -7,9 +7,9 @@
 
 #include "slib/exception/Exception.h"
 #include "slib/exception/ValueException.h"
-#include "slib/StringBuilder.h"
-#include "slib/String.h"
-#include "slib/Numeric.h"
+#include "slib/lang/StringBuilder.h"
+#include "slib/lang/String.h"
+#include "slib/lang/Numeric.h"
 #include "slib/util/StringUtils.h"
 #include "slib/util/Log.h"
 

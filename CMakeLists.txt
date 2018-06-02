@@ -9,10 +9,11 @@ add_custom_target(headers SOURCES ${slibHeaders})
 
 option(WITH_JSON "build JSON utils" ON)
 
-set(SLIB_SOURCES slib/Class.cpp
-	             slib/Numeric.cpp
-				 slib/Object.cpp
-				 slib/String.cpp
+set(SLIB_SOURCES slib/lang/Class.cpp
+	             slib/lang/Numeric.cpp
+				 slib/lang/Object.cpp
+				 slib/lang/String.cpp
+				 slib/lang/StringBuilder.cpp
                  slib/collections/Properties.cpp
                  slib/concurrent/Semaphore.cpp
                  slib/concurrent/Thread.cpp
@@ -43,7 +44,7 @@ set(SLIB_SOURCES slib/Class.cpp
 				 slib/util/expr/ExpressionInputStream.cpp
 				 slib/util/expr/Function.cpp
 				 slib/util/expr/Resolver.cpp
-                 slib/StringBuilder.cpp)
+				 )
 
 if(WITH_JSON)
     MESSAGE("JSON utilities enabled")

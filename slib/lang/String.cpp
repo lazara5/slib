@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "slib/String.h"
-#include "slib/StringBuilder.h"
+#include "slib/lang/String.h"
+#include "slib/lang/StringBuilder.h"
 #include "slib/collections/ArrayList.h"
 #include "slib/compat/cppbits/make_unique.h"
 
@@ -26,7 +26,31 @@ int BasicString::compareTo(const BasicString &other) const {
 }
 
 bool BasicString::equals(BasicString const& other) const {
-	return String::equals(this, Ptr(other));
+	return String::equals(this, CPtr(other));
+}
+
+UPtr<String> BasicString::toUpperCase() const {
+	const char *buffer = c_str();
+	if (!buffer)
+		return nullptr;
+	size_t len = length();
+	UPtr<String> res = std::make_unique<String>(buffer, length());
+	char *resBuffer = res->str();
+	for (size_t i = 0; i < len; i++)
+		resBuffer[i] = ((char)toupper(resBuffer[i]));
+	return res;
+}
+
+UPtr<String> BasicString::toLowerCase() const {
+	const char *buffer = c_str();
+	if (!buffer)
+		return nullptr;
+	size_t len = length();
+	UPtr<String> res = std::make_unique<String>(buffer, length());
+	char *resBuffer = res->str();
+	for (size_t i = 0; i < len; i++)
+		resBuffer[i] = ((char)tolower(resBuffer[i]));
+	return res;
 }
 
 String::String(std::string const& str)

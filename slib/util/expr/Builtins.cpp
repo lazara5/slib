@@ -23,26 +23,26 @@ public:
 		put("math", math);
 
 		math->put("ceil", Function::impl<Double>(
-			[](SPtr<Resolver> const& resolver, ArgList const& args) {
+			[](SPtr<Resolver> const& /* resolver */, ArgList const& args) {
 				return Value::of(std::make_shared<Double>(ceil(args.get<Double>(0)->doubleValue())));
 			}
 		));
 		math->put("floor", Function::impl<Double>(
-			[](SPtr<Resolver> const& resolver, ArgList const& args) {
+			[](SPtr<Resolver> const& /* resolver */, ArgList const& args) {
 				return Value::of(std::make_shared<Double>(floor(args.get<Double>(0)->doubleValue())));
 			}
 		));
 		math->put("abs", Function::impl<Double>(
-			[](SPtr<Resolver> const& resolver, ArgList const& args) {
+			[](SPtr<Resolver> const& /* resolver */, ArgList const& args) {
 				return Value::of(std::make_shared<Double>(abs(args.get<Double>(0)->doubleValue())));
 			}
 		));
 
 		put("format", Function::impl<String>(
 			[](SPtr<Resolver> const& resolver, ArgList const& args) {
-				SPtr<StringBuilder> result = std::make_shared<StringBuilder>();
-				ExpressionFormatter(result).format(args, resolver);
-				return Value::of(result->toString());
+				StringBuilder result;
+				ExpressionFormatter::format(result, args, resolver);
+				return Value::of(result.toString());
 			}
 		));
 
@@ -120,6 +120,20 @@ public:
 						throw EvaluationException(_HERE_, "generic for(): second argument is not iterable");
 				} else
 					throw EvaluationException(_HERE_, "for(): invalid number of arguments");
+			}
+		));
+
+		put("$", Function::impl<String>(
+			[](SPtr<Resolver> const& resolver, ArgList const& args) {
+				SPtr<String> varName = args.get<String>(0);
+				SPtr<Object> value = resolver->getVar(*varName);
+				return value ? Value::of(value, varName) : Value::Nil(varName);
+			}
+		));
+
+		put("#", Function::impl<String>(
+			[](SPtr<Resolver> const& resolver, ArgList const& args) {
+				return ExpressionEvaluator::expressionValue(std::make_shared<ExpressionInputStream>(args.get<String>(0)), resolver);
 			}
 		));
 	}

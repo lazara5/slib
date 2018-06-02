@@ -8,7 +8,7 @@
 #include "slib/exception/Exception.h"
 #include "slib/util/PropertySource.h"
 #include "slib/collections/Map.h"
-#include "slib/StringBuilder.h"
+#include "slib/lang/StringBuilder.h"
 #include "slib/util/TemplateUtils.h"
 
 #include "fmt/format.h"

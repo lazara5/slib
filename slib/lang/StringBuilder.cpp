@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "slib/StringBuilder.h"
-#include "slib/String.h"
+#include "slib/lang/StringBuilder.h"
+#include "slib/lang/String.h"
 
 #include <stdarg.h>
 #include <inttypes.h>
@@ -162,11 +162,11 @@ bool StringBuilder::operator ==(StringBuilder const& other) const {
 }
 
 bool StringBuilder::equals(StringBuilder const& other) const {
-	return String::equals(this, Ptr(other));
+	return String::equals(this, CPtr(other));
 }
 
 bool StringBuilder::equalsIgnoreCase(StringBuilder const& other) const {
-	return String::equalsIgnoreCase(this, Ptr(other));
+	return String::equalsIgnoreCase(this, CPtr(other));
 }
 
 bool StringBuilder::operator <(StringBuilder const& other) const {
@@ -209,11 +209,11 @@ ptrdiff_t StringBuilder::indexOf(char ch, size_t fromIndex) const {
 }
 
 ptrdiff_t StringBuilder::indexOf(StringBuilder const& sub) const {
-	return String::indexOf(this, Ptr(sub));
+	return String::indexOf(this, CPtr(sub));
 }
 
 ptrdiff_t StringBuilder::indexOf(StringBuilder const& sub, size_t fromIndex) const {
-	return String::indexOf(this, Ptr(sub), fromIndex);
+	return String::indexOf(this, CPtr(sub), fromIndex);
 }
 
 ptrdiff_t StringBuilder::lastIndexOf(char ch) const {
@@ -225,7 +225,7 @@ ptrdiff_t StringBuilder::lastIndexOf(char ch, ptrdiff_t fromIndex) const {
 }
 
 ptrdiff_t StringBuilder::lastIndexOf(StringBuilder const& sub) const {
-	return String::lastIndexOf(this, Ptr(sub));
+	return String::lastIndexOf(this, CPtr(sub));
 }
 
 StringBuilder StringBuilder::substring(size_t beginIndex) const {
@@ -252,7 +252,7 @@ StringBuilder StringBuilder::trim() const {
 	for (b = (ptrdiff_t)_len; (b > 0) && isspace(_buffer[b - 1]); b--);
 
 	if (b > (ptrdiff_t)a)
-		return substring(a, b);
+		return substring(a, (size_t)b);
 	else {
 		StringBuilder res(nullptr, 1);
 		res._buffer[0] = 0;
@@ -261,34 +261,16 @@ StringBuilder StringBuilder::trim() const {
 	}
 }
 
-StringBuilder StringBuilder::toLowerCase() const {
-	if (isNull())
-		return getNull();
-	StringBuilder res(nullptr, (ptrdiff_t)(_len + 1));
-	for (size_t i = 0; i < _len; i++)
-		res.add((char)tolower(_buffer[i]));
-	return res;
-}
-
-StringBuilder StringBuilder::toUpperCase() const {
-	if (isNull())
-		return getNull();
-	StringBuilder res(nullptr, (ptrdiff_t)(_len + 1));
-	for (size_t i = 0; i < _len; i++)
-		res.add((char)toupper(_buffer[i]));
-	return res;
-}
-
 bool StringBuilder::startsWith(char prefix) const {
 	return String::startsWith(this, prefix);
 }
 
 bool StringBuilder::startsWith(StringBuilder const& prefix) const {
-	return String::startsWith(this, Ptr(prefix));
+	return String::startsWith(this, CPtr(prefix));
 }
 
 bool StringBuilder::startsWith(StringBuilder const& prefix, ptrdiff_t offset) const {
-	return String::startsWith(this, Ptr(prefix), offset);
+	return String::startsWith(this, CPtr(prefix), offset);
 }
 
 bool StringBuilder::endsWith(char suffix) const {
@@ -296,7 +278,7 @@ bool StringBuilder::endsWith(char suffix) const {
 }
 
 bool StringBuilder::endsWith(StringBuilder const& suffix) const {
-	return String::endsWith(this, Ptr(suffix));
+	return String::endsWith(this, CPtr(suffix));
 }
 
 int32_t StringBuilder::hashCode() const {

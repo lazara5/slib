@@ -18,9 +18,7 @@ class List : public Collection<E> {
 public:
 	virtual ~List() {}
 
-	static Class const* CLASS() {
-		return LISTCLASS();
-	}
+	static constexpr Class CLASS = LISTCLASS;
 
 	virtual size_t size() const override = 0;
 

@@ -46,9 +46,7 @@ public:
 public:
 	virtual ~Map() {}
 
-	static Class const* CLASS() {
-		return MAPCLASS();
-	}
+	static constexpr Class _class = MAPCLASS;
 
 	virtual SPtr<V> put(const K& key, SPtr<V> const& value) = 0;
 
@@ -76,6 +74,9 @@ public:
 public:
 	virtual ConstIterator<Entry> constIterator() const = 0;
 };
+
+template <class K, class V, class Pred>
+constexpr Class Map<K, V, Pred>::_class;
 
 } // namespace
 

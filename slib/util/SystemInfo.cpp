@@ -16,19 +16,19 @@ SystemInfo::SystemInfo() {
 	provideProperty("ipv6", 	static_cast<GetProperty>(&SystemInfo::getIpV6));
 }
 
-int getIPAddrs(std::shared_ptr<std::string>& ip, std::shared_ptr<std::string>& ipv4, std::shared_ptr<std::string>& ipv6) {
+static int getIPAddrs(SPtr<String>& ip, SPtr<String>& ipv4, SPtr<String>& ipv6) {
 	struct ifaddrs *ifaddr, *ifa;
 	int family, n;
 
 	if (getifaddrs(&ifaddr) == -1) {
-		logger.warnf("[SystemInfo] getifaddrs() failed, errno={}", StringUtils::formatErrno());
+		Log::warnf("[SystemInfo] getifaddrs() failed, errno={}", StringUtils::formatErrno());
 		return -1;
 	}
 
 	char ipstr[128];
 
-	for (ifa = ifaddr, n = 0; ifa != NULL; ifa = ifa->ifa_next, n++) {
-		if (ifa->ifa_addr == NULL)
+	for (ifa = ifaddr, n = 0; ifa != nullptr; ifa = ifa->ifa_next, n++) {
+		if (ifa->ifa_addr == nullptr)
 			continue;
 
 		// ignore loopback, not running interfaces
@@ -44,13 +44,13 @@ int getIPAddrs(std::shared_ptr<std::string>& ip, std::shared_ptr<std::string>& i
 
 			if (ipaddr) {
 				if (!ip)
-					ip = std::make_shared<std::string>(ipaddr);
+					ip = std::make_shared<String>(ipaddr);
 				if (family == AF_INET) {
 					if (!ipv4)
-						ipv4 = ip = std::make_shared<std::string>(ipaddr);
+						ipv4 = ip = std::make_shared<String>(ipaddr);
 				} else if (family == AF_INET6) {
 					if (!ipv6)
-						ipv6 = ip = std::make_shared<std::string>(ipaddr);
+						ipv6 = ip = std::make_shared<String>(ipaddr);
 				}
 			}
 		}
@@ -67,9 +67,9 @@ void SystemInfo::initialize() {
 
 	if (gethostname(hostname, sizeof(hostname)) < 0) {
 		logger.warnf("[SystemInfo] Failed to determine hostname, errno={}", StringUtils::formatErrno());
-		_hostname = std::make_shared<std::string>("localhost");
+		_hostname = std::make_shared<String>("localhost");
 	} else
-		_hostname = std::make_shared<std::string>(hostname);
+		_hostname = std::make_shared<String>(hostname);
 }
 
 } // namespace slib

@@ -30,14 +30,14 @@ public:
 
 class BasicString: virtual public Object {
 public:
-	static Class const* CLASS() {
-		return BASICSTRINGCLASS();
-	}
+	static constexpr Class _class = BASICSTRINGCLASS;
 
 	virtual size_t length() const = 0;
 	virtual const char *c_str() const = 0;
 
 	virtual int compareTo(BasicString const& other) const;
+
+	using Object::equals;
 
 	/**
 	 * Compares this BasicString to the specified BasicString object. Returns <i>true</i>
@@ -104,6 +104,8 @@ protected:
 		}
 	}
 public:
+	String();
+
 	String(std::string const& str);
 
 	String(const char *buffer);
@@ -115,12 +117,10 @@ public:
 
 	virtual ~String() override;
 
-	static Class const* CLASS() {
-		return STRINGCLASS();
-	}
+	static constexpr Class _class = STRINGCLASS;
 
-	virtual Class const* getClass() const override {
-		return STRINGCLASS();
+	virtual Class const& getClass() const override {
+		return STRINGCLASS;
 	}
 
 	size_t length() const override {
@@ -196,6 +196,10 @@ public:
 	template <class S>
 	bool equalsIgnoreCase(S const* other) {
 		return equalsIgnoreCase(CPtr(_str), CPtr(other));
+	}
+
+	String operator+(String const& other) const {
+		return String(_str + other._str);
 	}
 
 	char charAt(size_t pos) const {
@@ -373,8 +377,8 @@ public:
 		return trim(str->c_str(), str->length());
 	}
 
-	String trim() {
-		return trim(CPtr(_str));
+	UPtr<String> trim() {
+		return std::make_unique<String>(trim(CPtr(_str)));
 	}
 
 	static std::string trim(const char *str) {
@@ -531,7 +535,7 @@ public:
 		return substring(str->c_str(), str->length(), beginIndex, endIndex);
 	}
 
-	std::unique_ptr<String> substring(size_t beginIndex, size_t endIndex) {
+	std::unique_ptr<String> substring(size_t beginIndex, size_t endIndex) const {
 		return std::make_unique<String>(substring(CPtr(_str), beginIndex, endIndex));
 	}
 
@@ -542,7 +546,7 @@ public:
 		return substring(str, beginIndex, str->length());
 	}
 
-	std::unique_ptr<String> substring(size_t beginIndex) {
+	std::unique_ptr<String> substring(size_t beginIndex) const {
 		return std::make_unique<String>(substring(CPtr(_str), beginIndex));
 	}
 
@@ -608,9 +612,9 @@ public:
 		return simpleSplit(str->c_str(), str->length(), delim, limit);
 	}
 
-	static std::unique_ptr<ArrayList<String>> split(const char *buffer, size_t len, const char *pattern, int limit = 0);
+	static UPtr<ArrayList<String>> split(const char *buffer, size_t len, const char *pattern, int limit = 0);
 
-	std::unique_ptr<ArrayList<String>> split(const char *pattern, int limit = 65535);
+	UPtr<ArrayList<String>> split(const char *pattern, int limit = 65535);
 
 	virtual int32_t hashCode() const override;
 

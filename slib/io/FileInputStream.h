@@ -2,6 +2,7 @@
 #define H_SLIB_IO_FILEINPUTSTREAM_H
 
 #include "slib/io/InputStream.h"
+#include "slib/lang/String.h"
 
 namespace slib {
 
@@ -9,8 +10,8 @@ class FileInputStream : public InputStream {
 private:
 	FILE *_f;
 public:
-	FileInputStream(std::string const& fileName);
-	virtual ~FileInputStream();
+	FileInputStream(String const& fileName);
+	virtual ~FileInputStream() override;
 
 	/** @throws IOException */
 	virtual int read() override;

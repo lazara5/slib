@@ -3,7 +3,7 @@
 
 namespace slib {
 
-FileInputStream::FileInputStream(std::string const& fileName) {
+FileInputStream::FileInputStream(String const& fileName) {
 	_f = fopen(fileName.c_str(), "r");
 	if (!_f)
 		throw FileNotFoundException(_HERE_, fmt::format("fopen() failed, errno='{}'", StringUtils::formatErrno()).c_str());

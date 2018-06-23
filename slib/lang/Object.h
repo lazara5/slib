@@ -20,12 +20,10 @@ class Object {
 public:
 	virtual ~Object() {}
 
-	static Class const* CLASS() {
-		return OBJECTCLASS();
-	}
+	static constexpr Class _class = OBJECTCLASS;
 
-	virtual Class const* getClass() const {
-		return OBJECTCLASS();
+	virtual Class const& getClass() const {
+		return OBJECTCLASS;
 	}
 
 	virtual int32_t hashCode() const {
@@ -48,7 +46,7 @@ template <class T>
 bool instanceof(Object const* obj) {
 	if (!obj)
 		return false;
-	return (T::CLASS()->isAssignableFrom(obj->getClass()));
+	return (T::_class.isAssignableFrom(obj->getClass()));
 }
 
 template <class T>

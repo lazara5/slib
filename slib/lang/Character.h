@@ -16,12 +16,10 @@ public:
 	Character(char value)
 	:_value(value) {}
 
-	static Class const* CLASS() {
-		return CHARACTERCLASS();
-	}
+	static constexpr Class CLASS = CHARACTERCLASS;
 
-	virtual Class const* getClass() const override {
-		return CHARACTERCLASS();
+	virtual Class const& getClass() const override {
+		return CHARACTERCLASS;
 	}
 
 	virtual int32_t hashCode() const override {
@@ -32,11 +30,11 @@ public:
 		return _value;
 	}
 
-	static std::unique_ptr<String> toString(char c) {
+	static UPtr<String> toString(char c) {
 		return std::make_unique<String>(c);
 	}
 
-	virtual std::unique_ptr<String> toString() const override {
+	virtual UPtr<String> toString() const override {
 		return toString(_value);
 	}
 public:

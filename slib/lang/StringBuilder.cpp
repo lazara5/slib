@@ -383,12 +383,13 @@ void StringBuilder::assignInternal(const char *src, size_t len) {
 	_buffer[len] = 0;
 }
 
-void StringBuilder::clear() {
+StringBuilder& StringBuilder::clear() {
 	_hash = 0;
 	if (_buffer) {
 		_buffer[0] = 0;
 		_len = 0;
 	}
+	return *this;
 }
 
 void StringBuilder::truncate(size_t len) {

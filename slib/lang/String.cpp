@@ -15,6 +15,8 @@ using std::ptrdiff_t;
 
 namespace slib {
 
+constexpr Class BasicString::_class;
+
 int BasicString::compareTo(const BasicString &other) const {
 	const char *buffer = c_str();
 	const char *otherBuffer = other.c_str();
@@ -53,6 +55,9 @@ UPtr<String> BasicString::toLowerCase() const {
 	return res;
 }
 
+String::String()
+:_hash(0) {}
+
 String::String(std::string const& str)
 :_str(str)
 ,_hash(0) {}
@@ -75,8 +80,10 @@ String::String(char c)
 
 String::~String() {}
 
-std::unique_ptr<ArrayList<std::string>> String::simpleSplit(const char *buffer, size_t len, const char delim, int limit /* = 65535 */) {
-	std::unique_ptr<ArrayList<std::string>> results = std::make_unique<ArrayList<std::string>>();
+constexpr Class String::_class;
+
+UPtr<ArrayList<std::string>> String::simpleSplit(const char *buffer, size_t len, const char delim, int limit /* = 65535 */) {
+	UPtr<ArrayList<std::string>> results = std::make_unique<ArrayList<std::string>>();
 	if (len == 0)
 		return results;
 
@@ -136,7 +143,7 @@ std::unique_ptr<ArrayList<String> > String::split(const char *buffer, size_t len
 	return results;
 }
 
-std::unique_ptr<ArrayList<String>> String::split(const char *pattern, int limit /* = 65535 */) {
+UPtr<ArrayList<String>> String::split(const char *pattern, int limit /* = 65535 */) {
 	return split(_str.c_str(), _str.length(), pattern, limit);
 }
 

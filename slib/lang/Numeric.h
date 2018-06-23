@@ -27,9 +27,7 @@ class Number : virtual public Object {
 public:
 	virtual ~Number();
 
-	static Class const* CLASS() {
-		return NUMBERCLASS();
-	}
+	static constexpr Class _class = NUMBERCLASS;
 
 	virtual int64_t longValue() const = 0;
 
@@ -57,12 +55,10 @@ public:
 	Integer(const Integer& other)
 	: _value(other._value) {}
 
-	static Class const* CLASS() {
-		return INTEGERCLASS();
-	}
+	static constexpr Class _class = INTEGERCLASS;
 
-	virtual Class const* getClass() const override {
-		return INTEGERCLASS();
+	virtual Class const& getClass() const override {
+		return INTEGERCLASS;
 	}
 
 	virtual int32_t hashCode() const override {
@@ -234,12 +230,10 @@ public:
 	UInt(const UInt& other)
 	: _value(other._value) {}
 
-	static Class const* CLASS() {
-		return UINTCLASS();
-	}
+	static constexpr Class _class = UINTCLASS;
 
-	virtual Class const* getClass() const override {
-		return UINTCLASS();
+	virtual Class const& getClass() const override {
+		return UINTCLASS;
 	}
 
 	int32_t hashCode() const override {
@@ -250,6 +244,8 @@ public:
 		_value = other._value;
 		return *this;	// This will allow assignments to be chained
 	}
+
+	using Object::equals;
 
 	bool equals(const UInt& other) const {
 		return (_value == other._value);
@@ -293,7 +289,8 @@ public:
 		return parseUInt(str, 10);
 	}
 
-	static uint32_t parseUInt(const std::string& s) {
+	template <class S>
+	static uint32_t parseUInt(S const& s) {
 		return parseUInt(s.c_str(), 10);
 	}
 
@@ -301,7 +298,7 @@ public:
 		return parseUInt(s.c_str(), radix);
 	}
 
-	static std::unique_ptr<String> toString(uint32_t i) {
+	static UPtr<String> toString(uint32_t i) {
 		std::stringstream stream;
 		stream << i;
 		return std::make_unique<String>(stream.str());
@@ -350,16 +347,10 @@ public:
 	Short(const Short& other)
 	: _value(other._value) {}
 
-	static Class const* CLASS() {
-		return SHORTCLASS();
-	}
+	static constexpr Class _class = SHORTCLASS;
 
-	virtual Class const* getClass() const override {
-		return SHORTCLASS();
-	}
-
-	static UPtr<String> toString(short s) {
-		return Integer::toString(s);
+	virtual Class const& getClass() const override {
+		return SHORTCLASS;
 	}
 
 	virtual int32_t hashCode() const override {
@@ -370,12 +361,23 @@ public:
 		return _value;
 	}
 
+	virtual int64_t longValue() const override;
+	virtual double doubleValue() const override;
+
 	/** @throws NumberFormatException */
 	static short parseShort(const char *str, int radix) {
 		int i = Integer::parseInt(str, radix);
 		if (i < MIN_VALUE || i > MAX_VALUE)
 			throw NumericOverflowException(_HERE_, "Out of range");
 		return (short)i;
+	}
+
+	static UPtr<String> toString(short s) {
+		return Integer::toString(s);
+	}
+
+	virtual UPtr<String> toString() const override {
+		return toString(_value);
 	}
 };
 
@@ -393,12 +395,10 @@ public:
 	Long(int64_t value)
 	:_value(value) {}
 
-	static Class const* CLASS() {
-		return LONGCLASS();
-	}
+	static constexpr Class _class = LONGCLASS;
 
-	virtual Class const* getClass() const override {
-		return LONGCLASS();
+	virtual Class const& getClass() const override {
+		return LONGCLASS;
 	}
 
 	/**
@@ -421,11 +421,13 @@ public:
 		return *this;	// This will allow assignments to be chained
 	}
 
-	bool equals(const Long& other) const {
+	using Object::equals;
+
+	bool equals(Long const& other) const {
 		return (_value == other._value);
 	}
 
-	bool equals(std::shared_ptr<Long> const& other) const {
+	bool equals(SPtr<Long> const& other) const {
 		if (!other)
 			return false;
 		return (_value == other->_value);
@@ -435,7 +437,7 @@ public:
 		return equals(other);
 	}
 
-	int64_t longValue() const override;
+	virtual int64_t longValue() const override;
 	virtual double doubleValue() const override;
 
 	/** Parses the string argument as a signed decimal long */
@@ -511,13 +513,13 @@ public:
 		return result;
 	}
 
-	static std::unique_ptr<String> toString(int64_t i) {
+	static UPtr<String> toString(int64_t i) {
 		std::stringstream stream;
 		stream << i;
 		return std::make_unique<String>(stream.str());
 	}
 
-	virtual std::unique_ptr<String> toString() const override {
+	virtual UPtr<String> toString() const override {
 		return toString(_value);
 	}
 };
@@ -532,12 +534,10 @@ public:
 	ULong(uint64_t value)
 	:_value(value) {}
 
-	static Class const* CLASS() {
-		return ULONGCLASS();
-	}
+	static constexpr Class _class = ULONGCLASS;
 
-	virtual Class const* getClass() const override {
-		return ULONGCLASS();
+	virtual Class const& getClass() const override {
+		return ULONGCLASS;
 	}
 
 	/**
@@ -560,11 +560,13 @@ public:
 		return *this;	// This will allow assignments to be chained
 	}
 
+	using Object::equals;
+
 	bool equals(const ULong& other) const {
 		return (_value == other._value);
 	}
 
-	bool equals(std::shared_ptr<ULong> const& other) const {
+	bool equals(SPtr<ULong> const& other) const {
 		if (!other)
 			return false;
 		return (_value == other->_value);
@@ -622,7 +624,8 @@ public:
 		return parseULong(str.c_str(), defaultValue);
 	}
 
-	struct hash {								///< hash based on mix from Murmur3
+	struct hash {
+		/** hash based on mix from Murmur3 */
 		size_t operator()(const uint64_t& key) const {
 			uint64_t k = key ^ (key >> 33);
 			k *= 0xff51afd7ed558ccd;
@@ -632,6 +635,16 @@ public:
 			return (size_t) k;
 		}
 	};
+
+	static UPtr<String> toString(uint64_t i) {
+		std::stringstream stream;
+		stream << i;
+		return std::make_unique<String>(stream.str());
+	}
+
+	virtual UPtr<String> toString() const override {
+		return toString(_value);
+	}
 };
 
 /** Double value */
@@ -653,12 +666,10 @@ public:
 	Double(double value)
 	:_value(value) {}
 
-	static Class const* CLASS() {
-		return DOUBLECLASS();
-	}
+	static constexpr Class _class = DOUBLECLASS;
 
-	virtual Class const* getClass() const override {
-		return DOUBLECLASS();
+	virtual Class const& getClass() const override {
+		return DOUBLECLASS;
 	}
 
 	/**
@@ -677,10 +688,12 @@ public:
 		return (int32_t)(bits ^ (bits >> 32));
 	}
 
-	Double& operator=(const Double& other) {
+	Double& operator =(const Double& other) {
 		_value = other._value;
 		return *this;	// This will allow assignments to be chained
 	}
+
+	using Object::equals;
 
 	bool equals(const Double& other) const {
 		return (doubleToLongBits(_value) == doubleToLongBits(other._value));
@@ -692,7 +705,7 @@ public:
 		return (doubleToLongBits(_value) == doubleToLongBits(other->_value));
 	}
 
-	bool operator==(const Double& other) const {
+	bool operator ==(const Double& other) const {
 		return equals(other);
 	}
 
@@ -731,7 +744,7 @@ public:
 		return parseDouble(buffer);
 	}
 
-	static std::unique_ptr<String> toString(double d) {
+	static UPtr<String> toString(double d) {
 		std::stringstream stream;
 		stream << d;
 		return std::make_unique<String>(stream.str());
@@ -748,34 +761,34 @@ public:
 
 	virtual ~Boolean() override;
 
-	static Class const* CLASS() {
-		return BOOLEANCLASS();
-	}
+	static constexpr Class _class = BOOLEANCLASS;
 
-	virtual Class const* getClass() const override {
-		return BOOLEANCLASS();
+	virtual Class const& getClass() const override {
+		return BOOLEANCLASS;
 	}
 
 	virtual int32_t hashCode() const override {
 		return _value ? 1231 : 1237;
 	}
+
+	using Object::equals;
 	
 	bool equals(const Boolean& other) const {
 		return (_value == other._value);
 	}
 
-	bool equals(std::shared_ptr<Boolean> const& other) const {
+	bool equals(SPtr<Boolean> const& other) const {
 		if (!other)
 			return false;
 		return (_value == other->_value);
 	}
 
-	Boolean& operator=(const Boolean & other) {
+	Boolean& operator =(const Boolean & other) {
 		_value = other._value;
 		return *this;	// This will allow assignments to be chained
 	}
 
-	bool operator==(const Boolean& other) const {
+	bool operator ==(const Boolean& other) const {
 		return equals(other);
 	}
 
@@ -789,12 +802,14 @@ public:
 		return (!strcasecmp(str, "true"));
 	}
 
-	static bool parseBoolean(const std::string& str) {
-		return parseBoolean(str.c_str());
+	template <class S>
+	static bool parseBoolean(S const* str) {
+		const char *buffer = str ? str->c_str() : nullptr;
+		return parseBoolean(buffer);
 	}
 
 	virtual UPtr<String> toString() const override {
-		return _value ? std::make_unique<String>("true") : std::make_unique<String>("false");
+		return std::make_unique<String>(_value ? "true" : "false");
 	}
 };
 

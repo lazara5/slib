@@ -303,7 +303,7 @@ public:
 	SPtr<V> get(const K& key) const {
 		int32_t hash = _smudge(sizeTHash(std::hash<K>()(key)));
 		Pred eq;
-		fmt::print("<-h: {}->{}, if: {}\n", std::hash<K>()(key), hash, indexFor(hash, _tableLength));
+		//fmt::print("<-h: {}->{}, if: {}\n", std::hash<K>()(key), hash, indexFor(hash, _tableLength));
 		for (Entry *e = _table[indexFor(hash, _tableLength)]; e != nullptr; e = e->_next) {
 			if ((e->_keyHash == hash) && (eq(e->_key, key)))
 				return e->_value;
@@ -349,7 +349,7 @@ public:
 	virtual SPtr<V> put(const K& key, SPtr<V> const& value) {
 		int32_t hash = _smudge(sizeTHash(std::hash<K>()(key)));
 		int32_t i = indexFor(hash, _tableLength);
-		fmt::print("->h: {}->{}, if: {}\n", sizeTHash(std::hash<K>()(key)), hash, i);
+		//fmt::print("->h: {}->{}, if: {}\n", sizeTHash(std::hash<K>()(key)), hash, i);
 		Pred eq;
 		for (Entry *e = _table[i]; e != nullptr; e = e->_next) {
 			if ((e->_keyHash == hash) && (eq(e->_key, key))) {
@@ -509,7 +509,7 @@ protected:
 };
 
 /** Hash table based object that maps keys to values */
-template <class K, class V, class Pred = std::equal_to<K> >
+template <class K, class V, class Pred = std::equal_to<K>>
 class HashMap : public Map<K, V, Pred> {
 public:
 	static const int32_t DEFAULT_INITIAL_CAPACITY = InternalHashMap<K, V, Pred>::DEFAULT_INITIAL_CAPACITY;
@@ -532,12 +532,10 @@ public:
 		_internalMap->clear();
 	}
 
-	static Class const* CLASS() {
-		return HASHMAPCLASS();
-	}
+	static constexpr Class _class = HASHMAPCLASS;
 
-	virtual Class const* getClass() const override {
-		return HASHMAPCLASS();
+	virtual Class const& getClass() const override {
+		return HASHMAPCLASS;
 	}
 
 	/**
@@ -678,9 +676,6 @@ public:
 		_internalMap->forEach(callback);
 	}
 
-private:
-
-
 public:
 	virtual ConstIterator<typename Map<K, V, Pred>::Entry> constIterator() const {
 		return ConstIterator<typename Map<K, V, Pred>::Entry>(new typename InternalHashMap<K, V, Pred>::ConstEntryIterator(_internalMap));
@@ -690,6 +685,9 @@ public:
 		return Iterator<typename Map<K, V, Pred>::Entry>(new typename InternalHashMap<K, V, Pred>::EntryIterator(_internalMap));
 	}
 };
+
+template <class K, class V, class Pred>
+constexpr Class HashMap<K, V, Pred>::_class;
 
 } // namespace slib
 

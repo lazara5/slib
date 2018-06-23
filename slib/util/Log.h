@@ -41,29 +41,29 @@ public:
 		Trace
 	};
 protected:
-	std::shared_ptr<spdlog::logger> _logger;
+	static SPtr<spdlog::logger> _staticLogger;
 
 	std::string _name;
-	std::string _format;
-	Level _level;
+	static String _staticFormat;
+	static Level _staticLevel;
 protected:
-	std::shared_ptr<spdlog::logger> initConsole(const Config& cfg, ConstIterator<std::shared_ptr<std::string> > &params);
-	std::shared_ptr<spdlog::logger> initRotating(const Config& cfg, ConstIterator<std::shared_ptr<std::string> > &params);
-	std::shared_ptr<spdlog::logger> initSyslog(const Config& cfg, ConstIterator<std::shared_ptr<std::string> > &params);
+	static SPtr<spdlog::logger> initConsole(const Config& cfg, String const& name, ConstIterator<SPtr<String>> &params);
+	static SPtr<spdlog::logger> initRotating(const Config& cfg, String const& name, ConstIterator<SPtr<String>> &params);
+	static SPtr<spdlog::logger> initSyslog(const Config& cfg, String const& name, ConstIterator<SPtr<String>> &params);
 
 	static char *fmtb(char *staticBuffer, size_t bufferLen, const char *format, va_list ap);
 protected:
 	static void sys(int priority, const char *message, va_list ap, va_list ap1);
 public:
-	Log(std::string const& name) {
+	/*Log(std::string const& name) {
 		_name = name;
 		//_format = "[%d-%m-%C %T.%e] %v"; 
 		_format = "[%d-%m-%C %T.%e][%l][%t] %v";
 		_level = Level::Info;
-	}
+	}*/
 
-	bool enabled() {
-		return (bool)_logger;
+	static bool enabled() {
+		return (bool)_staticLogger;
 	}
 
 	static void sys(int level, const char *message);
@@ -78,7 +78,7 @@ public:
 		va_end(ap);
 	}
 
-	void startup(int level, const char *message);
+	static void startup(int level, const char *message);
 	
 	/** logs a startup error message. This is written to stderr and system log.
 	 * This function can be called before log::init() because it is NOT necessarily writing in the log files
@@ -88,21 +88,21 @@ public:
 		startup(level, fmt::format(format, args...).c_str());
 	}
 
-	void init(const Config& cfg, ConstIterator<std::shared_ptr<std::string> > params);
-	void init(const Config& cfg, const std::string& name, const std::string& defaultValue = "");
+	static void staticInit(const Config& cfg, ConstIterator<SPtr<String>> params);
+	static void staticInit(const Config& cfg, String const& name, String const& defaultValue = "");
 
-	bool enabled(Level level) {
-		if (!_logger)
+	static bool enabled(Level level) {
+		if (!_staticLogger)
 			return false;
-		return (_level >= level);
+		return (_staticLevel >= level);
 	}
 
-	void log(Level level, spdlog::level::level_enum l, const char *msg) {
-		if (_level < level)
+	static void log(Level level, spdlog::level::level_enum l, const char *msg) {
+		if (_staticLevel < level)
 			return;
-		if (_logger) {
+		if (_staticLogger) {
 			try {
-				_logger->log(l, msg);
+				_staticLogger->log(l, msg);
 			} catch(const spdlog::spdlog_ex& e) {
 				fprintf(stderr, "log failed: %s\n", e.what());
 			}
@@ -110,27 +110,27 @@ public:
 	}
 
 	template <typename... Args>
-	void log(Level level, spdlog::level::level_enum l, const char *fmt, const Args&... args) {
-		if (_level < level)
+	static void log(Level level, spdlog::level::level_enum l, const char *fmt, const Args&... args) {
+		if (_staticLevel < level)
 			return;
-		if (_logger) {
+		if (_staticLogger) {
 			try {
-				_logger->log(l, fmt, args...);
+				_staticLogger->log(l, fmt, args...);
 			} catch(const spdlog::spdlog_ex& e) {
 				fprintf(stderr, "log failed: %s\n", e.what());
 			}
 		}
 	}
 
-	void logvf(Level level, spdlog::level::level_enum l, const char *format, va_list ap) {
-		if (_level < level)
+	static void logvf(Level level, spdlog::level::level_enum l, const char *format, va_list ap) {
+		if (_staticLevel < level)
 			return;
-		if (_logger) {
+		if (_staticLogger) {
 			char staticBuffer[256];
 			char *fmtBuffer = nullptr;
 			try {
 				fmtBuffer = fmtb(staticBuffer, sizeof(staticBuffer), format, ap);
-				_logger->log(l, fmtBuffer);
+				_staticLogger->log(l, fmtBuffer);
 			} catch(const spdlog::spdlog_ex& e) {
 				fprintf(stderr, "log failed: %s\n", e.what());
 			}
@@ -153,7 +153,7 @@ public:
 	}
 
 	template <typename... Args>
-	void warnf(const char *format, const Args&... args) {
+	static void warnf(const char *format, const Args&... args) {
 		log(Level::Warn, spdlog::level::warn, format, args...);
 	}
 

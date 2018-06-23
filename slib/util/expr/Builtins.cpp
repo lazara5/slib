@@ -23,23 +23,23 @@ public:
 		put("math", math);
 
 		math->put("ceil", Function::impl<Double>(
-			[](SPtr<Resolver> const& /* resolver */, ArgList const& args) {
+			[](Resolver const& /* resolver */, ArgList const& args) {
 				return Value::of(std::make_shared<Double>(ceil(args.get<Double>(0)->doubleValue())));
 			}
 		));
 		math->put("floor", Function::impl<Double>(
-			[](SPtr<Resolver> const& /* resolver */, ArgList const& args) {
+			[](Resolver const& /* resolver */, ArgList const& args) {
 				return Value::of(std::make_shared<Double>(floor(args.get<Double>(0)->doubleValue())));
 			}
 		));
 		math->put("abs", Function::impl<Double>(
-			[](SPtr<Resolver> const& /* resolver */, ArgList const& args) {
+			[](Resolver const& /* resolver */, ArgList const& args) {
 				return Value::of(std::make_shared<Double>(abs(args.get<Double>(0)->doubleValue())));
 			}
 		));
 
 		put("format", Function::impl<String>(
-			[](SPtr<Resolver> const& resolver, ArgList const& args) {
+			[](Resolver const& resolver, ArgList const& args) {
 				StringBuilder result;
 				ExpressionFormatter::format(result, args, resolver);
 				return Value::of(result.toString());
@@ -47,7 +47,7 @@ public:
 		));
 
 		put("if", Function::impl<Object, Expression, Expression>(
-			[](SPtr<Resolver> const& resolver, ArgList const& args) {
+			[](Resolver const& resolver, ArgList const& args) {
 				bool val = Value::isTrue(args.getNullable(0));
 				if (val)
 					return (args.get<Expression>(1))->evaluate(resolver);
@@ -61,7 +61,7 @@ public:
 		));
 
 		put("for", Function::impl<String, Object, Expression, Expression, Expression>(
-			[](SPtr<Resolver> const& resolver, ArgList const& args) {
+			[](Resolver const& resolver, ArgList const& args) {
 				size_t nArgs = args.size();
 				if (nArgs == 5) {
 					// classic "for"
@@ -71,8 +71,8 @@ public:
 					SPtr<Expression> updateExpression = args.get<Expression>(3);
 					SPtr<Expression> evalExpression = args.get<Expression>(4);
 
-					SPtr<ExpressionEvaluator::LoopResolver> loopResolver = std::make_shared<ExpressionEvaluator::LoopResolver>(loopVarName, resolver);
-					loopResolver->setVar(initialValue);
+					ExpressionEvaluator::LoopResolver loopResolver(loopVarName, resolver);
+					loopResolver.setVar(initialValue);
 
 					SPtr<Value> finalValue = Value::Nil();
 					bool cond = true;
@@ -87,7 +87,7 @@ public:
 						else
 							finalValue = finalValue->add(exprValue);
 						SPtr<Value> updatedValue = updateExpression->evaluate(loopResolver);
-						loopResolver->setVar(updatedValue->getValue());
+						loopResolver.setVar(updatedValue->getValue());
 					}
 
 					return finalValue;
@@ -98,7 +98,7 @@ public:
 					if (instanceof<ConstIterable<Object>>(iterable)) {
 						SPtr<Expression> evalExpression = args.get<Expression>(2);
 
-						SPtr<ExpressionEvaluator::LoopResolver> loopResolver = std::make_shared<ExpressionEvaluator::LoopResolver>(loopVarName, resolver);
+						ExpressionEvaluator::LoopResolver loopResolver(loopVarName, resolver);
 
 						SPtr<Value> finalValue = Value::Nil();
 
@@ -106,7 +106,7 @@ public:
 						ConstIterator<SPtr<Object>> iter = i->constIterator();
 						while (iter.hasNext()) {
 							SPtr<Object> val = iter.next();
-							loopResolver->setVar(val);
+							loopResolver.setVar(val);
 
 							SPtr<Value> exprValue = evalExpression->evaluate(loopResolver);
 							if (finalValue->isNil())
@@ -124,15 +124,15 @@ public:
 		));
 
 		put("$", Function::impl<String>(
-			[](SPtr<Resolver> const& resolver, ArgList const& args) {
+			[](Resolver const& resolver, ArgList const& args) {
 				SPtr<String> varName = args.get<String>(0);
-				SPtr<Object> value = resolver->getVar(*varName);
+				SPtr<Object> value = resolver.getVar(*varName);
 				return value ? Value::of(value, varName) : Value::Nil(varName);
 			}
 		));
 
 		put("#", Function::impl<String>(
-			[](SPtr<Resolver> const& resolver, ArgList const& args) {
+			[](Resolver const& resolver, ArgList const& args) {
 				return ExpressionEvaluator::expressionValue(std::make_shared<ExpressionInputStream>(args.get<String>(0)), resolver);
 			}
 		));

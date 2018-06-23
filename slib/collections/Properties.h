@@ -11,15 +11,14 @@
 
 namespace slib {
 
-class Properties : public LinkedHashMap<std::string, std::string> {
+class Properties : public LinkedHashMap<String, String> {
 public:
 	class LineProcessor {
 	public:
-		typedef Map<std::string, std::string> Props;
+		typedef Map<String, String> Props;
 	public:
 		virtual ~LineProcessor();
-		virtual SPtr<std::string> processLine(const std::string& name,
-											  const std::string& rawProperty) = 0;
+		virtual UPtr<String> processLine(String const& name, SPtr<String> const& rawProperty) = 0;
 	};
 
 private:
@@ -42,9 +41,9 @@ private:
 
 	void internalLoad(LineReader *lr,
 					  LineProcessor *lineProcessor);
-	std::string unescape(std::string const& in, size_t offset, size_t len);
+	UPtr<String> unescape(std::string const& in, size_t offset, size_t len);
 
-	virtual void setVariableProperty(std::string const& name, std::string const& value,
+	virtual void setVariableProperty(String const& name, SPtr<String> const& value,
 									 LineProcessor *lineProcessor);
 protected:
 	/** @throws NumberFormatException */
@@ -57,8 +56,10 @@ protected:
 public:
 	virtual ~Properties() override {}
 
-	virtual Class const* getClass() const override {
-		return PROPERTIESCLASS();
+	static constexpr Class CLASS = PROPERTIESCLASS;
+
+	virtual Class const& getClass() const override {
+		return PROPERTIESCLASS;
 	}
 
 	/**
@@ -66,24 +67,24 @@ public:
 	 * The method returns the default value argument if the property is not found.
 	 * @param name the key
 	 */
-	virtual SPtr<std::string> getProperty(std::string const& name) const {
+	virtual SPtr<String> getProperty(String const& name) const {
 		return get(name);
 	}
 
-	virtual SPtr<std::string> getProperty(std::string const& name,
-										  SPtr<std::string> defaultValue) const {
-		SPtr<std::string> value = get(name);
+	virtual SPtr<String> getProperty(String const& name,
+									 SPtr<String> defaultValue) const {
+		SPtr<String> value = get(name);
 		if (value)
 			return value;
 		return defaultValue;
 	}
 
-	virtual SPtr<std::string> getProperty(std::string const& name,
-										  std::string const& defaultValue) const {
-		SPtr<std::string> value = get(name);
+	virtual SPtr<String> getProperty(String const& name,
+									 String const& defaultValue) const {
+		SPtr<String> value = get(name);
 		if (value)
 			return value;
-		return std::make_shared<std::string>(defaultValue);
+		return std::make_shared<String>(defaultValue);
 	}
 
 	/**
@@ -91,7 +92,7 @@ public:
 	 * @param name the key
 	 * @param value the value corresponding to the key
 	 */
-	virtual void setProperty(std::string const& name, std::string const& value) {
+	virtual void setProperty(String const& name, String const& value) {
 		emplace(name, value);
 	}
 
@@ -100,7 +101,7 @@ public:
 	 * @param name the key
 	 * @param value the value corresponding to the key
 	 */
-	virtual void setProperty(std::string const& name, SPtr<std::string> const& value) {
+	virtual void setProperty(String const& name, SPtr<String> const& value) {
 		put(name, value);
 	}
 
@@ -173,18 +174,18 @@ public:
 //--- typed getters -------------------------------------------------------------------------------
 
 	/** @throws MissingValueException */
-	std::string getString(std::string const& name) const {
-		SPtr<std::string> val = getProperty(name);
+	SPtr<String> getString(String const& name) const {
+		SPtr<String> val = getProperty(name);
 		if (val)
-			return *val;
+			return val;
 		throw MissingValueException(_HERE_, name.c_str());
 	}
 
-	std::string getString(const std::string& name, const std::string& defaultValue) const {
+	SPtr<String> getString(String const& name, String const& defaultValue) const {
 		try {
 			return getString(name);
 		} catch (MissingValueException const&) {
-			return defaultValue;
+			return std::make_shared<String>(defaultValue);
 		}
 	}
 
@@ -236,7 +237,7 @@ public:
 
 	/** @throws MissingValueException */
 	bool getBool(const std::string& name) const {
-		return Boolean::parseBoolean(getString(name));
+		return Boolean::parseBoolean(CPtr(getString(name)));
 	}
 
 	bool getBool(const std::string& name, bool defaultValue) const {

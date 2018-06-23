@@ -6,6 +6,7 @@
 #define H_SLIB_UTIL_FILEUTILS_H
 
 #include "slib/exception/Exception.h"
+#include "slib/lang/String.h"
 
 #include <string>
 
@@ -18,7 +19,7 @@ public:
 	}
 };
 
-extern mode_t parseModeSpec(const std::string& modeSpec);
+extern mode_t parseModeSpec(String const& modeSpec);
 
 class FileUtils {
 protected:
@@ -33,10 +34,10 @@ protected:
 public:
 	static const char SYSTEM_SEPARATOR;
 
-	static int mkdirs(const std::string& path, const std::string& mode = "rwxrwxr---");
-	static bool isPathAbsolute(const std::string& path);
-	static std::string buildPath(const std::string& dir, const std::string& name);
-	static std::string getPath(const std::string& fileName);
+	static int mkdirs(String const& path, String const& mode = "rwxrwxr---");
+	static bool isPathAbsolute(slib::String const& path);
+	static UPtr<String> buildPath(String const& dir, String const& name);
+	static UPtr<String> getPath(String const& fileName);
 
 	static std::string getExtension(const std::string& fileName);
 

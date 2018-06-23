@@ -8,7 +8,7 @@ Application bootstrapping and general utility library. It handles:
   * Runtime type system (class names, instanceof and casts only, limited to string, numeric and collection types)
   * Basic threading and concurrency
   * File manipulation
-  * Expression evaluator (still incomplete)
+  * Expression evaluator
 
 Currently Linux only. Requires a compiler with C++11 support.
 
@@ -21,4 +21,5 @@ Please note this is not currently intended as a general-purpose library. Only wh
   * [tclap](http://tclap.sourceforge.net/)
   * [libbsd](https://libbsd.freedesktop.org/wiki/)
   * [rapidjson](http://rapidjson.org/) - optional, for JsonUtils only
+  * [CppUTest](http://cpputest.github.io) - for tests only
 

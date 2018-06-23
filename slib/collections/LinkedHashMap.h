@@ -228,8 +228,10 @@ public:
 	LinkedHashMap(const LinkedHashMap& other)
 	:_internalMap(std::make_shared<InternalLinkedHashMap<K, V, Pred>>(*other._internalMap)) {}
 
-	virtual Class const* getClass() const override {
-		return LINKEDHASHMAPCLASS();
+	static constexpr Class _class = LINKEDHASHMAPCLASS;
+
+	virtual Class const& getClass() const override {
+		return LINKEDHASHMAPCLASS;
 	}
 
 	virtual void clear() override {
@@ -261,6 +263,9 @@ public:
 		return Iterator<typename Map<K, V, Pred>::Entry>(new typename InternalLinkedHashMap<K, V, Pred>::EntryIterator(_internalMap));
 	}
 };
+
+template <class K, class V, class Pred>
+constexpr Class LinkedHashMap<K, V, Pred>::_class;
 
 } // namespace
 

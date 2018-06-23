@@ -19,6 +19,7 @@ namespace expr {
 
 class Value {
 friend class ExpressionEvaluator;
+friend class ResultHolder;
 private:
 	SPtr<Object> _value;
 	SPtr<String> _name;
@@ -60,13 +61,38 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	static void checkNil(Value const& v){
-		if (!v._value) {
-			if (!v._name)
-				throw MissingSymbolException(_HERE_, v._name);
+	static void checkNil(SPtr<Object> const& value, SPtr<String> const& name) {
+		if (!value) {
+			if (!name)
+				throw MissingSymbolException(_HERE_, name);
 			else
 				throw NilValueException(_HERE_);
 		}
+	}
+
+	/** @throws EvaluationException */
+	static void checkNil(Value const& v) {
+		checkNil(v._value, v._name);
+	}
+
+
+	/** @throws EvaluationException */
+	static UPtr<String> asString(SPtr<Object> const& value, SPtr<String> const& name = nullptr) {
+		if (instanceof<Number>(value)) {
+			double d = (Class::castPtr<Number>(value))->doubleValue();
+			if (Number::isMathematicalInteger(d))
+				return Long::toString((long) d);
+			else
+				return Double::toString(d);
+		} else {
+			checkNil(value, name);
+			return value->toString();
+		}
+	}
+
+	/** @throws EvaluationException */
+	UPtr<String> asString() {
+		return asString(_value, _name);
 	}
 
 	/** @throws EvaluationException */
@@ -309,7 +335,7 @@ private:
 	/** @throws EvaluationException */
 	int64_t getIndex(SPtr<Value> const& arg) {
 		if (!instanceof<Number>(arg->_value))
-			throw EvaluationException(_HERE_, fmt::format("Operator '[]': expected numeric index, got '{}'", arg->_value->getClass()->getName()).c_str());
+			throw EvaluationException(_HERE_, fmt::format("Operator '[]': expected numeric index, got '{}'", arg->_value->getClass().getName()).c_str());
 		Number *index = Class::castPtr<Number>(arg->_value);
 		if (!Number::isMathematicalInteger(index->doubleValue()))
 			throw EvaluationException(_HERE_, fmt::format("Operator '[]': expected integer index, got {}", index->doubleValue()).c_str());
@@ -337,7 +363,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	SPtr<Value> member(SPtr<String> const& memberName, SPtr<Resolver> const& resolver) {
+	SPtr<Value> member(SPtr<String> const& memberName, Resolver const& resolver) {
 		if (isNil()) {
 			// maybe it is a dotted variable name
 			if (!_name) {
@@ -345,7 +371,7 @@ public:
 				checkNil(*this);
 			}
 			SPtr<String> dottedName = std::make_shared<String>(fmt::format("{}.{}", *_name, *memberName));
-			SPtr<Object> val = resolver->getVar(*dottedName);
+			SPtr<Object> val = resolver.getVar(*dottedName);
 			if (val)
 				return std::make_shared<Value>(val);
 			return Nil(dottedName);

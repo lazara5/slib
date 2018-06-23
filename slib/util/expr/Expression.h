@@ -23,16 +23,14 @@ public:
 
 	virtual ~Expression() override;
 
-	static Class const* CLASS() {
-		return EXPRESSIONCLASS();
-	}
+	static constexpr Class _class = EXPRESSIONCLASS;
 
-	virtual Class const* getClass() const override {
-		return EXPRESSIONCLASS();
+	virtual Class const& getClass() const override {
+		return EXPRESSIONCLASS;
 	}
 
 	/** @throws EvaluationException */
-	std::shared_ptr<Value> evaluate(SPtr<Resolver> resolver);
+	std::shared_ptr<Value> evaluate(Resolver const& resolver);
 };
 
 } // namespace expr

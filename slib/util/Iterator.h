@@ -250,9 +250,7 @@ public:
 template <class T>
 class ConstIterable : virtual public Object {
 public:
-	static Class const* CLASS() {
-		return CONSTITERABLECLASS();
-	}
+	static constexpr Class CLASS = CONSTITERABLECLASS;
 
 	virtual ConstIterator<std::shared_ptr<T>> constIterator() const = 0;
 };

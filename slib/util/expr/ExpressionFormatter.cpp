@@ -25,6 +25,9 @@ namespace expr {
 
 CharBuffer::~CharBuffer() {}
 
+//--- FormatToken ----------------------------------------------------------------------
+//--------------------------------------------------------------------------------------
+
 bool FormatToken::setFlag(char c) {
 	int32_t newFlag;
 	switch (c) {
@@ -66,7 +69,182 @@ bool FormatToken::setFlag(char c) {
 	_flags = (_flags | newFlag);
 	_strFlags.add(c);
 	return true;
+}
 
+//--- ParserStateMachine ---------------------------------------------------------------
+//--------------------------------------------------------------------------------------
+
+SPtr<FormatToken> ParserStateMachine::getNextFormatToken() {
+	_token = std::make_shared<FormatToken>();
+	_token->setFormatStringStartIndex(_format->position());
+
+	// FINITE STATE MACHINE
+	while (true) {
+		if (ParserStateMachine::EXIT_STATE != _state) {
+			// exit state does not need to get next char
+			_currentChar = getNextFormatChar();
+			if (EOS == _currentChar && ParserStateMachine::ENTRY_STATE != _state) {
+				throw UnknownFormatConversionException(_HERE_, getFormatString());
+			}
+		}
+
+		switch (_state) {
+		// exit state
+		case ParserStateMachine::EXIT_STATE: {
+			process_EXIT_STATE();
+			return _token;
+		}
+			// plain text state, not yet applied converter
+		case ParserStateMachine::ENTRY_STATE: {
+			process_ENTRY_STATE();
+			break;
+		}
+			// begins converted string
+		case ParserStateMachine::START_CONVERSION_STATE: {
+			process_START_CONVERSION_STATE();
+			break;
+		}
+		case ParserStateMachine::FLAGS_STATE: {
+			process_FLAGS_STATE();
+			break;
+		}
+		case ParserStateMachine::WIDTH_STATE: {
+			process_WIDTH_STATE();
+			break;
+		}
+		case ParserStateMachine::PRECISION_STATE: {
+			process_PRECISION_STATE();
+			break;
+		}
+		case ParserStateMachine::CONVERSION_TYPE_STATE: {
+			process_CONVERSION_TYPE_STATE();
+			break;
+		}
+		}
+	}
+}
+
+void ParserStateMachine::process_ENTRY_STATE() {
+	if (EOS == _currentChar)
+		_state = ParserStateMachine::EXIT_STATE;
+	else if ('%' == _currentChar) {
+		// change to conversion type state
+		_state = START_CONVERSION_STATE;
+		_rawToken.add('%');
+	}
+	// else remains in ENTRY_STATE
+}
+
+void ParserStateMachine::process_START_CONVERSION_STATE() {
+	if (Character::isDigit(_currentChar)) {
+		ptrdiff_t position = _format->position() - 1;
+		int32_t number = parseInt(_format);
+		char nextChar = 0;
+		if (_format->hasRemaining())
+			nextChar = _format->get();
+		if ('$' == nextChar) {
+			// the digital sequence stands for the argument
+			// index.
+			int argIndex = number;
+			// k$ stands for the argument whose index is k-1 except that
+			// 0$ and 1$ both stands for the first element.
+			if (argIndex > 0)
+				_token->setArgIndex(argIndex - 1);
+			else if (argIndex == FormatToken::UNSET) {
+				throw MissingFormatArgumentException(_HERE_, *getFormatString());
+			}
+			_state = FLAGS_STATE;
+		} else {
+			// the digital zero stands for one format flag.
+			if ('0' == _currentChar) {
+				_state = FLAGS_STATE;
+				_format->position(position);
+			} else {
+				// the digital sequence stands for the width.
+				_state = WIDTH_STATE;
+				// do not get the next char.
+				_format->position(_format->position() - 1);
+				_token->setWidth(number);
+			}
+		}
+		_currentChar = nextChar;
+	} else if ('<' == _currentChar) {
+		_state = FLAGS_STATE;
+		_token->setArgIndex(FormatToken::LAST_ARGUMENT_INDEX);
+	} else {
+		_state = FLAGS_STATE;
+		// do not get the next char.
+		_format->position(_format->position() - 1);
+	}
+}
+
+void ParserStateMachine::process_FLAGS_STATE() {
+	if (_token->setFlag(_currentChar)) {
+		// remains in FLAGS_STATE
+	} else if (Character::isDigit(_currentChar)) {
+		_token->setWidth(parseInt(_format));
+		_state = WIDTH_STATE;
+	} else if ('.' == _currentChar) {
+		_state = PRECISION_STATE;
+		_rawToken.add('.');
+	} else {
+		_state = CONVERSION_TYPE_STATE;
+		// do not get the next char.
+		_format->position(_format->position() - 1);
+	}
+}
+
+void ParserStateMachine::process_WIDTH_STATE() {
+	if ('.' == _currentChar) {
+		_state = PRECISION_STATE;
+		_rawToken.add('.');
+	} else {
+		_state = CONVERSION_TYPE_STATE;
+		// do not get the next char
+		_format->position(_format->position() - 1);
+	}
+}
+
+void ParserStateMachine::process_PRECISION_STATE() {
+	if (Character::isDigit(_currentChar)) {
+		_token->setPrecision(parseInt(_format));
+	} else {
+		// the precision is required but not given by the format string
+		throw UnknownFormatConversionException(_HERE_, getFormatString());
+	}
+	_state = CONVERSION_TYPE_STATE;
+}
+
+void ParserStateMachine::process_CONVERSION_TYPE_STATE() {
+	_token->setConversionType(_currentChar);
+	_rawToken.add((char)tolower(_currentChar));
+	_state = EXIT_STATE;
+}
+
+void ParserStateMachine::process_EXIT_STATE() {
+	_token->setPlainText(getFormatString());
+	_token->setFormat(_rawToken.toString());
+}
+
+int32_t ParserStateMachine::parseInt(const SPtr<CharBuffer> &buffer) {
+	ptrdiff_t start = buffer->position() - 1;
+	ptrdiff_t end = buffer->limit();
+	while (buffer->hasRemaining()) {
+		if (!Character::isDigit(buffer->get())) {
+			end = buffer->position() - 1;
+			break;
+		}
+	}
+	buffer->position(0);
+	UPtr<String> intStr = buffer->subSequence(start, end)->toString();
+	buffer->position(end);
+	try {
+		int32_t res = Integer::parseInt(CPtr(intStr));
+		_rawToken.add(*intStr);
+		return res;
+	} catch (NumberFormatException e) {
+		return FormatToken::UNSET;
+	}
 }
 
 static SPtr<Object> getArgument(ArgList const& args, int32_t index, SPtr<FormatToken> const& token, SPtr<Object> const& lastArgument, bool hasLastArgumentSet, bool allowNil) {
@@ -84,8 +262,8 @@ static SPtr<Object> getArgument(ArgList const& args, int32_t index, SPtr<FormatT
 	return (allowNil ? args.getNullable((size_t)index + 1) : args.get((size_t)index + 1));
 }
 
-static SPtr<String> padding(SPtr<FormatToken> const& token, StringBuilder &source, int startIndex) {
-	int start = startIndex;
+static SPtr<String> padding(SPtr<FormatToken> const& token, StringBuilder &source, int32_t startIndex) {
+	int32_t start = startIndex;
 	bool paddingRight = token->isFlagSet(FormatToken::FLAG_MINUS);
 	char paddingChar = ' '; // space as padding char.
 	if (token->isFlagSet(FormatToken::FLAG_ZERO))
@@ -158,7 +336,7 @@ static SPtr<String> formatString(SPtr<FormatToken> const& token, SPtr<Object> co
 static SPtr<String> formatCharacter(SPtr<FormatToken> const& token, SPtr<Object> const& arg) {
 	StringBuilder result;
 
-	int startIndex = 0;
+	int32_t startIndex = 0;
 	int32_t flags = token->getFlags();
 
 	if (token->isFlagSet(FormatToken::FLAG_MINUS) && !token->isWidthSet())
@@ -191,6 +369,24 @@ static SPtr<String> formatCharacter(SPtr<FormatToken> const& token, SPtr<Object>
 			throw IllegalFormatConversionException(_HERE_, token->getConversionType(), arg->getClass());
 		}
 	}
+	return padding(token, result, startIndex);
+}
+
+static SPtr<String> formatPercent(SPtr<FormatToken> const& token) {
+	StringBuilder result("%");
+
+	int32_t startIndex = 0;
+	int32_t flags = token->getFlags();
+
+	if (token->isFlagSet(FormatToken::FLAG_MINUS) && !token->isWidthSet())
+		throw MissingFormatWidthException(_HERE_, fmt::format("-{}", token->getConversionType()).c_str());
+
+	if (FormatToken::FLAGS_UNSET != flags && FormatToken::FLAG_MINUS != flags)
+		throw FormatFlagsConversionMismatchException(_HERE_, token->getStrFlags(), token->getConversionType());
+
+	if (token->isPrecisionSet())
+		throw IllegalFormatPrecisionException(_HERE_, token->getPrecision());
+
 	return padding(token, result, startIndex);
 }
 
@@ -278,6 +474,9 @@ static SPtr<String> formatArg(SPtr<FormatToken> const& token, SPtr<Object> const
 		case 'A':
 			result = formatFloat(token, arg);
 			break;
+		case '%':
+			result = formatPercent(token);
+			break;
 		default:
 			throw UnknownFormatConversionException(_HERE_, String::valueOf(token->getConversionType()));
 	}
@@ -287,7 +486,7 @@ static SPtr<String> formatArg(SPtr<FormatToken> const& token, SPtr<Object> const
 	return result;
 }
 
-void ExpressionFormatter::format(StringBuilder &out, ArgList const& args, SPtr<Resolver> const& resolver) {
+void ExpressionFormatter::format(StringBuilder &out, ArgList const& args, Resolver const& resolver) {
 	SPtr<String> format = args.get<String>(0);
 	SPtr<CharBuffer> formatBuffer = std::make_shared<CharBuffer>(format);
 	ParserStateMachine parser(formatBuffer);

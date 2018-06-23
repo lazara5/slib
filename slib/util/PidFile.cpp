@@ -25,9 +25,9 @@ pid_t PidFile::open(struct pidfh **pfh, const Config& cfg, const std::string& mo
 		throw PidFileException(_HERE_, "Pid file already open");
 	}
 
-	std::string pidFile = cfg.getString("pidfile", cfg.getAppName() + ".pid");
-	if (!FileUtils::isPathAbsolute(pidFile))
-		pidFile = FileUtils::buildPath(cfg.getLogDir(), pidFile);
+	SPtr<String> pidFile = cfg.getString("pidfile", cfg.getAppName() + ".pid");
+	if (!FileUtils::isPathAbsolute(*pidFile))
+		pidFile = FileUtils::buildPath(*cfg.getLogDir(), *pidFile);
 
 	mode_t mode = 0;
 	try {
@@ -36,10 +36,10 @@ pid_t PidFile::open(struct pidfh **pfh, const Config& cfg, const std::string& mo
 		throw PidFileException(_HERE_, fmt::format("Error parsing file mode spec, errno='{}'", StringUtils::formatErrno(err)).c_str());
 	}
 
-	*pfh = pidfile_open(pidFile.c_str(), mode, &otherPid);
+	*pfh = pidfile_open(pidFile->c_str(), mode, &otherPid);
 	if (*pfh == nullptr) {
 		if (errno != EEXIST)
-			throw PidFileException(_HERE_, fmt::format("Error opening pid file '{}', errno='{}'", pidFile, StringUtils::formatErrno()).c_str());
+			throw PidFileException(_HERE_, fmt::format("Error opening pid file '{}', errno='{}'", *pidFile, StringUtils::formatErrno()).c_str());
 		return otherPid;
 	}
 

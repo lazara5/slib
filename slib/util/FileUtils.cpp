@@ -4,6 +4,7 @@
 
 #include "slib/util/FileUtils.h"
 #include "slib/lang/String.h"
+#include "slib/lang/StringBuilder.h"
 #include "slib/exception/IllegalArgumentException.h"
 
 #include <sys/stat.h>
@@ -34,8 +35,8 @@ bool isMode(char c, char setValue) {
 	throw IllegalArgumentException(_HERE_, "Invalid mode");
 }
 
-mode_t parseModeSpec(const std::string& modeSpec) {
-	size_t modeLen = modeSpec.size();
+mode_t parseModeSpec(String const& modeSpec) {
+	size_t modeLen = modeSpec.length();
 	if ((modeLen < 9) || (modeLen > 10))
 		throw (int)EINVAL;
 
@@ -61,7 +62,7 @@ mode_t parseModeSpec(const std::string& modeSpec) {
 	return mode;
 }
 
-int FileUtils::mkdirs(const std::string& path, const std::string& modeSpec) {
+int FileUtils::mkdirs(String const& path, String const& modeSpec) {
 	mode_t mode = 0;
 	try {
 		mode = parseModeSpec(modeSpec);
@@ -95,33 +96,33 @@ int FileUtils::mkdirs(const std::string& path, const std::string& modeSpec) {
 	return 0;
 }
 
-bool FileUtils::isPathAbsolute(const std::string& path) {
-	if (path.empty())
+bool FileUtils::isPathAbsolute(String const& path) {
+	if (path.isEmpty())
 		return false;
 	if (String::startsWith(CPtr(path), '/'))
 		return true;
 	return false;
 }
 
-std::string FileUtils::buildPath(const std::string& dir, const std::string& name) {
-	std::string path = name;
-	if (dir.empty())
-		return name;
+UPtr<String> FileUtils::buildPath(String const& dir, String const& name) {
+	StringBuilder path(name);
+	if (dir.isEmpty())
+		return std::make_unique<String>(name);
 	if (!isPathAbsolute(name)) {
-		size_t l = dir.size();
+		size_t l = dir.length();
 		if (l > 0 && String::endsWith(CPtr(dir), '/'))
-			path = dir + name;
+			path.clear().add(dir).add(name);
 		else
-			path = dir + '/' + name;
+			path.clear().add(dir).add('/').add(name);
 	}
-	return path;
+	return path.toString();
 }
 
-std::string FileUtils::getPath(const std::string& fileName) {
+UPtr<String> FileUtils::getPath(String const& fileName) {
 	std::ptrdiff_t lastSep = String::lastIndexOf(CPtr(fileName), '/');
 	if (lastSep < 0)
-		return fileName;
-	return String::substring(CPtr(fileName), 0, (size_t)lastSep);
+		return std::make_unique<String>(fileName);
+	return fileName.substring(0, (size_t)lastSep);
 }
 
 ptrdiff_t indexOfLastSep(const std::string& fileName) {

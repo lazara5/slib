@@ -10,8 +10,10 @@
 
 namespace slib {
 
-std::unique_ptr<String> Object::toString() const {
-	return std::make_unique<String>(fmt::format("{}@{:x}", getClass()->getName(), hashCode()));
+constexpr Class Object::_class;
+
+UPtr<String> Object::toString() const {
+	return std::make_unique<String>(fmt::format("{}@{:x}", getClass().getName(), hashCode()));
 }
 
 } // namespace slib

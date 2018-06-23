@@ -27,12 +27,12 @@ public:
 	EvaluationException(const char *where, const char *msg, Exception const& error)
 	:EvaluationException(where, "EvaluationException", msg, error) {}
 
-	EvaluationException(const char *where, const char *oper, Class const* op1)
-	:EvaluationException(where, "EvaluationException", fmt::format("Operator '{}' not applicable for '{}'", oper, op1->getName()).c_str()) {}
+	EvaluationException(const char *where, const char *oper, Class const& op1)
+	:EvaluationException(where, "EvaluationException", fmt::format("Operator '{}' not applicable for '{}'", oper, op1.getName()).c_str()) {}
 
-	EvaluationException(const char *where, const char *oper, Class const* op1, Class const* op2)
+	EvaluationException(const char *where, const char *oper, Class const& op1, Class const& op2)
 	:EvaluationException(where, "EvaluationException", fmt::format("Operator '{}' not applicable for '{}' and '{}'",
-																   oper, op1->getName(), op2->getName()).c_str()) {}
+																   oper, op1.getName(), op2.getName()).c_str()) {}
 };
 
 class SyntaxErrorException : public EvaluationException {

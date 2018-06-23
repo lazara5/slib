@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef H_SLIB_STRINGBUILDER_H
-#define H_SLIB_STRINGBUILDER_H
+#ifndef H_SLIB_LANG_STRINGBUILDER_H
+#define H_SLIB_LANG_STRINGBUILDER_H
 
 #include "slib/lang/Object.h"
 #include "slib/lang/String.h"
@@ -61,12 +61,10 @@ public:
 	StringBuilder(uint64_t val);
 	StringBuilder(double val);
 
-	static Class const* CLASS() {
-		return STRINGBUILDERCLASS();
-	}
+	static constexpr Class _class = STRINGBUILDERCLASS;
 
-	virtual Class const* getClass() const override {
-		return STRINGBUILDERCLASS();
+	virtual Class const& getClass() const override {
+		return STRINGBUILDERCLASS;
 	}
 
 	void alloc(size_t newLen);
@@ -98,7 +96,7 @@ public:
 	// assignment
 	void assign(const char *src, size_t len);
 	void assignInternal(const char *src, size_t len);
-	void clear();
+	StringBuilder& clear();
 	void truncate(size_t len);
 
 	char *releaseBufferOwnership();
@@ -439,7 +437,7 @@ public:
 		return (_buffer == nullptr);
 	}
 
-	virtual std::unique_ptr<String> toString() const override {
+	virtual UPtr<String> toString() const override {
 		return std::make_unique<String>((const char *)_buffer, _len);
 	}
 
@@ -527,4 +525,4 @@ namespace std {
 	};
 }
 
-#endif // H_SLIB_STRINGBUILDER_H
+#endif // H_SLIB_LANG_STRINGBUILDER_H

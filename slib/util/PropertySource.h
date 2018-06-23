@@ -7,17 +7,18 @@
 
 #include "slib/collections/Map.h"
 #include "slib/exception/ValueException.h"
+#include "slib/util/expr/Resolver.h"
 
 #include <unordered_map>
 #include <string>
 
 namespace slib {
 
-class PropertySource : public ValueProvider<std::string, std::string> {
+class PropertySource : public expr::Resolver {
 protected:
-	typedef std::shared_ptr<std::string> (PropertySource::*GetProperty)() const;
+	typedef SPtr<Object> (PropertySource::*GetProperty)() const;
 private:
-	typedef std::unordered_map<std::string, GetProperty> PropertyMap;
+	typedef std::unordered_map<String, GetProperty> PropertyMap;
 	typedef PropertyMap::const_iterator PropMapConstIter;
 	PropertyMap _properties;
 	bool _initialized;
@@ -30,9 +31,9 @@ public:
 	:_initialized(false) {
 	}
 
-	virtual ~PropertySource();
+	virtual ~PropertySource() override;
 
-	std::string getProperty(const std::string& name);
+	SPtr<Object> getProperty(String const& name);
 
 	virtual void initialize() = 0;
 
@@ -41,9 +42,7 @@ public:
 		_initialized = true;
 	}
 
-	virtual std::shared_ptr<std::string> get(std::string const& name) const override;
-
-	virtual bool containsKey(std::string const& name) const override;
+	virtual SPtr<Object> getVar(String const& name) const override;
 };
 
 } // namespace

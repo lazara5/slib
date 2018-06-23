@@ -18,9 +18,9 @@ namespace expr {
 
 class ArgList {
 protected:
-	std::shared_ptr<String> _symbolName;
+	SPtr<String> _symbolName;
 public:
-	ArgList(std::shared_ptr<String> const& symbolName)
+	ArgList(SPtr<String> const& symbolName)
 	:_symbolName(symbolName) {}
 
 	virtual ~ArgList();
@@ -34,14 +34,14 @@ public:
 		std::shared_ptr<Object> obj = getNullable(index);
 		if (!obj)
 			return nullptr;
-		if (!T::CLASS()->isAssignableFrom(obj->getClass()))
-			throw CastException(_HERE_, fmt::format("Function {}(): invalid parameter type: expected {}, got {}", *_symbolName, T::CLASS()->getName(), obj->getClass()->getName()).c_str());
+		if (!T::_class.isAssignableFrom(obj->getClass()))
+			throw CastException(_HERE_, fmt::format("Function {}(): invalid parameter type: expected {}, got {}", *_symbolName, T::_class.getName(), obj->getClass().getName()).c_str());
 		return Class::cast<T>(obj);
 	}
 
 	/** @throws EvaluationException */
-	std::shared_ptr<Object> get(size_t index) const {
-		std::shared_ptr<Object> obj = getNullable(index);
+	SPtr<Object> get(size_t index) const {
+		SPtr<Object> obj = getNullable(index);
 		if (!obj)
 			throw EvaluationException(_HERE_, fmt::format("Function {}(): expected non-nil argument: {}", *_symbolName, index).c_str());
 		return obj;
@@ -62,10 +62,10 @@ class Function;
 
 class FunctionArgs : public ArgList {
 private:
-	std::shared_ptr<Function> const& _function;
+	SPtr<Function> const& _function;
 	ArrayList<Object> _args;
 public:
-	FunctionArgs(SPtr<Function> const& function, std::shared_ptr<String> const& symbolName)
+	FunctionArgs(SPtr<Function> const& function, SPtr<String> const& symbolName)
 	:ArgList(symbolName)
 	,_function(function) {}
 
@@ -82,13 +82,13 @@ public:
 	}
 
 	/** @throws CastException */
-	void add(std::shared_ptr<Object> const& obj);
+	void add(const SPtr<Object> &obj);
 
-	Class const* peek();
+	Class const& peek();
 };
 
 /** @throws EvaluationException */
-typedef std::function<SPtr<Value>(SPtr<Resolver> const& resolver, ArgList const& args)> Evaluate;
+typedef std::function<SPtr<Value>(Resolver const& resolver, ArgList const& args)> Evaluate;
 
 class Function : virtual public Object {
 private:
@@ -96,18 +96,20 @@ private:
 	size_t _fixedParams;
 
 	/** Parameter types for fixed params */
-	UPtr<std::vector<Class const*>> _paramTypes;
+	UPtr<std::vector<Class>> _paramTypes;
 protected:
 	Evaluate _evaluate;
 public:
 	/** do NOT use directly, only public for make_shared */
-	Function(bool /* dontUse */, std::initializer_list<Class const*> argTypes, Evaluate evaluate)
+	Function(bool /* dontUse */, std::initializer_list<Class> argTypes, Evaluate evaluate)
 	:_evaluate(evaluate) {
 		auto functionParams = argTypes.size();
 		if (functionParams > 0) {
-			_paramTypes = std::make_unique<std::vector<Class const*>>();
+			_paramTypes = std::make_unique<std::vector<Class>>();
 			_paramTypes->reserve(functionParams);
-			_paramTypes->insert(_paramTypes->end(), argTypes);
+			//_paramTypes->insert(_paramTypes->end(), argTypes);
+			for (Class const& c : argTypes)
+				_paramTypes->push_back(c);
 			_fixedParams = (unsigned int)functionParams;
 		} else {
 			_fixedParams = 0;
@@ -117,21 +119,19 @@ public:
 
 	template <typename ...Args>
 	static SPtr<Function> impl(Evaluate evaluate) {
-		return std::make_shared<Function>(true, std::initializer_list<Class const*>({Args::CLASS()...}), evaluate);
+		return std::make_shared<Function>(true, std::initializer_list<Class>({Args::_class...}), evaluate);
 	}
 
 	virtual ~Function() override;
 
-	static Class const* CLASS() {
-		return FUNCTIONCLASS();
+	static constexpr Class _class = FUNCTIONCLASS;
+
+	virtual Class const& getClass() const override {
+		return FUNCTIONCLASS;
 	}
 
-	virtual Class const* getClass() const override {
-		return FUNCTIONCLASS();
-	}
-
-	Class const* getParamType(size_t i) {
-		return (i < _fixedParams) ? (*_paramTypes)[i] : OBJECTCLASS();
+	Class const& getParamType(size_t i) {
+		return (i < _fixedParams) ? (*_paramTypes)[i] : OBJECTCLASS;
 	}
 
 	size_t getFixedParamsCount() {
@@ -139,7 +139,7 @@ public:
 	}
 
 	/** @throws EvaluationException; */
-	SPtr<Value> evaluate(SPtr<Resolver> const& resolver, ArgList const& args) {
+	SPtr<Value> evaluate(Resolver const& resolver, ArgList const& args) {
 		return _evaluate(resolver, args);
 	}
 };

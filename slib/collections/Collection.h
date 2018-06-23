@@ -16,9 +16,7 @@ namespace slib {
 template <class E>
 class Collection : virtual public Object, public ConstIterable<E> {
 public:
-	static Class const* CLASS() {
-		return COLLECTIONCLASS();
-	}
+	static constexpr Class CLASS = COLLECTIONCLASS;
 
 	virtual size_t size() const = 0;
 

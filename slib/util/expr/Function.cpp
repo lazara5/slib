@@ -9,20 +9,22 @@ namespace expr {
 
 Function::~Function() {}
 
+constexpr Class Function::_class;
+
 ArgList::~ArgList() {}
 
 FunctionArgs::~FunctionArgs() {}
 
-void FunctionArgs::add(std::shared_ptr<Object> const& obj) {
+void FunctionArgs::add(SPtr<Object> const& obj) {
 	size_t np = _args.size();
-	Class const* pClass = _function->getParamType(np);
-	if ((!obj) || (pClass->isAssignableFrom(obj->getClass())))
+	Class const& clazz = _function->getParamType(np);
+	if ((!obj) || (clazz.isAssignableFrom(obj->getClass())))
 		_args.add(obj);
 	else
-		throw CastException(_HERE_, fmt::format("Function {}(): invalid parameter type: expected {}, got {}", *_symbolName, pClass->getName(), obj->getClass()->getName()).c_str());
+		throw CastException(_HERE_, fmt::format("Function {}(): invalid parameter type: expected {}, got {}", *_symbolName, clazz.getName(), obj->getClass().getName()).c_str());
 }
 
-const Class *FunctionArgs::peek() {
+Class const& FunctionArgs::peek() {
 	return _function->getParamType(_args.size());
 }
 

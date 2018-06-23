@@ -124,43 +124,27 @@ public:
 };
 
 class FormatFlagsConversionMismatchException : public IllegalFormatException {
-private:
-	SPtr<String> _f;
-	char _c;
 public:
 	FormatFlagsConversionMismatchException(const char *where, UPtr<String> f, char c)
-	:IllegalFormatException(where, "FormatFlagsConversionMismatchException", fmt::format("Conversion = {}, Flags = {}", c, *f).c_str())
-	,_f(std::make_shared<String>(*f))
-	,_c(c) {}
+	:IllegalFormatException(where, "FormatFlagsConversionMismatchException", fmt::format("Conversion = {}, Flags = {}", c, *f).c_str()) {}
 };
 
 class IllegalFormatCodePointException : public IllegalFormatException {
-private:
-	int32_t _c;
 public:
 	IllegalFormatCodePointException(const char *where, int32_t c)
-	:IllegalFormatException(where, "IllegalFormatCodePointException", fmt::format("Code point = {:#x}", c).c_str())
-	,_c(c) {}
+	:IllegalFormatException(where, "IllegalFormatCodePointException", fmt::format("Code point = {:#x}", c).c_str()) {}
 };
 
 class IllegalFormatConversionException : public IllegalFormatException {
-private:
-	char _c;
-	Class const* _arg;
 public:
-	IllegalFormatConversionException(const char *where, char c, Class const* arg)
-	:IllegalFormatException(where, "IllegalFormatConversionException", fmt::format("{} != {}", c, arg->getName()).c_str())
-	,_c(c)
-	,_arg(arg) {}
+	IllegalFormatConversionException(const char *where, char c, Class const& arg)
+	:IllegalFormatException(where, "IllegalFormatConversionException", fmt::format("{} != {}", c, arg.getName()).c_str()) {}
 };
 
 class IllegalFormatPrecisionException : public IllegalFormatException {
-private:
-	int32_t _p;
 public:
 	IllegalFormatPrecisionException(const char *where, int32_t p)
-	:IllegalFormatException(where, "IllegalFormatPrecisionException", Integer::toString(p)->c_str())
-	,_p(p) {}
+	:IllegalFormatException(where, "IllegalFormatPrecisionException", Integer::toString(p)->c_str()) {}
 };
 
 class FormatToken {
@@ -333,55 +317,7 @@ public:
 	 * recorded in the FormatToken returned and the position of the stream
 	 * for the format string will be advanced until the next format token.
 	 */
-	SPtr<FormatToken> getNextFormatToken() {
-		_token = std::make_shared<FormatToken>();
-		_token->setFormatStringStartIndex(_format->position());
-
-		// FINITE STATE MACHINE
-		while (true) {
-			if (ParserStateMachine::EXIT_STATE != _state) {
-				// exit state does not need to get next char
-				_currentChar = getNextFormatChar();
-				if (EOS == _currentChar && ParserStateMachine::ENTRY_STATE != _state) {
-					throw UnknownFormatConversionException(_HERE_, getFormatString());
-				}
-			}
-
-			switch (_state) {
-				// exit state
-				case ParserStateMachine::EXIT_STATE: {
-					process_EXIT_STATE();
-					return _token;
-				}
-					// plain text state, not yet applied converter
-				case ParserStateMachine::ENTRY_STATE: {
-					process_ENTRY_STATE();
-					break;
-				}
-					// begins converted string
-				case ParserStateMachine::START_CONVERSION_STATE: {
-					process_START_CONVERSION_STATE();
-					break;
-				}
-				case ParserStateMachine::FLAGS_STATE: {
-					process_FLAGS_STATE();
-					break;
-				}
-				case ParserStateMachine::WIDTH_STATE: {
-					process_WIDTH_STATE();
-					break;
-				}
-				case ParserStateMachine::PRECISION_STATE: {
-					process_PRECISION_STATE();
-					break;
-				}
-				case ParserStateMachine::CONVERSION_TYPE_STATE: {
-					process_CONVERSION_TYPE_STATE();
-					break;
-				}
-			}
-		}
-	}
+	SPtr<FormatToken> getNextFormatToken();
 private:
 	char getNextFormatChar() {
 		if (_format->hasRemaining())
@@ -397,131 +333,24 @@ private:
 		return formatString;
 	}
 
-	void process_ENTRY_STATE() {
-		if (EOS == _currentChar)
-			_state = ParserStateMachine::EXIT_STATE;
-		else if ('%' == _currentChar) {
-			// change to conversion type state
-			_state = START_CONVERSION_STATE;
-			_rawToken.add('%');
-		}
-		// else remains in ENTRY_STATE
-	}
+	void process_ENTRY_STATE();
 
-	void process_START_CONVERSION_STATE() {
-		if (Character::isDigit(_currentChar)) {
-			ptrdiff_t position = _format->position() - 1;
-			int32_t number = parseInt(_format);
-			char nextChar = 0;
-			if (_format->hasRemaining())
-				nextChar = _format->get();
-			if ('$' == nextChar) {
-				// the digital sequence stands for the argument
-				// index.
-				int argIndex = number;
-				// k$ stands for the argument whose index is k-1 except that
-				// 0$ and 1$ both stands for the first element.
-				if (argIndex > 0)
-					_token->setArgIndex(argIndex - 1);
-				else if (argIndex == FormatToken::UNSET) {
-					throw MissingFormatArgumentException(_HERE_, *getFormatString());
-				}
-				_state = FLAGS_STATE;
-			} else {
-				// the digital zero stands for one format flag.
-				if ('0' == _currentChar) {
-					_state = FLAGS_STATE;
-					_format->position(position);
-				} else {
-					// the digital sequence stands for the width.
-					_state = WIDTH_STATE;
-					// do not get the next char.
-					_format->position(_format->position() - 1);
-					_token->setWidth(number);
-				}
-			}
-			_currentChar = nextChar;
-		} else if ('<' == _currentChar) {
-			_state = FLAGS_STATE;
-			_token->setArgIndex(FormatToken::LAST_ARGUMENT_INDEX);
-		} else {
-			_state = FLAGS_STATE;
-			// do not get the next char.
-			_format->position(_format->position() - 1);
-		}
-	}
+	void process_START_CONVERSION_STATE();
 
-	void process_FLAGS_STATE() {
-		if (_token->setFlag(_currentChar)) {
-			// remains in FLAGS_STATE
-		} else if (Character::isDigit(_currentChar)) {
-			_token->setWidth(parseInt(_format));
-			_state = WIDTH_STATE;
-		} else if ('.' == _currentChar) {
-			_state = PRECISION_STATE;
-			_rawToken.add('.');
-		} else {
-			_state = CONVERSION_TYPE_STATE;
-			// do not get the next char.
-			_format->position(_format->position() - 1);
-		}
-	}
+	void process_FLAGS_STATE();
 
-	void process_WIDTH_STATE() {
-		if ('.' == _currentChar) {
-			_state = PRECISION_STATE;
-			_rawToken.add('.');
-		} else {
-			_state = CONVERSION_TYPE_STATE;
-			// do not get the next char
-			_format->position(_format->position() - 1);
-		}
-	}
+	void process_WIDTH_STATE();
 
-	void process_PRECISION_STATE() {
-		if (Character::isDigit(_currentChar)) {
-			_token->setPrecision(parseInt(_format));
-		} else {
-			// the precision is required but not given by the format string
-			throw UnknownFormatConversionException(_HERE_, getFormatString());
-		}
-		_state = CONVERSION_TYPE_STATE;
-	}
+	void process_PRECISION_STATE();
 
-	void process_CONVERSION_TYPE_STATE() {
-		_token->setConversionType(_currentChar);
-		_rawToken.add((char)tolower(_currentChar));
-		_state = EXIT_STATE;
-	}
+	void process_CONVERSION_TYPE_STATE();
 
-	void process_EXIT_STATE() {
-		_token->setPlainText(getFormatString());
-		_token->setFormat(_rawToken.toString());
-	}
+	void process_EXIT_STATE();
 
 	/**
 	 * Parses integer value from the given buffer
 	 */
-	int32_t parseInt(SPtr<CharBuffer> const& buffer) {
-		ptrdiff_t start = buffer->position() - 1;
-		ptrdiff_t end = buffer->limit();
-		while (buffer->hasRemaining()) {
-			if (!Character::isDigit(buffer->get())) {
-				end = buffer->position() - 1;
-				break;
-			}
-		}
-		buffer->position(0);
-		UPtr<String> intStr = buffer->subSequence(start, end)->toString();
-		buffer->position(end);
-		try {
-			int32_t res = Integer::parseInt(CPtr(intStr));
-			_rawToken.add(*intStr);
-			return res;
-		} catch (NumberFormatException e) {
-			return FormatToken::UNSET;
-		}
-	}
+	int32_t parseInt(SPtr<CharBuffer> const& buffer);
 };
 
 /**
@@ -533,7 +362,7 @@ public:
 	/**
 	 * @throws EvaluationException
 	 */
-	static void format(StringBuilder &out, ArgList const& args, SPtr<Resolver> const& resolver);
+	static void format(StringBuilder &out, ArgList const& args, Resolver const& resolver);
 };
 
 } // namespace expr

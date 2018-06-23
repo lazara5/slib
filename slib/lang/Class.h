@@ -6,6 +6,8 @@
 #define H_SLIB_CLASS_H
 
 #include "slib/exception/NullPointerException.h"
+#include "slib/lang/StringView.h"
+#include "slib/util/TemplateUtils.h"
 
 #include <stdint.h>
 #include <inttypes.h>
@@ -143,34 +145,35 @@ typedef enum {
 
 constexpr uint64_t OBJECTID = typeId<BASEID(OBJECT)>();
 constexpr uint64_t VOIDID = typeId<BASEID(VOID)>();
-	constexpr uint64_t NUMBERID = typeId<BASEID(NUMBER), OBJECTID>();
+	constexpr uint64_t NUMBERID = typeId<BASEID(NUMBER)>();
 		constexpr uint64_t SHORTID = typeId<BASEID(SHORT), NUMBERID>();
 		constexpr uint64_t INTEGERID = typeId<BASEID(INTEGER), NUMBERID>();
 		constexpr uint64_t UINTID = typeId<BASEID(UINT), NUMBERID>();
 		constexpr uint64_t LONGID = typeId<BASEID(LONG), NUMBERID>();
 		constexpr uint64_t ULONGID = typeId<BASEID(ULONG), NUMBERID>();
 		constexpr uint64_t DOUBLEID = typeId<BASEID(DOUBLE), NUMBERID>();
-	constexpr uint64_t CHARACTERID = typeId<BASEID(CHARACTER), OBJECTID>();
-	constexpr uint64_t CONSTITERABLEID = typeId<BASEID(CONSTITERABLE), OBJECTID>();
-		constexpr uint64_t ITERABLEID = typeId<BASEID(ITERABLE), OBJECTID>();
+	constexpr uint64_t CHARACTERID = typeId<BASEID(CHARACTER)>();
+	constexpr uint64_t CONSTITERABLEID = typeId<BASEID(CONSTITERABLE)>();
+		constexpr uint64_t ITERABLEID = typeId<BASEID(ITERABLE)>();
 	constexpr uint64_t COLLECTIONID = typeId<BASEID(COLLECTION), CONSTITERABLEID>();
 		constexpr uint64_t QUEUEID = typeId<BASEID(QUEUE), COLLECTIONID>();
 			constexpr uint64_t PRIORITYQUEUEID = typeId<BASEID(PRIORITYQUEUE), QUEUEID>();
 		constexpr uint64_t LISTID = typeId<BASEID(LIST), COLLECTIONID>();
 			constexpr uint64_t ARRAYLISTID = typeId<BASEID(ARRAYLIST), LISTID>();
-	constexpr uint64_t MAPID = typeId<BASEID(MAP), OBJECTID>();
+	constexpr uint64_t MAPID = typeId<BASEID(MAP)>();
 		constexpr uint64_t HASHMAPID = typeId<BASEID(HASHMAP), MAPID>();
 			constexpr uint64_t LINKEDHASHMAPID = typeId<BASEID(LINKEDHASHMAP), HASHMAPID>();
 				constexpr uint64_t PROPERTIESID = typeId<BASEID(PROPERTIES), LINKEDHASHMAPID>();
-	constexpr uint64_t BASICSTRINGID = typeId<BASEID(BASICSTRING), OBJECTID>();
+	constexpr uint64_t BASICSTRINGID = typeId<BASEID(BASICSTRING)>();
 		constexpr uint64_t STRINGID = typeId<BASEID(STRING), BASICSTRINGID>();
 		constexpr uint64_t ASCIICASEINSENSITIVESTRINGD = typeId<BASEID(ASCIICASEINSENSITIVESTRING), BASICSTRINGID>();
 		constexpr uint64_t STRINGBUILDERID = typeId<BASEID(STRINGBUILDER), BASICSTRINGID>();
-	constexpr uint64_t BOOLEANID = typeId<BASEID(BOOLEAN), OBJECTID>();
+	constexpr uint64_t BOOLEANID = typeId<BASEID(BOOLEAN)>();
 // Expression evaluator
-	constexpr uint64_t RESOLVERID = typeId<BASEID(RESOLVER), OBJECTID>();
-	constexpr uint64_t FUNCTIONID = typeId<BASEID(FUNCTION), OBJECTID>();
-	constexpr uint64_t EXPRESSIONID = typeId<BASEID(EXPRESSION), OBJECTID>();
+	constexpr uint64_t RESOLVERID = typeId<BASEID(RESOLVER)>();
+	constexpr uint64_t FUNCTIONID = typeId<BASEID(FUNCTION)>();
+	constexpr uint64_t EXPRESSIONID = typeId<BASEID(EXPRESSION)>();
+
 class ClassCastException : public Exception {
 public:
 	ClassCastException(const char *where, const char *c1, const char *c2);
@@ -178,25 +181,24 @@ public:
 
 class Class {
 protected:
-	std::string _name;
+	StringView _name;
 	uint64_t _typeId;
 public:
-	Class(const char *name, uint64_t typeId)
+	constexpr Class(StringView const& name, uint64_t typeId)
 	:_name(name)
-	,_typeId(typeId) {
-		printf("Class %s: %" PRIu64 "\n", name, typeId);
-	}
+	,_typeId(typeId) {}
 
-	Class(const char *name);
+	constexpr Class(Class const& clazz)
+	:_name(clazz._name)
+	,_typeId(clazz.getTypeId()) {}
 
-	Class(Class const&) = delete;
 	Class& operator=(Class const&) = delete;
 
 	bool operator ==(Class const& other) const {
 		return _typeId == other._typeId;
 	}
 
-	std::string const& getName() const {
+	constexpr StringView const& getName() const {
 		return _name;
 	}
 
@@ -204,10 +206,8 @@ public:
 		return _typeId;
 	}
 
-	bool isAssignableFrom(Class const* cls) const {
-		if (!cls)
-			throw NullPointerException(_HERE_);
-		uint64_t div = (cls->getTypeId() % getTypeId());
+	bool isAssignableFrom(Class const& cls) const {
+		uint64_t div = (cls.getTypeId() % getTypeId());
 		return (div == 0);
 	}
 
@@ -218,14 +218,14 @@ public:
 			if (std::is_convertible<typename std::remove_pointer<V*>::type, typename std::remove_pointer<T*>::type>::value == true)
 				return dynamic_cast<T*>(from);
 
-			bool canCast = T::CLASS()->isAssignableFrom(from->getClass());
+			bool canCast = T::_class.isAssignableFrom(from->getClass());
 			if (canCast) {
 				T* ret = dynamic_cast<T*>(from);
 				if (ret)
 					return ret;
 			}
 
-			throw ClassCastException(_HERE_, V::CLASS()->getName().c_str(), T::CLASS()->getName().c_str());
+			throw ClassCastException(_HERE_, V::_class.getName().c_str(), T::_class.getName().c_str());
 		}
 
 		return nullptr;
@@ -238,87 +238,87 @@ public:
 			if (std::is_convertible<typename std::remove_pointer<V*>::type, typename std::remove_pointer<T*>::type>::value == true)
 				return dynamic_cast<T const*>(from);
 
-			bool canCast = T::CLASS()->isAssignableFrom(from->getClass());
+			bool canCast = T::_class.isAssignableFrom(from->getClass());
 			if (canCast) {
 				T const* ret =  dynamic_cast<T const*>(from);
 				if (ret)
 					return ret;
 			}
 
-			throw ClassCastException(_HERE_, V::CLASS()->getName().c_str(), T::CLASS()->getName().c_str());
+			throw ClassCastException(_HERE_, V::_class.getName().c_str(), T::_class.getName().c_str());
 		}
 
 		return nullptr;
 	}
 
 	template <class T, class V>
-	static std::shared_ptr<T> cast(std::shared_ptr<V> const& from) {
+	static SPtr<T> cast(SPtr<V> const& from) {
 		if (from) {
 			// Check if it is convertible to the base class or to itself
 			if (std::is_convertible<typename std::remove_pointer<V*>::type, typename std::remove_pointer<T*>::type>::value == true)
 				return std::dynamic_pointer_cast<T>(from);
 
-			bool canCast = T::CLASS()->isAssignableFrom(from->getClass());
+			bool canCast = T::_class.isAssignableFrom(from->getClass());
 			if (canCast) {
 				T* ret = dynamic_cast<T*>(from.get());
 				if (ret)
-					return std::shared_ptr<T>(from, ret);
+					return SPtr<T>(from, ret);
 			}
 
-			throw ClassCastException(_HERE_, V::CLASS()->getName().c_str(), T::CLASS()->getName().c_str());
+			throw ClassCastException(_HERE_, V::_class.getName().c_str(), T::_class.getName().c_str());
 		}
 
 		return nullptr;
 	}
 
 	template <class T, class V>
-	static T* castPtr(std::shared_ptr<V> const& from) {
+	static T* castPtr(SPtr<V> const& from) {
 		if (!from)
 			return nullptr;
 		return cast<T>(from.get());
 	}
 
 	template <class T, class V>
-	static T* castPtr(std::unique_ptr<V> const& from) {
+	static T* castPtr(UPtr<V> const& from) {
 		if (!from)
 			return nullptr;
 		return cast<T>(from.get());
 	}
 };
 
-extern const Class* OBJECTCLASS();
-extern const Class* VOIDCLASS();
-extern const Class* NUMBERCLASS();
-extern const Class* SHORTCLASS();
-extern const Class* INTEGERCLASS();
-extern const Class* UINTCLASS();
-extern const Class* LONGCLASS();
-extern const Class* ULONGCLASS();
-extern const Class* DOUBLECLASS();
-extern const Class* CHARACTERCLASS();
-extern const Class* CONSTITERABLECLASS();
-extern const Class* COLLECTIONCLASS();
-extern const Class* PRIORITYQUEUECLASS();
-extern const Class* LISTCLASS();
-extern const Class* ARRAYLISTCLASS();
-extern const Class* MAPCLASS();
-extern const Class* HASHMAPCLASS();
-extern const Class* LINKEDHASHMAPCLASS();
-extern const Class* PROPERTIESCLASS();
-extern const Class* BASICSTRINGCLASS();
-extern const Class* STRINGCLASS();
-extern const Class* STRINGBUILDERCLASS();
-extern const Class* BOOLEANCLASS();
+#define CLASSDEF(instName, className) constexpr Class instName ## CLASS(#className ## _SV, instName ## ID);
+
+CLASSDEF(OBJECT, Object)
+CLASSDEF(VOID, Void)
+CLASSDEF(NUMBER, Number)
+CLASSDEF(SHORT, Short)
+CLASSDEF(INTEGER, Integer)
+CLASSDEF(UINT, UInt)
+CLASSDEF(LONG, Long)
+CLASSDEF(ULONG, ULong)
+CLASSDEF(DOUBLE, Double)
+CLASSDEF(CHARACTER, Character)
+CLASSDEF(CONSTITERABLE, ConstIterable)
+CLASSDEF(COLLECTION, Collection)
+CLASSDEF(PRIORITYQUEUE, PriorityQueue)
+CLASSDEF(LIST, List)
+CLASSDEF(ARRAYLIST, ArrayList)
+CLASSDEF(MAP, Map)
+CLASSDEF(HASHMAP, HashMap)
+CLASSDEF(LINKEDHASHMAP, LinkedHashMap)
+CLASSDEF(PROPERTIES, Properties)
+CLASSDEF(BASICSTRING, BasicString)
+CLASSDEF(STRING, String)
+CLASSDEF(STRINGBUILDER, StringBuilder)
+CLASSDEF(BOOLEAN, Boolean)
 // Expression evaluator
-extern const Class* RESOLVERCLASS();
-extern const Class* FUNCTIONCLASS();
-extern const Class* EXPRESSIONCLASS();
+CLASSDEF(RESOLVER, Resolver)
+CLASSDEF(FUNCTION, Function)
+CLASSDEF(EXPRESSION, Expression)
 
 class Void {
 public:
-	static Class const* CLASS() {
-		return VOIDCLASS();
-	}
+	static constexpr Class CLASS = VOIDCLASS;
 };
 
 } // namespace slib

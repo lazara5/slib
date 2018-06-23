@@ -16,12 +16,10 @@ class Resolver : virtual public Object {
 public:
 	virtual ~Resolver() override;
 
-	static Class const* CLASS() {
-		return RESOLVERCLASS();
-	}
+	static constexpr Class _class = RESOLVERCLASS;
 
-	virtual Class const* getClass() const override {
-		return RESOLVERCLASS();
+	virtual Class const& getClass() const override {
+		return RESOLVERCLASS;
 	}
 
 	/**
@@ -30,7 +28,7 @@ public:
 	 * @param key  variable name
 	 * @return variable value or nullptr if not defined
 	 */
-	virtual SPtr<Object> getVar(String const& key) = 0;
+	virtual SPtr<Object> getVar(String const& key) const = 0;
 };
 
 class MapResolver : public Resolver {
@@ -42,7 +40,7 @@ public:
 
 	virtual ~MapResolver() override;
 
-	virtual SPtr<Object> getVar(const String &key) override {
+	virtual SPtr<Object> getVar(const String &key) const override {
 		return _map->get(key);
 	}
 };

@@ -4,6 +4,7 @@
 
 #include "slib/collections/Properties.h"
 #include "slib/lang/String.h"
+#include "slib/lang/StringBuilder.h"
 
 namespace slib {
 
@@ -175,16 +176,16 @@ void Properties::internalLoad(LineReader *lr,
 			}
 			valueStart++;
 		}
-		std::string key = unescape(line, 0, keyLen);
-		std::string value = unescape(line, valueStart, (size_t)limit - valueStart);
-		setVariableProperty(key, value, lineProcessor);
+		UPtr<String> key = unescape(line, 0, keyLen);
+		SPtr<String> value = unescape(line, valueStart, (size_t)limit - valueStart);
+		setVariableProperty(*key, value, lineProcessor);
 	}
 }
 
-std::string Properties::unescape(std::string const& in, size_t offset, size_t len) {
+UPtr<String> Properties::unescape(std::string const& in, size_t offset, size_t len) {
 	size_t end = offset + len;
 	char c;
-	std::string out;
+	StringBuilder out;
 
 	while (offset < end) {
 		c = in[offset++];
@@ -201,25 +202,27 @@ std::string Properties::unescape(std::string const& in, size_t offset, size_t le
 					c = '\n';
 				else if (c == 'f')
 					c = '\f';
-				out.push_back(c);
+				out.add(c);
 			}
 		} else
-			out.push_back(c);
+			out.add(c);
 	}
 
-	return out;
+	return out.toString();
 }
 
-void Properties::setVariableProperty(std::string const& name, std::string const& value,
+void Properties::setVariableProperty(String const& name, SPtr<String> const& value,
 									 LineProcessor *lineProcessor) {
 	if ((!lineProcessor))
-		emplace(name, value);
+		//emplace(name, value);
+		put(name, value);
 	else {
-		std::shared_ptr<std::string> finalVal;
+		SPtr<String> finalVal;
 		if (lineProcessor)
 			finalVal = lineProcessor->processLine(name, value);
 		else
-			finalVal = std::make_shared<std::string>(value);
+			//finalVal = std::make_shared<String>(value);
+			finalVal = value;
 
 		if (finalVal)
 			put(name, finalVal);

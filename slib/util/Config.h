@@ -6,13 +6,12 @@
 #define H_SLIB_UTIL_CONFIG_H
 
 #include "slib/lang/String.h"
-#include "slib/util/Log.h"
+//#include "slib/util/Log.h"
 #include "slib/util/StringUtils.h"
 #include "slib/lang/Numeric.h"
 #include "slib/collections/List.h"
 #include "slib/collections/Properties.h"
 #include "slib/util/expr/Resolver.h"
-#include "slib/compat/cppbits/make_unique.h"
 
 #include "fmt/format.h"
 

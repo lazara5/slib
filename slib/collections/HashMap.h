@@ -66,6 +66,10 @@ public:
 			return _value;
 		}
 
+		virtual V *getValuePtr() const {
+			return _value.get();
+		}
+
 		int32_t hashCode() const {
 			return (sizeTHash(std::hash<K>()(_key)) ^ (_value ? 0 : sizeTHash(std::hash<V>(*_value))));
 		}
@@ -300,14 +304,17 @@ public:
 	 * the key to a <i>'NULL'</i> reference.
 	 * HashMap::containsKey may be used to distinguish between these two cases.
 	 */
-	SPtr<V> get(const K& key) const {
-		int32_t hash = _smudge(sizeTHash(std::hash<K>()(key)));
-		Pred eq;
-		//fmt::print("<-h: {}->{}, if: {}\n", std::hash<K>()(key), hash, indexFor(hash, _tableLength));
-		for (Entry *e = _table[indexFor(hash, _tableLength)]; e != nullptr; e = e->_next) {
-			if ((e->_keyHash == hash) && (eq(e->_key, key)))
-				return e->_value;
-		}
+	virtual SPtr<V> get(K const& key) const {
+		const typename Map<K, V>::Entry *e = getEntry(key);
+		if (e)
+			return e->getValue();
+		return nullptr;
+	}
+
+	virtual V *getPtr(K const& key) const {
+		const typename Map<K, V>::Entry *e = getEntry(key);
+		if (e)
+			return e->getValuePtr();
 		return nullptr;
 	}
 
@@ -568,8 +575,12 @@ public:
 	 * the key to a <i>'NULL'</i> reference.
 	 * HashMap::containsKey may be used to distinguish between these two cases.
 	 */
-	virtual SPtr<V> get(const K& key) const override {
+	virtual SPtr<V> get(K const& key) const override {
 		return _internalMap->get(key);
+	}
+
+	virtual V *getPtr(K const& key) const override {
+		return _internalMap->getPtr(key);
 	}
 
 	virtual const typename Map<K, V>::Entry *getEntry(const K& key) const override {

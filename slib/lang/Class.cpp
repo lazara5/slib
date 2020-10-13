@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "slib/lang/Class.h"
-#include "slib/compat/cppbits/make_unique.h"
 
 #include "fmt/format.h"
 

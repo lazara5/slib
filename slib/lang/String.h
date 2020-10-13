@@ -8,7 +8,6 @@
 #include "slib/lang/Object.h"
 #include "slib/exception/Exception.h"
 #include "slib/util/TemplateUtils.h"
-#include "slib/compat/cppbits/make_unique.h"
 
 #include "fmt/format.h"
 
@@ -105,8 +104,8 @@ protected:
 	}
 public:
 	String();
-
 	String(std::string const& str);
+
 
 	String(const char *buffer);
 	String(const char *buffer, size_t len);
@@ -637,8 +636,6 @@ public:
 	}
 };
 
-void format_arg(fmt::BasicFormatter<char> &f, const char *&format_str, String const& s);
-
 /**
  * Immutable ASCII string with case-insensitive comparison and hash code
  */
@@ -757,6 +754,18 @@ public:
 extern ASCIICaseInsensitiveString NULLASCIICISTRING;
 
 } // namespace
+
+template <>
+struct fmt::formatter<slib::String> {
+	constexpr auto parse(format_parse_context& ctx) {
+		return ctx.begin();
+	}
+
+	template <typename FormatContext>
+	auto format(const slib::String& s, FormatContext& ctx) {
+		return format_to(ctx.out(), "{}", s.c_str());
+	}
+};
 
 namespace std {
 	// for using String as key in unordered_map

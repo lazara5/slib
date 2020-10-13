@@ -5,6 +5,8 @@
 #include "slib/lang/Numeric.h"
 #include "slib/util/StringUtils.h"
 
+#include <vector>
+
 namespace slib {
 
 Number::~Number() {}

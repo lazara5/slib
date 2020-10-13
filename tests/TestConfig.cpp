@@ -19,10 +19,12 @@ public:
 		});
 	}
 
-	virtual void onBeforeSearch(slib::List<String> &pathList) const override {
-		pathList.emplace<String>(0, "data");
-	}
+	virtual void onBeforeSearch(slib::List<String> &pathList) const override;
 };
+
+void TestConfig::onBeforeSearch(slib::List<String> &pathList) const {
+	pathList.emplace<String>(0, "data");
+}
 
 static UPtr<TestConfig> config;
 

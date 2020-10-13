@@ -10,6 +10,9 @@
 #include "slib/lang/String.h"
 
 #include "fmt/format.h"
+#include "spdlog/sinks/stdout_sinks.h"
+#include "spdlog/sinks/rotating_file_sink.h"
+#include "spdlog/sinks/base_sink.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -25,7 +28,8 @@ String Log::_staticFormat("[%d-%m-%C %T.%e][%l][%t] %v");
 Log::Level Log::_staticLevel = Log::Level::Info;
 
 /** Custom syslog sink. Allows for properly setting the facility */
-class syslogSink : public spdlog::sinks::sink {
+template <typename Mutex>
+class syslogSink : public spdlog::sinks::base_sink<Mutex> {
 public:
 	syslogSink(int syslog_option = 0, int facility = LOG_USER)
 	:_facility(facility) {
@@ -47,11 +51,11 @@ public:
 	syslogSink(const syslogSink&) = delete;
 	syslogSink& operator=(const syslogSink&) = delete;
 
-	void log(const spdlog::details::log_msg &msg) override {
-		::syslog(syslog_prio_from_level(msg) | (_facility << 3), "%s", msg.raw.str().c_str());
+	void sink_it_(const spdlog::details::log_msg& msg) override {
+		::syslog(syslog_prio_from_level(msg) | (_facility << 3), "%s", msg.payload.data());
 	}
 
-	void flush() override {
+	void flush_() override {
 	}
 
 private:
@@ -280,7 +284,7 @@ SPtr<spdlog::logger> Log::initRotating(const Config& cfg, String const& name, Co
 SPtr<spdlog::logger> Log::initSyslog(const Config& cfg, String const& name, ConstIterator<SPtr<String>> &params) {
 	int facility = getNextIntParam(params, LOG_USER);
 
-	return spdlog::create<syslogSink>(name.c_str(), 0, facility);
+	return spdlog::create<syslogSink<std::mutex> >(name.c_str(), 0, facility);
 }
 
 } // namespace

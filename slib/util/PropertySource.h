@@ -33,8 +33,6 @@ public:
 
 	virtual ~PropertySource() override;
 
-	SPtr<Object> getProperty(String const& name);
-
 	virtual void initialize() = 0;
 
 	void init() {

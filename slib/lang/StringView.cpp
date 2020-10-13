@@ -6,8 +6,8 @@
 
 namespace slib {
 
-void format_arg(fmt::BasicFormatter<char> &f, const char *&format_str, StringView const& s) {
+/*void format_arg(fmt::BasicFormatter<char> &f, const char *&format_str, StringView const& s) {
 	f.writer().write("{}", s.c_str());
-}
+}*/
 
 } // namespace slib

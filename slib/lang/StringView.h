@@ -41,8 +41,18 @@ constexpr StringView operator ""_SV(const char* str, size_t len) noexcept {
 	return StringView(str, len);
 }
 
-void format_arg(fmt::BasicFormatter<char> &f, const char *&format_str, StringView const& s);
-
 } // namespace slib
+
+template <>
+struct fmt::formatter<slib::StringView> {
+	constexpr auto parse(format_parse_context& ctx) {
+		return ctx.begin();
+	}
+
+	template <typename FormatContext>
+	auto format(const slib::StringView& sv, FormatContext& ctx) {
+		return format_to(ctx.out(), "{}", sv.c_str());
+	}
+};
 
 #endif // H_SLIB_LANG_STRINGVIEW_H

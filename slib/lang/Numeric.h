@@ -8,7 +8,6 @@
 #include "slib/lang/Object.h"
 #include "slib/exception/NumericExceptions.h"
 #include "slib/lang/String.h"
-#include "slib/compat/cppbits/make_unique.h"
 
 #include "fmt/format.h"
 
@@ -326,7 +325,7 @@ public:
 		return String(fmt::format("{:x}", i));
 	}
 
-	virtual std::unique_ptr<String> toString() const override {
+	virtual UPtr<String> toString() const override {
 		return toString(_value);
 	}
 };
@@ -699,7 +698,7 @@ public:
 		return (doubleToLongBits(_value) == doubleToLongBits(other._value));
 	}
 
-	bool equals(std::shared_ptr<Double> const& other) const {
+	bool equals(SPtr<Double> const& other) const {
 		if (!other)
 			return false;
 		return (doubleToLongBits(_value) == doubleToLongBits(other->_value));

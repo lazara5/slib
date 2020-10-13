@@ -40,6 +40,7 @@ public:
 	public:
 		virtual const K& getKey() const = 0;
 		virtual const SPtr<V> getValue() const = 0;
+		virtual V *getValuePtr() const = 0;
 		virtual ~Entry() {}
 	};
 
@@ -61,8 +62,9 @@ public:
 		return put(key, std::make_shared<V>(value));
 	}
 
-	virtual SPtr<V> get(const K& key) const override = 0;
-	virtual const Entry *getEntry(const K& key) const = 0;
+	virtual SPtr<V> get(K const& key) const override = 0;
+	virtual V *getPtr(K const& key) const = 0;
+	virtual Entry const *getEntry(const K& key) const = 0;
 	virtual SPtr<V> remove(const K& key) = 0;
 
 	virtual bool containsKey(const K& key) const override = 0;

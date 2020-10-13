@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 project (slib)
-
+SET(CMAKE_CXX_STANDARD 14)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 FILE(GLOB_RECURSE slibHeaders "slib/*.h")
@@ -11,24 +11,25 @@ option(WITH_JSON "build JSON utils" ON)
 option(WITH_TESTS "compile tests" OFF)
 option(WITH_COVERAGE "enable code coverage" OFF)
 
-set(SLIB_SOURCES slib/lang/Class.cpp
-				slib/lang/Numeric.cpp
-				slib/lang/Object.cpp
-				slib/lang/String.cpp
-				slib/lang/StringBuilder.cpp
-				slib/lang/StringView.cpp
-				slib/collections/Properties.cpp
-				slib/concurrent/Semaphore.cpp
-                slib/concurrent/Thread.cpp
-                slib/concurrent/FdThread.cpp
+set(SLIB_SOURCES
+	slib/lang/Class.cpp
+	slib/lang/Numeric.cpp
+	slib/lang/Object.cpp
+	slib/lang/String.cpp
+	slib/lang/StringBuilder.cpp
+	slib/lang/StringView.cpp
+	slib/collections/Properties.cpp
+	slib/concurrent/Semaphore.cpp
+	slib/concurrent/Thread.cpp
+	slib/concurrent/FdThread.cpp
                 slib/exception/Exception.cpp
                 slib/io/IO.cpp
                 slib/io/InputStream.cpp
                 slib/io/FileInputStream.cpp
                 slib/io/OutputStream.cpp
                 slib/io/FileOutputStream.cpp
-				slib/text/StringCharacterIterator.cpp
-                slib/util/CmdLine.cpp
+	slib/text/StringCharacterIterator.cpp
+	slib/util/CmdLine.cpp
                 slib/util/Config.cpp
                 slib/util/FileUtils.cpp
                 slib/util/Log.cpp
@@ -37,17 +38,17 @@ set(SLIB_SOURCES slib/lang/Class.cpp
                 slib/util/PropertySource.cpp
                 slib/util/Random.cpp
                 slib/util/StringUtils.cpp
-                slib/util/System.cpp
-                slib/util/SystemInfo.cpp
-				slib/util/TemplateUtils.cpp
-				slib/util/expr/Builtins.cpp
-				slib/util/expr/Expression.cpp
-				slib/util/expr/ExpressionEvaluator.cpp
-				slib/util/expr/ExpressionFormatter.cpp
-				slib/util/expr/ExpressionInputStream.cpp
-				slib/util/expr/Function.cpp
-				slib/util/expr/Resolver.cpp
-				)
+	slib/util/System.cpp
+	slib/util/SystemInfo.cpp
+	slib/util/TemplateUtils.cpp
+	slib/util/expr/Builtins.cpp
+	slib/util/expr/Expression.cpp
+	slib/util/expr/ExpressionEvaluator.cpp
+	slib/util/expr/ExpressionFormatter.cpp
+	slib/util/expr/ExpressionInputStream.cpp
+	slib/util/expr/Function.cpp
+	slib/util/expr/Resolver.cpp
+	)
 
 if(WITH_JSON)
 	MESSAGE("JSON utilities enabled")

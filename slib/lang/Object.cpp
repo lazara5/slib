@@ -4,7 +4,6 @@
 
 #include "slib/lang/Object.h"
 #include "slib/lang/String.h"
-#include "slib/compat/cppbits/make_unique.h"
 
 #include "fmt/format.h"
 

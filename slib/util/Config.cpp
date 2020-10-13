@@ -4,6 +4,7 @@
 
 #include "slib/lang/String.h"
 #include "slib/util/Config.h"
+#include "slib/util/Log.h"
 #include "slib/util/FileUtils.h"
 #include "slib/collections/ArrayList.h"
 #include "slib/io/FileInputStream.h"

@@ -8,7 +8,6 @@
 #include "slib/lang/Object.h"
 #include "slib/lang/String.h"
 #include "slib/exception/NullPointerException.h"
-#include "slib/compat/cppbits/make_unique.h"
 
 #include <string>
 #include <sstream>

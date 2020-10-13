@@ -5,7 +5,6 @@
 #include "slib/lang/String.h"
 #include "slib/lang/StringBuilder.h"
 #include "slib/collections/ArrayList.h"
-#include "slib/compat/cppbits/make_unique.h"
 
 #include <sstream>
 #include <string>
@@ -165,9 +164,9 @@ UPtr<String> String::valueOf(char c) {
 	return std::make_unique<String>(c);
 }
 
-void format_arg(fmt::BasicFormatter<char> &f, const char *&format_str, String const& s) {
+/*void format_arg(fmt::BasicFormatter<char> &f, const char *&format_str, String const& s) {
 	f.writer().write("{}", s.c_str());
-}
+}*/
 
 ASCIICaseInsensitiveString::ASCIICaseInsensitiveString() {
 	_hash = 0;

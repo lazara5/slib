@@ -38,6 +38,7 @@ std::unique_ptr<String> strEval(const char *expr) {
 
 TEST(ExprTests, BasicTests) {
 	STRCMP_EQUAL("0", strEval("1 + (-1)")->c_str());
+	STRCMP_EQUAL("2.5", strEval("(7 - 2)/2")->c_str());
 	STRCMP_EQUAL("5", strEval("math.ceil(2.3) + math.floor(2.5)")->c_str());
 }
 

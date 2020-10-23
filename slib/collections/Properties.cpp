@@ -176,9 +176,9 @@ void Properties::internalLoad(LineReader *lr,
 			}
 			valueStart++;
 		}
-		UPtr<String> key = unescape(line, 0, keyLen);
+		SPtr<String> key = unescape(line, 0, keyLen);
 		SPtr<String> value = unescape(line, valueStart, (size_t)limit - valueStart);
-		setVariableProperty(*key, value, lineProcessor);
+		setVariableProperty(key, value, lineProcessor);
 	}
 }
 
@@ -211,7 +211,7 @@ UPtr<String> Properties::unescape(std::string const& in, size_t offset, size_t l
 	return out.toString();
 }
 
-void Properties::setVariableProperty(String const& name, SPtr<String> const& value,
+void Properties::setVariableProperty(SPtr<String> const& name, SPtr<String> const& value,
 									 LineProcessor *lineProcessor) {
 	if ((!lineProcessor))
 		//emplace(name, value);

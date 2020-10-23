@@ -10,16 +10,18 @@
 #include "slib/collections/Map.h"
 
 namespace slib {
+
 namespace expr {
 
 class Resolver : virtual public Object {
 public:
+	static constexpr StringView _className {"Resolver"_SV};
+	typedef typename inherits<Object>::types _classInherits;
+public:
 	virtual ~Resolver() override;
 
-	static constexpr Class _class = RESOLVERCLASS;
-
 	virtual Class const& getClass() const override {
-		return RESOLVERCLASS;
+		return classOf<Resolver>::_class();
 	}
 
 	/**

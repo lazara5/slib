@@ -14,9 +14,13 @@
 namespace slib {
 
 template <class E>
-class Collection : virtual public Object, public ConstIterable<E> {
+class Collection : public ConstIterable<E> {
 public:
-	static constexpr Class CLASS = COLLECTIONCLASS;
+	TYPE_INFO(Collection, CLASS(Collection<E>), INHERITS(ConstIterable<E>));
+public:
+	virtual Class const& getClass() const override {
+		return classOf<Collection<E>>::_class();
+	}
 
 	virtual size_t size() const = 0;
 

@@ -63,7 +63,7 @@ public:
 	/** @throws EvaluationException */
 	static void checkNil(SPtr<Object> const& value, SPtr<String> const& name) {
 		if (!value) {
-			if (!name)
+			if (name)
 				throw MissingSymbolException(_HERE_, name);
 			else
 				throw NilValueException(_HERE_);
@@ -347,9 +347,13 @@ public:
 	SPtr<Value> index(SPtr<Value> const& arg) {
 		checkNil(*this);
 		checkNil(*arg);
-		if (instanceof<Map<String, Object>>(_value)) {
+		/*if (instanceof<Map<String, Object>>(_value)) {
 			return std::make_shared<Value>(
 				(Class::castPtr<Map<String, Object>>(_value))->get(*Class::castPtr<String>(arg->_value))
+			);*/
+		if (instanceof<Map<Object, Object>>(_value)) {
+			return std::make_shared<Value>(
+					(Class::castPtr<Map<Object, Object>>(_value))->get(*Class::castPtr<Object>(arg->_value))
 			);
 		// TODO: Array
 		} else if (instanceof<List<Object>>(_value)) {

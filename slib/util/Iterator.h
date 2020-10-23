@@ -228,7 +228,6 @@ public:
 	}
 
 	/**
-	 * 
 	 * Removes from the underlying collection the last element returned by the
 	 * iterator (optional operation). This method can be called only once per
 	 * call to <i>next()</i>. The behavior of an iterator is unspecified if
@@ -250,7 +249,11 @@ public:
 template <class T>
 class ConstIterable : virtual public Object {
 public:
-	static constexpr Class CLASS = CONSTITERABLECLASS;
+	TYPE_INFO(ConstIterable, CLASS(ConstIterable<T>), INHERITS(Object));
+public:
+	virtual Class const& getClass() const override {
+		return classOf<ConstIterable<T>>::_class();
+	}
 
 	virtual ConstIterator<std::shared_ptr<T>> constIterator() const = 0;
 };

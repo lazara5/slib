@@ -31,19 +31,19 @@ public:
 	template <class K1, class V1, class Pred1> friend class InternalHashMap;
 	template <class K1, class V1, class Pred1> friend class InternalLinkedHashMap;
 	protected:
-		const K _key;
+		SPtr<K> _key;
 		SPtr<V> _value;
 		Entry *_next;
 		const int32_t _keyHash;
 	public:
 		Entry(int32_t hash, const K& k, const V& v, Entry *n)
-		: _key(k)
+		: _key(std::make_shared<K>(k))
 		, _value(std::make_shared<V>(v))
 		, _keyHash(hash) {
 			_next = n;
 		}
 
-		Entry(int32_t hash, const K& k, SPtr<V> const& v, Entry *n)
+		Entry(int32_t hash, SPtr<K> const& k, SPtr<V> const& v, Entry *n)
 		: _key(k)
 		, _value(v)
 		, _keyHash(hash) {
@@ -51,15 +51,19 @@ public:
 		}
 
 		/** in-place constructor */
-		Entry(Entry *n, int32_t hash, K& k, SPtr<V> const& v)
+		Entry(Entry *n, int32_t hash, SPtr<K> const& k, SPtr<V> const& v)
 		:_key(std::move(k))
 		,_value(v)
 		,_keyHash(hash) {
 			_next = n;
 		}
 
-		virtual const K& getKey() const {
+		virtual const SPtr<K> getKey() const {
 			return _key;
+		}
+
+		virtual K *getKeyPtr() const {
+			return _key.get();
 		}
 
 		virtual const SPtr<V> getValue() const {
@@ -71,7 +75,7 @@ public:
 		}
 
 		int32_t hashCode() const {
-			return (sizeTHash(std::hash<K>()(_key)) ^ (_value ? 0 : sizeTHash(std::hash<V>(*_value))));
+			return (sizeTHash(std::hash<K>()(*_key)) ^ (_value ? 0 : sizeTHash(std::hash<V>(*_value))));
 		}
 
 		virtual void onRemove(InternalHashMap *) {}
@@ -145,14 +149,14 @@ protected:
 		_threshold = (int)(newCapacity * _loadFactor);
 	}
 
-	virtual void addEntry(int32_t hash, const K& key, SPtr<V> value, int bucketIndex) {
+	virtual void addEntry(int32_t hash, SPtr<K> const& key, SPtr<V> value, int bucketIndex) {
 		Entry* e = _table[bucketIndex];
 		_table[bucketIndex] = new Entry(hash, key, value, e);
 		if (_size++ >= _threshold)
 			resize(2 * _tableLength);
 	}
 
-	virtual void emplaceEntry(int32_t hash, K& key, SPtr<V> value, int bucketIndex) {
+	virtual void emplaceEntry(int32_t hash, SPtr<K> const& key, SPtr<V> value, int bucketIndex) {
 		Entry* e = _table[bucketIndex];
 		//printf("EE\n");
 		_table[bucketIndex] = new Entry(e, hash, key, value);
@@ -174,7 +178,7 @@ protected:
 
 		while (e != nullptr) {
 			Entry* next = e->_next;
-			if ((e->_keyHash == hash) && (eq(key, e->_key))) {
+			if ((e->_keyHash == hash) && (eq(key, *(e->_key)))) {
 				_size--;
 				if (prev == e)
 					_table[i] = next;
@@ -322,7 +326,7 @@ public:
 		int32_t hash = _smudge(sizeTHash(std::hash<K>()(key)));
 		Pred eq;
 		for (const Entry *e = _table[indexFor(hash, _tableLength)]; e != nullptr; e = e->_next) {
-			if ((e->_keyHash == hash) && (eq(e->_key, key)))
+			if ((e->_keyHash == hash) && (eq(*(e->_key), key)))
 				return e;
 		}
 		return nullptr;
@@ -337,7 +341,7 @@ public:
 		int32_t hash = _smudge(sizeTHash(std::hash<K>()(key)));
 		Pred eq;
 		for (Entry *e = _table[indexFor(hash, _tableLength)]; e != nullptr; e = e->_next) {
-			if ((e->_keyHash == hash) && (eq(e->_key, key)))
+			if ((e->_keyHash == hash) && (eq(*(e->_key), key)))
 				return true;
 		}
 		return false;
@@ -353,13 +357,13 @@ public:
 	 *		(A <i>'NULL'</i> reference as a return value can also indicate that the map
 	 *		previously associated a <i>'NULL'</i> reference with <i>key</i>.)
 	 */
-	virtual SPtr<V> put(const K& key, SPtr<V> const& value) {
-		int32_t hash = _smudge(sizeTHash(std::hash<K>()(key)));
+	virtual SPtr<V> put(SPtr<K> const& key, SPtr<V> const& value) {
+		int32_t hash = _smudge(sizeTHash(std::hash<K>()(*key)));
 		int32_t i = indexFor(hash, _tableLength);
 		//fmt::print("->h: {}->{}, if: {}\n", sizeTHash(std::hash<K>()(key)), hash, i);
 		Pred eq;
 		for (Entry *e = _table[i]; e != nullptr; e = e->_next) {
-			if ((e->_keyHash == hash) && (eq(e->_key, key))) {
+			if ((e->_keyHash == hash) && (eq(*(e->_key), *key))) {
 				SPtr<V> oldValue = std::move(e->_value);
 				e->_value = value;
 				return oldValue;
@@ -410,7 +414,7 @@ public:
 		}
 	}
 
-	virtual void forEach(bool (*callback)(void*, const K&, const SPtr<V>&), void *data) const {
+	virtual void forEach(bool (*callback)(void*, SPtr<K> const&, const SPtr<V>&), void *data) const {
 		for (int32_t i = 0; i < _tableLength; i++) {
 			Entry *e = _table[i];
 			while (e != nullptr) {
@@ -422,7 +426,7 @@ public:
 		}
 	}
 
-	virtual void forEach(std::function<bool(const K&, const SPtr<V>&)> callback) const {
+	virtual void forEach(std::function<bool(SPtr<K> const&, const SPtr<V>&)> callback) const {
 		for (int32_t i = 0; i < _tableLength; i++) {
 			Entry *e = _table[i];
 			while (e != nullptr) {
@@ -505,8 +509,8 @@ protected:
 		virtual void remove() {
 			if (this->_current == NULL)
 				throw IllegalStateException(_HERE_);
-			K k = this->_current->_key;
-			_ncMap->removeEntryForKey(k);
+			SPtr<K> const& k = this->_current->_key;
+			_ncMap->removeEntryForKey(*k);
 		}
 
 		virtual typename Iterator<typename Map<K, V>::Entry>::IteratorImpl *clone() {
@@ -518,6 +522,8 @@ protected:
 /** Hash table based object that maps keys to values */
 template <class K, class V, class Pred = std::equal_to<K>>
 class HashMap : public Map<K, V, Pred> {
+public:
+	TYPE_INFO(HashMap, CLASS(HashMap<K, V, Pred>), CLASS(Map<K, V, Pred>));
 public:
 	static const int32_t DEFAULT_INITIAL_CAPACITY = InternalHashMap<K, V, Pred>::DEFAULT_INITIAL_CAPACITY;
 	static const int32_t MAXIMUM_CAPACITY = InternalHashMap<K, V, Pred>::MAXIMUM_CAPACITY;
@@ -539,10 +545,8 @@ public:
 		_internalMap->clear();
 	}
 
-	static constexpr Class _class = HASHMAPCLASS;
-
 	virtual Class const& getClass() const override {
-		return HASHMAPCLASS;
+		return classOf<HashMap<K, V, Pred>>::_class();
 	}
 
 	/**
@@ -606,7 +610,7 @@ public:
 	 *		(A <i>'NULL'</i> reference as a return value can also indicate that the map
 	 *		previously associated a <i>'NULL'</i> reference with <i>key</i>.)
 	 */
-	virtual SPtr<V> put(const K& key, SPtr<V> const& value) override {
+	virtual SPtr<V> put(SPtr<K> const& key, SPtr<V> const& value) override {
 		return _internalMap->put(key, value);
 	}
 
@@ -696,9 +700,6 @@ public:
 		return Iterator<typename Map<K, V, Pred>::Entry>(new typename InternalHashMap<K, V, Pred>::EntryIterator(_internalMap));
 	}
 };
-
-template <class K, class V, class Pred>
-constexpr Class HashMap<K, V, Pred>::_class;
 
 } // namespace slib
 

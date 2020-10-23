@@ -29,7 +29,12 @@ public:
 
 class BasicString: virtual public Object {
 public:
-	static constexpr Class _class = BASICSTRINGCLASS;
+	static constexpr StringView _className {"BasicString"_SV};
+	typedef typename inherits<Object>::types _classInherits;
+public:
+	virtual Class const& getClass() const override {
+		return classOf<BasicString>::_class();
+	}
 
 	virtual size_t length() const = 0;
 	virtual const char *c_str() const = 0;
@@ -58,6 +63,9 @@ class ArrayList;
 
 class String : public BasicString {
 friend class BasicString;
+public:
+	static constexpr StringView _className {"String"_SV};
+	typedef typename inherits<BasicString>::types _classInherits;
 protected:
 	std::string _str;
 	mutable volatile int32_t _hash;
@@ -106,7 +114,6 @@ public:
 	String();
 	String(std::string const& str);
 
-
 	String(const char *buffer);
 	String(const char *buffer, size_t len);
 
@@ -116,10 +123,8 @@ public:
 
 	virtual ~String() override;
 
-	static constexpr Class _class = STRINGCLASS;
-
 	virtual Class const& getClass() const override {
-		return STRINGCLASS;
+		return classOf<String>::_class();
 	}
 
 	size_t length() const override {
@@ -757,12 +762,12 @@ extern ASCIICaseInsensitiveString NULLASCIICISTRING;
 
 template <>
 struct fmt::formatter<slib::String> {
-	constexpr auto parse(format_parse_context& ctx) {
+	const char *parse(format_parse_context& ctx) {
 		return ctx.begin();
 	}
 
 	template <typename FormatContext>
-	auto format(const slib::String& s, FormatContext& ctx) {
+	format_context::iterator format(const slib::String& s, FormatContext& ctx) {
 		return format_to(ctx.out(), "{}", s.c_str());
 	}
 };

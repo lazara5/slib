@@ -10,8 +10,6 @@ namespace expr {
 
 Expression::~Expression() {}
 
-constexpr Class Expression::_class;
-
 SPtr<Value> Expression::evaluate(Resolver const& resolver) {
 	return ExpressionEvaluator::expressionValue(std::make_shared<ExpressionInputStream>(_text), resolver);
 }

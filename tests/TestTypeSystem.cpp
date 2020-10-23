@@ -16,6 +16,7 @@ TEST(TypeSystem, InstanceOf) {
 	CHECK(instanceof<Number>(i1));
 	CHECK(instanceof<Integer>(i1));
 	CHECK_FALSE(instanceof<String>(i1));
+	STRCMP_EQUAL(i1.getClass().getName().c_str(), "Integer");
 
 	CHECK(instanceof<BasicString>(s1));
 	CHECK(instanceof<String>(s1));
@@ -25,5 +26,6 @@ TEST(TypeSystem, InstanceOf) {
 	CHECK((instanceof<Map<String, Object>>(lhm1)));
 	CHECK((instanceof<HashMap<String, Object>>(lhm1)));
 	CHECK((instanceof<LinkedHashMap<String, Object>>(lhm1)));
+	CHECK_FALSE((instanceof<LinkedHashMap<String, String>>(lhm1)));
 	CHECK_FALSE(instanceof<Number>(lhm1));
 }

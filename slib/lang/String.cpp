@@ -14,8 +14,6 @@ using std::ptrdiff_t;
 
 namespace slib {
 
-constexpr Class BasicString::_class;
-
 int BasicString::compareTo(const BasicString &other) const {
 	const char *buffer = c_str();
 	const char *otherBuffer = other.c_str();
@@ -78,8 +76,6 @@ String::String(char c)
 ,_hash(0) {}
 
 String::~String() {}
-
-constexpr Class String::_class;
 
 UPtr<ArrayList<std::string>> String::simpleSplit(const char *buffer, size_t len, const char delim, int limit /* = 65535 */) {
 	UPtr<ArrayList<std::string>> results = std::make_unique<ArrayList<std::string>>();

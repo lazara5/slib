@@ -16,9 +16,13 @@ namespace slib {
 template <class E>
 class List : public Collection<E> {
 public:
+	TYPE_INFO(List, CLASS(List<E>), INHERITS(Collection<E>));
+public:
 	virtual ~List() {}
 
-	static constexpr Class CLASS = LISTCLASS;
+	virtual Class const& getClass() const override {
+		return classOf<List<E>>::_class();
+	}
 
 	virtual size_t size() const override = 0;
 

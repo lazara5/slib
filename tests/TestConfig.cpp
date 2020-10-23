@@ -2,6 +2,9 @@
 
 #include "slib/util/Config.h"
 #include "slib/util/SystemInfo.h"
+#include "slib/util/FileUtils.h"
+
+#include "Global.h"
 
 using namespace slib;
 
@@ -31,7 +34,8 @@ static UPtr<TestConfig> config;
 TEST_GROUP(ConfigTests)
 {
 	void setup() {
-		config = std::make_unique<TestConfig>("test.conf", "SlibTest");
+		config = std::make_unique<TestConfig>(*FileUtils::buildPath(*FileUtils::getPath(test_argv[0]), "data/test.conf"), "SlibTest");
+		//config = std::make_unique<TestConfig>("test.conf", "SlibTest");
 	}
 
 	void teardown() {

@@ -20,20 +20,20 @@ namespace slib {
 
 using namespace expr;
 
-UPtr<String> ConfigProcessor::processLine(String const& name, SPtr<String> const& rawProperty) {
+UPtr<String> ConfigProcessor::processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) {
 	//SPtr<String> value = StringUtils::interpolate(rawProperty, *this, false);
 	SPtr<Object> value = ExpressionEvaluator::smartInterpolate(*rawProperty, *this, false);
 
 	if (String::startsWith(CPtr(name), '@')) {
 		if (!_vars)
 			_vars = std::make_unique<HashMap<String, Object>>();
-		_vars->put(String::substring(CPtr(name), 1), value);
+		_vars->put(std::make_shared<String>(String::substring(CPtr(name), 1)), value);
 		return nullptr;
 	} else if (String::endsWith(CPtr(name), ']')) {
 		ptrdiff_t openBracket = String::lastIndexOf(CPtr(name), '[');
 		if (openBracket > 0) {
 			std::string mapName = String::trim(CPtr(String::substring(CPtr(name), 0, (size_t)openBracket)));
-			std::string mapEntry = String::trim(CPtr(String::substring(CPtr(name), (size_t)openBracket + 1, name.length() - 1)));
+			std::string mapEntry = String::trim(CPtr(String::substring(CPtr(name), (size_t)openBracket + 1, name->length() - 1)));
 			if ((!mapName.empty()) && (!mapEntry.empty())) {
 				bool sunk = sink(mapName, mapEntry, value);
 				if (sunk)
@@ -87,13 +87,13 @@ SPtr<Object> ConfigProcessor::getVar(String const& name) const {
 	return false;
 }*/
 
-UPtr<String> SimpleConfigProcessor::processLine(String const& name, SPtr<String> const& rawProperty) {
+UPtr<String> SimpleConfigProcessor::processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) {
 	//SPtr<String> value = StringUtils::interpolate(rawProperty, *this, true);
 	SPtr<Object> value = ExpressionEvaluator::smartInterpolate(*rawProperty, *this, true);
 	if (String::startsWith(CPtr(name), '@')) {
 		if (!_vars)
 			_vars = std::make_unique<HashMap<String, Object>>();
-		_vars->put(String::substring(CPtr(name), 1), value);
+		_vars->put(std::make_shared<String>(String::substring(CPtr(name), 1)), value);
 		return nullptr;
 	}
 	return Value::asString(value);

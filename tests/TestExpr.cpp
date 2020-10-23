@@ -23,6 +23,13 @@ TEST_GROUP(ExprTests) {
 		list->emplace<Integer>(2);
 		list->emplace<Integer>(3);
 
+		auto map = std::make_shared<HashMap<Object, Object>>();
+		vars->put("oo", map);
+		map->emplace<Integer, String>(3, "xxx");
+
+		auto map1 = std::make_shared<HashMap<Object, Object>>();
+		auto *map2 = dynamic_cast<Map<Object, Object>*>(map1.get());
+
 		resolver = std::make_unique<MapResolver>(vars);
 	}
 
@@ -32,7 +39,7 @@ TEST_GROUP(ExprTests) {
 	}
 };
 
-std::unique_ptr<String> strEval(const char *expr) {
+UPtr<String> strEval(const char *expr) {
 	return ExpressionEvaluator::strExpressionValue(std::make_shared<String>(expr), *resolver);
 }
 
@@ -44,4 +51,9 @@ TEST(ExprTests, BasicTests) {
 
 TEST(ExprTests, FormatTests) {
 	STRCMP_EQUAL("xxx:true:yyy:42.00", strEval("format('xxx:%b:%s:%.2f', true, 'yyy', 42)")->c_str());
+}
+
+TEST(ExprTests, ExtraTests) {
+	UPtr<String> res = strEval("oo[3]");
+	printf("\n");
 }

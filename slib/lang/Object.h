@@ -18,12 +18,12 @@ class String;
 
 class Object {
 public:
+	BASE_TYPE_INFO(Object, (Object));
+public:
 	virtual ~Object() {}
 
-	static constexpr Class _class = OBJECTCLASS;
-
 	virtual Class const& getClass() const {
-		return OBJECTCLASS;
+		return classOf<Object>::_class();
 	}
 
 	virtual int32_t hashCode() const {
@@ -37,7 +37,7 @@ public:
 		return this == &other;
 	}
 
-	bool operator==(Object const& other) const {
+	bool operator ==(Object const& other) const {
 		return equals(other);
 	}
 };
@@ -46,7 +46,7 @@ template <class T>
 bool instanceof(Object const* obj) {
 	if (!obj)
 		return false;
-	return (T::_class.isAssignableFrom(obj->getClass()));
+	return (classOf<T>::_class().isAssignableFrom(obj->getClass()));
 }
 
 template <class T>
@@ -65,5 +65,14 @@ bool instanceof(Object const& obj) {
 }
 
 } // namespace slib
+
+namespace std {
+	// for using Object as key in unordered_map
+	template<> struct hash<slib::Object> {
+		std::size_t operator()(const slib::Object& obj) const {
+			return (size_t)obj.hashCode();
+		}
+	};
+}
 
 #endif // H_SLIB_OBJECT_H

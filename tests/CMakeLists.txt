@@ -14,6 +14,7 @@ endif()
 add_compile_options(-DCPPUTEST_MEM_LEAK_DETECTION_DISABLED)
 
 set(TESTS_SOURCES
+	Global.h
 	AllTests.cpp
 	TestConfig.cpp
 	TestExpr.cpp

@@ -19,6 +19,8 @@ namespace slib {
 template <class E>
 class ArrayList : public AbstractList<E> {
 using AbstractList<E>::_modCount;
+public:
+	TYPE_INFO(ArrayList, CLASS(ArrayList<E>), INHERITS(AbstractList<E>));
 private:
 	static const int DEFAULT_CAPACITY = 10;
 
@@ -67,10 +69,8 @@ public:
 	virtual ~ArrayList() {
 	}
 
-	static constexpr Class CLASS = ARRAYLISTCLASS;
-
 	virtual Class const& getClass() const override {
-		return ARRAYLISTCLASS;
+		return classOf<ArrayList<E>>::_class();
 	}
 
 	/**

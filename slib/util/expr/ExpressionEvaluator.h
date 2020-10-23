@@ -80,10 +80,10 @@ protected:
 	static SPtr<Value> termValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
 
 	/** @throws EvaluationException */
-	static std::shared_ptr<Value> factorValue(std::shared_ptr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static SPtr<Value> factorValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
 
 	/** @throws EvaluationException */
-	static std::shared_ptr<Value> primaryValue(std::shared_ptr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static SPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
 
 	/** @throws EvaluationException */
 	static std::shared_ptr<Value> evaluateSymbol(std::shared_ptr<ExpressionInputStream> const& input, Resolver const& resolver);

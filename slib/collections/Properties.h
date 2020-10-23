@@ -13,12 +13,15 @@ namespace slib {
 
 class Properties : public LinkedHashMap<String, String> {
 public:
+	static constexpr StringView _className {"Properties"_SV};
+	typedef typename inherits<LinkedHashMap<String, String>>::types _classInherits;
+public:
 	class LineProcessor {
 	public:
 		typedef Map<String, String> Props;
 	public:
 		virtual ~LineProcessor();
-		virtual UPtr<String> processLine(String const& name, SPtr<String> const& rawProperty) = 0;
+		virtual UPtr<String> processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) = 0;
 	};
 
 private:
@@ -43,7 +46,7 @@ private:
 					  LineProcessor *lineProcessor);
 	UPtr<String> unescape(std::string const& in, size_t offset, size_t len);
 
-	virtual void setVariableProperty(String const& name, SPtr<String> const& value,
+	virtual void setVariableProperty(SPtr<String> const& name, SPtr<String> const& value,
 									 LineProcessor *lineProcessor);
 protected:
 	/** @throws NumberFormatException */
@@ -56,10 +59,8 @@ protected:
 public:
 	virtual ~Properties() override {}
 
-	static constexpr Class CLASS = PROPERTIESCLASS;
-
 	virtual Class const& getClass() const override {
-		return PROPERTIESCLASS;
+		return classOf<Properties>::_class();
 	}
 
 	/**
@@ -93,7 +94,7 @@ public:
 	 * @param value the value corresponding to the key
 	 */
 	virtual void setProperty(String const& name, String const& value) {
-		emplace(name, value);
+		put(std::make_shared<String>(name), std::make_shared<String>(value));
 	}
 
 	/**
@@ -101,7 +102,7 @@ public:
 	 * @param name the key
 	 * @param value the value corresponding to the key
 	 */
-	virtual void setProperty(String const& name, SPtr<String> const& value) {
+	virtual void setProperty(SPtr<String> const& name, SPtr<String> const& value) {
 		put(name, value);
 	}
 

@@ -10,16 +10,17 @@
 namespace slib {
 
 class Character : virtual public Object {
+public:
+	static constexpr StringView _className {"Character"_SV};
+	typedef typename inherits<Object>::types _classInherits;
 private:
 	char _value;
 public:
 	Character(char value)
 	:_value(value) {}
 
-	static constexpr Class CLASS = CHARACTERCLASS;
-
 	virtual Class const& getClass() const override {
-		return CHARACTERCLASS;
+		return classOf<Character>::_class();
 	}
 
 	virtual int32_t hashCode() const override {

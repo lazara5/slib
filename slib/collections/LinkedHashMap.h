@@ -34,7 +34,7 @@ private:
 			_after->_before = this;
 		}
 	public:
-		Entry(int h, const K& k, SPtr<V> v, typename InternalHashMap<K, V, Pred>::Entry *n)
+		Entry(int h, SPtr<K> const& k, SPtr<V> v, typename InternalHashMap<K, V, Pred>::Entry *n)
 		:InternalHashMap<K, V, Pred>::Entry(h, k, v, n) {
 			_before = _after = nullptr;
 		}
@@ -52,7 +52,7 @@ private:
 
 	Entry *_header;
 protected:
-	virtual void createEntry(int hash, const K& key, SPtr<V> value, int bucketIndex) {
+	virtual void createEntry(int hash, SPtr<K> const& key, SPtr<V> value, int bucketIndex) {
 		typename InternalHashMap<K, V, Pred>::Entry *old = this->_table[bucketIndex];
 		Entry *e = new Entry(hash, key, value, old);
 		this->_table[bucketIndex] = e;
@@ -60,7 +60,7 @@ protected:
 		this->_size++;
 	}
 
-	virtual void createInplaceEntry(int hash, K& key, SPtr<V> value, int bucketIndex) {
+	virtual void createInplaceEntry(int hash, SPtr<K> const& key, SPtr<V> value, int bucketIndex) {
 		typename InternalHashMap<K, V, Pred>::Entry *old = this->_table[bucketIndex];
 		Entry *e = new Entry(hash, key, value, old);
 		this->_table[bucketIndex] = e;
@@ -68,14 +68,14 @@ protected:
 		this->_size++;
 	}
 
-	virtual void addEntry(int hash, const K& key, SPtr<V> value, int bucketIndex) override {
+	virtual void addEntry(int hash, SPtr<K> const& key, SPtr<V> value, int bucketIndex) override {
 		createEntry(hash, key, value, bucketIndex);
 
 		if (this->_size >= this->_threshold)
 			this->resize(2 * this->_tableLength);
 	}
 
-	virtual void emplaceEntry(int hash, K& key, SPtr<V> value, int bucketIndex) override {
+	virtual void emplaceEntry(int hash, SPtr<K> const& key, SPtr<V> value, int bucketIndex) override {
 		createInplaceEntry(hash, key, value, bucketIndex);
 
 		if (this->_size >= this->_threshold)
@@ -84,7 +84,7 @@ protected:
 public:
 	InternalLinkedHashMap(int32_t initialCapacity = DEFAULT_INITIAL_CAPACITY, float loadFactor = HASH_DEFAULT_LOAD_FACTOR)
 	:InternalHashMap<K, V, Pred>(initialCapacity, loadFactor) {
-		_header = new Entry(-1, K(), nullptr, nullptr);
+		_header = new Entry(-1, std::make_shared<K>(), nullptr, nullptr);
 		_header->_before = _header->_after = _header;
 	}
 
@@ -119,7 +119,7 @@ public:
 		}
 	}
 
-	virtual void forEach(bool (*callback)(void*, const K&, const SPtr<V>&), void *data) const override {
+	virtual void forEach(bool (*callback)(void*, SPtr<K> const&, const SPtr<V>&), void *data) const override {
 		Entry *entry = _header->_after;
 		while (entry != _header) {
 			bool cont = callback(data, entry->_key, entry->_value);
@@ -129,7 +129,7 @@ public:
 		}
 	}
 
-	virtual void forEach(std::function<bool(const K&, const SPtr<V>&)> callback) const override {
+	virtual void forEach(std::function<bool(SPtr<K> const&, const SPtr<V>&)> callback) const override {
 		Entry *entry = _header->_after;
 		while (entry != _header) {
 			bool cont = callback(entry->_key, entry->_value);
@@ -200,7 +200,7 @@ protected:
 		virtual void remove() {
 			if (this->_lastReturned == nullptr)
 				throw IllegalStateException(_HERE_);
-			_ncMap->remove(this->_lastReturned->_key);
+			_ncMap->remove(*(this->_lastReturned->_key));
 			this->_lastReturned = nullptr;
 		}
 
@@ -217,6 +217,8 @@ protected:
 template <class K, class V, class Pred = std::equal_to<K>>
 class LinkedHashMap : public HashMap<K, V, Pred> {
 public:
+	TYPE_INFO(LinkedHashMap, CLASS(LinkedHashMap<K, V, Pred>), INHERITS(HashMap<K, V, Pred>));
+public:
 	static const int32_t DEFAULT_INITIAL_CAPACITY = InternalLinkedHashMap<K, V, Pred>::DEFAULT_INITIAL_CAPACITY;
 	static const int32_t MAXIMUM_CAPACITY = InternalLinkedHashMap<K, V, Pred>::MAXIMUM_CAPACITY;
 protected:
@@ -228,10 +230,8 @@ public:
 	LinkedHashMap(const LinkedHashMap& other)
 	:_internalMap(std::make_shared<InternalLinkedHashMap<K, V, Pred>>(*other._internalMap)) {}
 
-	static constexpr Class _class = LINKEDHASHMAPCLASS;
-
 	virtual Class const& getClass() const override {
-		return LINKEDHASHMAPCLASS;
+		return classOf<LinkedHashMap<K, V, Pred>>::_class();
 	}
 
 	virtual void clear() override {
@@ -263,9 +263,6 @@ public:
 		return Iterator<typename Map<K, V, Pred>::Entry>(new typename InternalLinkedHashMap<K, V, Pred>::EntryIterator(_internalMap));
 	}
 };
-
-template <class K, class V, class Pred>
-constexpr Class LinkedHashMap<K, V, Pred>::_class;
 
 } // namespace
 

@@ -15,12 +15,12 @@ class Builtins : public HashMap<String, Object> {
 public:
 	Builtins() {
 		// constants
-		put("true", std::make_shared<Boolean>(true));
-		put("false", std::make_shared<Boolean>(false));
-		put("nil", nullptr);
+		emplace<String, Boolean>("true", true);
+		emplace<String, Boolean>("false", false);
+		put(std::make_shared<String>("nil"), nullptr);
 
 		SPtr<Map<String, Object>> math = std::make_shared<HashMap<String, Object>>();
-		put("math", math);
+		emplace_key<String>("math", math);
 
 		math->put("ceil", Function::impl<Double>(
 			[](Resolver const& /* resolver */, ArgList const& args) {
@@ -38,7 +38,7 @@ public:
 			}
 		));
 
-		put("format", Function::impl<String>(
+		emplace_key<String>("format", Function::impl<String>(
 			[](Resolver const& resolver, ArgList const& args) {
 				StringBuilder result;
 				ExpressionFormatter::format(result, args, resolver);
@@ -46,7 +46,7 @@ public:
 			}
 		));
 
-		put("if", Function::impl<Object, Expression, Expression>(
+		emplace_key<String>("if", Function::impl<Object, Expression, Expression>(
 			[](Resolver const& resolver, ArgList const& args) {
 				bool val = Value::isTrue(args.getNullable(0));
 				if (val)
@@ -60,7 +60,7 @@ public:
 			}
 		));
 
-		put("for", Function::impl<String, Object, Expression, Expression, Expression>(
+		emplace_key<String>("for", Function::impl<String, Object, Expression, Expression, Expression>(
 			[](Resolver const& resolver, ArgList const& args) {
 				size_t nArgs = args.size();
 				if (nArgs == 5) {
@@ -123,7 +123,7 @@ public:
 			}
 		));
 
-		put("$", Function::impl<String>(
+		emplace_key<String>("$", Function::impl<String>(
 			[](Resolver const& resolver, ArgList const& args) {
 				SPtr<String> varName = args.get<String>(0);
 				SPtr<Object> value = resolver.getVar(*varName);
@@ -131,7 +131,7 @@ public:
 			}
 		));
 
-		put("#", Function::impl<String>(
+		emplace_key<String>("#", Function::impl<String>(
 			[](Resolver const& resolver, ArgList const& args) {
 				return ExpressionEvaluator::expressionValue(std::make_shared<ExpressionInputStream>(args.get<String>(0)), resolver);
 			}

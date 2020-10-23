@@ -15,6 +15,8 @@ namespace slib {
 template <class K, class V>
 class ValueProvider {
 public:
+	BASE_TYPE_INFO(ValueProvider, CLASS(ValueProvider<K, V>));
+public:
 	virtual ~ValueProvider() {}
 
 	virtual std::shared_ptr<V> get(const K& key) const = 0;
@@ -36,9 +38,11 @@ template <class K, class V,
 		  class Pred = std::equal_to<K>>
 class Map : virtual public Object, public ValueProvider<K, V> {
 public:
+	TYPE_INFO(Map, CLASS(Map<K, V, Pred>), CLASS(Object), CLASS(ValueProvider<K, V>));
+public:
 	class Entry {
 	public:
-		virtual const K& getKey() const = 0;
+		virtual const SPtr<K> getKey() const = 0;
 		virtual const SPtr<V> getValue() const = 0;
 		virtual V *getValuePtr() const = 0;
 		virtual ~Entry() {}
@@ -47,19 +51,39 @@ public:
 public:
 	virtual ~Map() {}
 
-	static constexpr Class _class = MAPCLASS;
+	virtual Class const& getClass() const override {
+		return classOf<Map<K, V, Pred>>::_class();
+	}
 
-	virtual SPtr<V> put(const K& key, SPtr<V> const& value) = 0;
+	virtual SPtr<V> put(SPtr<K> const& key, SPtr<V> const& value) = 0;
+
+	virtual SPtr<V> put(K const& key, SPtr<V> const& value) {
+		return put(std::make_shared<K>(key), value);
+	}
 
 	template <class AVT, typename... A>
 	SPtr<V> emplace(const K& key, A&&... args) {
-		return put(key, std::make_shared<AVT>(std::forward<A>(args)...));
+		return put(std::make_shared<K>(key), std::make_shared<AVT>(std::forward<A>(args)...));
 	}
 
-	template <class AVT>
+	/*template <class AVT>
 	SPtr<V> emplace(const K& key, AVT const& value) {
 		static_assert(std::is_same<AVT, V>::value, "Only use with the exact value type");
-		return put(key, std::make_shared<V>(value));
+		return put(std::make_shared<K>(key), std::make_shared<V>(value));
+	}*/
+
+	template <class AKT, class AVT, typename KAT, typename VAT>
+	SPtr<V> emplace(KAT&& key_arg, VAT&& value_arg) {
+		static_assert(std::is_base_of<K, AKT>::value, "");
+		static_assert(std::is_base_of<V, AVT>::value, "");
+		return put(std::make_shared<AKT>(std::forward<KAT>(key_arg)), std::make_shared<AVT>(std::forward<VAT>(value_arg)));
+	}
+
+	template <class AKT, typename KAT, typename AVT>
+	SPtr<V> emplace_key(KAT&& key_arg, SPtr<AVT> const& value) {
+		static_assert(std::is_base_of<K, AKT>::value, "");
+		static_assert(std::is_base_of<V, AVT>::value, "");
+		return put(std::make_shared<AKT>(std::forward<KAT>(key_arg)), value);
 	}
 
 	virtual SPtr<V> get(K const& key) const override = 0;
@@ -76,9 +100,6 @@ public:
 public:
 	virtual ConstIterator<Entry> constIterator() const = 0;
 };
-
-template <class K, class V, class Pred>
-constexpr Class Map<K, V, Pred>::_class;
 
 } // namespace
 

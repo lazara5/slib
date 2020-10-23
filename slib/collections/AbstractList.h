@@ -11,6 +11,8 @@ namespace slib {
 
 template <class E>
 class AbstractList : public List<E> {
+public:
+	TYPE_INFO(AbstractList, CLASS(AbstractList<E>), INHERITS(List<E>));
 protected:
 	/**
 	 * The number of times this list has been structurally modified.

@@ -14,6 +14,11 @@
 #include <functional>
 
 namespace slib {
+
+namespace expr {
+	class Function;
+}
+
 namespace expr {
 
 class ArgList {
@@ -27,15 +32,15 @@ public:
 
 	virtual size_t size() const = 0;
 
-	virtual std::shared_ptr<Object> getNullable(size_t index) const = 0;
+	virtual SPtr<Object> getNullable(size_t index) const = 0;
 
 	template<class T>
 	std::shared_ptr<T> getNullable(size_t index) const {
-		std::shared_ptr<Object> obj = getNullable(index);
+		SPtr<Object> obj = getNullable(index);
 		if (!obj)
 			return nullptr;
-		if (!T::_class.isAssignableFrom(obj->getClass()))
-			throw CastException(_HERE_, fmt::format("Function {}(): invalid parameter type: expected {}, got {}", *_symbolName, T::_class.getName(), obj->getClass().getName()).c_str());
+		if (!classOf<T>::_class().isAssignableFrom(obj->getClass()))
+			throw CastException(_HERE_, fmt::format("Function {}(): invalid parameter type: expected {}, got {}", *_symbolName, classOf<T>::_class().getName(), obj->getClass().getName()).c_str());
 		return Class::cast<T>(obj);
 	}
 
@@ -48,8 +53,8 @@ public:
 	}
 
 	template<class T>
-	std::shared_ptr<T> get(size_t index) const {
-		std::shared_ptr<T> obj = getNullable<T>(index);
+	SPtr<T> get(size_t index) const {
+		SPtr<T> obj = getNullable<T>(index);
 		if (!obj)
 			throw EvaluationException(_HERE_, fmt::format("Function {}(): expected non-nil argument: {}", *_symbolName, index).c_str());
 		return obj;
@@ -57,8 +62,6 @@ public:
 
 	//virtual ConstIterator<std::shared_ptr<Object>> varargIterator() const = 0;
 };
-
-class Function;
 
 class FunctionArgs : public ArgList {
 private:
@@ -91,6 +94,9 @@ public:
 typedef std::function<SPtr<Value>(Resolver const& resolver, ArgList const& args)> Evaluate;
 
 class Function : virtual public Object {
+public:
+	static constexpr StringView _className {"Function"_SV};
+	typedef typename inherits<Object>::types _classInherits;
 private:
 	/** Number of fixed params */
 	size_t _fixedParams;
@@ -119,19 +125,17 @@ public:
 
 	template <typename ...Args>
 	static SPtr<Function> impl(Evaluate evaluate) {
-		return std::make_shared<Function>(true, std::initializer_list<Class>({Args::_class...}), evaluate);
+		return std::make_shared<Function>(true, std::initializer_list<Class>({classOf<Args>::_class()...}), evaluate);
 	}
 
 	virtual ~Function() override;
 
-	static constexpr Class _class = FUNCTIONCLASS;
-
 	virtual Class const& getClass() const override {
-		return FUNCTIONCLASS;
+		return classOf<Function>::_class();
 	}
 
 	Class const& getParamType(size_t i) {
-		return (i < _fixedParams) ? (*_paramTypes)[i] : OBJECTCLASS;
+		return (i < _fixedParams) ? (*_paramTypes)[i] : classOf<Object>::_class();
 	}
 
 	size_t getFixedParamsCount() {

@@ -24,9 +24,13 @@ namespace slib {
 
 class Number : virtual public Object {
 public:
+	TYPE_INFO(Number, CLASS(Number), INHERITS(Object));
+public:
 	virtual ~Number();
 
-	static constexpr Class _class = NUMBERCLASS;
+	virtual Class const& getClass() const override {
+		return classOf<Number>::_class();
+	}
 
 	virtual int64_t longValue() const = 0;
 
@@ -39,6 +43,8 @@ public:
 
 /** 32-bit signed integer */
 class Integer : public Number {
+public:
+	TYPE_INFO(Integer, CLASS(Integer), INHERITS(Number));
 private:
 	int32_t _value;
 public:
@@ -54,10 +60,8 @@ public:
 	Integer(const Integer& other)
 	: _value(other._value) {}
 
-	static constexpr Class _class = INTEGERCLASS;
-
 	virtual Class const& getClass() const override {
-		return INTEGERCLASS;
+		return classOf<Integer>::_class();
 	}
 
 	virtual int32_t hashCode() const override {
@@ -74,7 +78,6 @@ public:
 	}
 
 	virtual bool equals(Object const& other) const override {
-		//return (_value == other->_value);
 		if (instanceof<Integer>(other))
 			return _value == Class::constCast<Integer>(&other)->_value;
 		return false;
@@ -214,6 +217,8 @@ public:
 
 /** 32-bit unsigned integer */
 class UInt : public Number {
+public:
+	TYPE_INFO(UInt, CLASS(UInt), INHERITS(Number));
 private:
 	uint32_t _value;
 public:
@@ -229,10 +234,8 @@ public:
 	UInt(const UInt& other)
 	: _value(other._value) {}
 
-	static constexpr Class _class = UINTCLASS;
-
 	virtual Class const& getClass() const override {
-		return UINTCLASS;
+		return classOf<UInt>::_class();
 	}
 
 	int32_t hashCode() const override {
@@ -331,6 +334,8 @@ public:
 };
 
 class Short : public Number {
+public:
+	TYPE_INFO(Short, CLASS(Short), INHERITS(Number));
 private:
 	short _value;
 public:
@@ -346,10 +351,8 @@ public:
 	Short(const Short& other)
 	: _value(other._value) {}
 
-	static constexpr Class _class = SHORTCLASS;
-
 	virtual Class const& getClass() const override {
-		return SHORTCLASS;
+		return classOf<Short>::_class();
 	}
 
 	virtual int32_t hashCode() const override {
@@ -382,6 +385,8 @@ public:
 
 /** 64-bit signed integer */
 class Long : public Number {
+public:
+	TYPE_INFO(Long, CLASS(Long), INHERITS(Number));
 private:
 	int64_t _value;
 public:
@@ -394,10 +399,8 @@ public:
 	Long(int64_t value)
 	:_value(value) {}
 
-	static constexpr Class _class = LONGCLASS;
-
 	virtual Class const& getClass() const override {
-		return LONGCLASS;
+		return classOf<Long>::_class();
 	}
 
 	/**
@@ -525,6 +528,8 @@ public:
 
 /** 64-bit unsigned integer */
 class ULong : public Number {
+public:
+	TYPE_INFO(ULong, CLASS(ULong), INHERITS(Number));
 private:
 	uint64_t _value;
 public:
@@ -533,10 +538,8 @@ public:
 	ULong(uint64_t value)
 	:_value(value) {}
 
-	static constexpr Class _class = ULONGCLASS;
-
 	virtual Class const& getClass() const override {
-		return ULONGCLASS;
+		return classOf<ULong>::_class();
 	}
 
 	/**
@@ -648,6 +651,8 @@ public:
 
 /** Double value */
 class Double : public Number {
+public:
+	TYPE_INFO(Double, CLASS(Double), INHERITS(Number));
 private:
 	double _value;
 protected:
@@ -665,10 +670,8 @@ public:
 	Double(double value)
 	:_value(value) {}
 
-	static constexpr Class _class = DOUBLECLASS;
-
 	virtual Class const& getClass() const override {
-		return DOUBLECLASS;
+		return classOf<Double>::_class();
 	}
 
 	/**
@@ -752,6 +755,8 @@ public:
 
 /** Boolean value */
 class Boolean : virtual public Object {
+public:
+	TYPE_INFO(Boolean, CLASS(Boolean), INHERITS(Object));
 private:
 	bool _value;
 public:
@@ -760,10 +765,8 @@ public:
 
 	virtual ~Boolean() override;
 
-	static constexpr Class _class = BOOLEANCLASS;
-
 	virtual Class const& getClass() const override {
-		return BOOLEANCLASS;
+		return classOf<Boolean>::_class();
 	}
 
 	virtual int32_t hashCode() const override {

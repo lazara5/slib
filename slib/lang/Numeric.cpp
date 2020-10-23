@@ -11,8 +11,6 @@ namespace slib {
 
 Number::~Number() {}
 
-constexpr Class Number::_class;
-
 static UPtr<String> getMantissa(UPtr<String> const& str, size_t stopPos) {
 	char firstChar = str->charAt(0);
 	bool hasSign = (firstChar == '-' || firstChar == '+');
@@ -171,8 +169,6 @@ bool Number::isMathematicalInteger(double val) {
 	return std::trunc(val) == val;
 }
 
-constexpr Class Integer::_class;
-
 int64_t Integer::longValue() const {
 	return (int64_t)_value;
 }
@@ -181,13 +177,9 @@ double Integer::doubleValue() const {
 	return (double)_value;
 }
 
-constexpr Class UInt::_class;
-
 double UInt::doubleValue() const {
 	return (double)_value;
 }
-
-constexpr Class Short::_class;
 
 int64_t Short::longValue() const {
 	return (int64_t)_value;
@@ -197,8 +189,6 @@ double Short::doubleValue() const {
 	return (double)_value;
 }
 
-constexpr Class Long::_class;
-
 int64_t Long::longValue() const {
 	return _value;
 }
@@ -207,13 +197,9 @@ double Long::doubleValue() const {
 	return (double)_value;
 }
 
-constexpr Class ULong::_class;
-
 double ULong::doubleValue() const {
 	return (double)_value;
 }
-
-constexpr Class Double::_class;
 
 int64_t Double::longValue() const {
 	return (int64_t)_value;
@@ -224,7 +210,5 @@ double Double::doubleValue() const {
 }
 
 Boolean::~Boolean() {}
-
-constexpr Class Boolean::_class;
 
 } // namespace slib

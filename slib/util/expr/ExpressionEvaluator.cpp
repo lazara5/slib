@@ -190,7 +190,7 @@ UPtr<String> ExpressionEvaluator::interpolate(String const& pattern, Resolver co
 						if (ignoreMissing) {
 							result.add("${").add(*expr).add('}');
 						} else
-							throw e;
+							throw;
 					}
 
 					state = InterState::APPEND;
@@ -313,7 +313,7 @@ SPtr<Object> ExpressionEvaluator::smartInterpolate(String const& pattern, Resolv
 							if (ignoreMissing)
 								result.add("${").add(*expr).add('}');
 							else
-								throw e;
+								throw;
 						}
 						state = InterState::APPEND;
 					} else if (c == '"' || c == '\'') {
@@ -414,7 +414,7 @@ SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 					else {
 						do {
 							Class const& argClass = params.peek();
-							if (argClass == EXPRESSIONCLASS)
+							if (argClass == classOf<Expression>::_class())
 								params.add(input->readArg());
 							else
 								params.add(expressionValue(input, resolver)->_value);

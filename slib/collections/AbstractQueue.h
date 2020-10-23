@@ -25,7 +25,7 @@ public:
 		if (offer(e))
 			return true;
 		else
-			throw new IllegalStateException("Queue full");
+			throw IllegalStateException("Queue full");
 	}
 
 	virtual SPtr<E> remove() override {
@@ -33,7 +33,7 @@ public:
 		if (e)
 			return e;
 
-		throw new NoSuchElementException(_HERE_);
+		throw NoSuchElementException(_HERE_);
 	}
 
 	virtual void clear() override {

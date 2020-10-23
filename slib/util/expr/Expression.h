@@ -9,12 +9,16 @@
 #include "slib/lang/String.h"
 
 namespace slib {
+
 namespace expr {
 
 class Value;
 class Resolver;
 
 class Expression : virtual public Object {
+public:
+	static constexpr StringView _className {"Expression"_SV};
+	typedef typename inherits<Object>::types _classInherits;
 private:
 	SPtr<String> _text;
 public:
@@ -23,10 +27,8 @@ public:
 
 	virtual ~Expression() override;
 
-	static constexpr Class _class = EXPRESSIONCLASS;
-
 	virtual Class const& getClass() const override {
-		return EXPRESSIONCLASS;
+		return classOf<Expression>::_class();
 	}
 
 	/** @throws EvaluationException */

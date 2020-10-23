@@ -45,12 +45,12 @@ constexpr StringView operator ""_SV(const char* str, size_t len) noexcept {
 
 template <>
 struct fmt::formatter<slib::StringView> {
-	constexpr auto parse(format_parse_context& ctx) {
+	const char *parse(format_parse_context& ctx) const {
 		return ctx.begin();
 	}
 
 	template <typename FormatContext>
-	auto format(const slib::StringView& sv, FormatContext& ctx) {
+	format_context::iterator format(const slib::StringView& sv, FormatContext& ctx) {
 		return format_to(ctx.out(), "{}", sv.c_str());
 	}
 };

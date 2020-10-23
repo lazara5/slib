@@ -41,7 +41,7 @@ public:
 
 	virtual ~ConfigProcessor() override {}
 
-	virtual UPtr<String> processLine(String const& name, SPtr<String> const& rawProperty) override;
+	virtual UPtr<String> processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) override;
 
 	void registerSource(String const& name, SPtr<PropertySource> const& src) {
 		if (!_sources)
@@ -73,7 +73,7 @@ public:
 	SimpleConfigProcessor(Properties const& props)
 	:_props(props) {}
 
-	virtual UPtr<String> processLine(String const& name, SPtr<String> const& rawProperty) override;
+	virtual UPtr<String> processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) override;
 
 	// ValueProvider interface
 	// Resolver interface

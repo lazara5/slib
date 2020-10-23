@@ -9,8 +9,6 @@ namespace expr {
 
 Resolver::~Resolver() {}
 
-constexpr Class Resolver::_class;
-
 MapResolver::~MapResolver() {}
 
 } // namespace expr

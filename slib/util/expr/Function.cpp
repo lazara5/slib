@@ -9,8 +9,6 @@ namespace expr {
 
 Function::~Function() {}
 
-constexpr Class Function::_class;
-
 ArgList::~ArgList() {}
 
 FunctionArgs::~FunctionArgs() {}

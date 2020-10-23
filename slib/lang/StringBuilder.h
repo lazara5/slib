@@ -20,6 +20,9 @@ namespace slib {
  * thread-safe when used in a mutable fashion !!!)
  */
 class StringBuilder : public BasicString {
+public:
+	static constexpr StringView _className {"StringBuilder"_SV};
+	typedef typename inherits<BasicString>::types _classInherits;
 private:
 	void build(const char *format, ...);
 protected:
@@ -60,10 +63,8 @@ public:
 	StringBuilder(uint64_t val);
 	StringBuilder(double val);
 
-	static constexpr Class _class = STRINGBUILDERCLASS;
-
 	virtual Class const& getClass() const override {
-		return STRINGBUILDERCLASS;
+		return classOf<StringBuilder>::_class();
 	}
 
 	void alloc(size_t newLen);

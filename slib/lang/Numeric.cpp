@@ -177,6 +177,10 @@ double Integer::doubleValue() const {
 	return (double)_value;
 }
 
+int64_t UInt::longValue() const {
+	return (int64_t)_value;
+}
+
 double UInt::doubleValue() const {
 	return (double)_value;
 }

@@ -31,8 +31,7 @@ void TestConfig::onBeforeSearch(slib::List<String> &pathList) const {
 
 static UPtr<TestConfig> config;
 
-TEST_GROUP(ConfigTests)
-{
+TEST_GROUP(ConfigTests) {
 	void setup() {
 		config = std::make_unique<TestConfig>(*FileUtils::buildPath(*FileUtils::getPath(test_argv[0]), "data/test.conf"), "SlibTest");
 		//config = std::make_unique<TestConfig>("test.conf", "SlibTest");

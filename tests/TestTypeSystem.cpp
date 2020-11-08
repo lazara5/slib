@@ -28,4 +28,7 @@ TEST(TypeSystem, InstanceOf) {
 	CHECK((instanceof<LinkedHashMap<String, Object>>(lhm1)));
 	CHECK_FALSE((instanceof<LinkedHashMap<String, String>>(lhm1)));
 	CHECK_FALSE(instanceof<Number>(lhm1));
+
+	HashMap<std::string, uint64_t> hm1;
+	CHECK((instanceof<Map<std::string, uint64_t>>(hm1)));
 }

@@ -19,6 +19,7 @@ set(TESTS_SOURCES
 	TestConfig.cpp
 	TestExpr.cpp
 	TestTypeSystem.cpp
+	TestNumeric.cpp
 )
 
 configure_file(data/test.conf ${CMAKE_CURRENT_BINARY_DIR}/data/test.conf COPYONLY)

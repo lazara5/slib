@@ -40,4 +40,7 @@
 #define COMMA1 ,
 #define COMMA_IF( value )   JOIN( COMMA , CHECK0( value ) )
 
+/** Unused symbol annotation */
+#define SLIB_UNUSED __attribute__((unused))
+
 #endif // H_SLIB_UTIL_MACROUTILS_H

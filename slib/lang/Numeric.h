@@ -97,6 +97,10 @@ public:
 		return _value;
 	}
 
+	operator int32_t() const {
+		return _value;
+	}
+
 	virtual int64_t longValue() const override;
 	virtual double doubleValue() const override;
 
@@ -267,11 +271,20 @@ public:
 		return _value;
 	}
 
+	operator uint32_t() const {
+		return _value;
+	}
+
+	virtual int64_t longValue() const override;
 	virtual double doubleValue() const override;
 
 	static uint32_t parseUInt(const char *str, int radix) {
 		if (str == nullptr)
 			throw NumberFormatException(_HERE_, "null");
+
+		// strtoul silently accepts negative numbers...
+		if (strchr(str, '-') != nullptr)
+			throw NumericOverflowException(_HERE_, "Out of range");
 
 		char *end;
 		errno = 0;
@@ -595,6 +608,10 @@ public:
 	static uint64_t parseULong(const char *str) {
 		if (str == nullptr)
 			throw NumberFormatException(_HERE_, "null");
+
+		// strtoull silently accepts negative numbers...
+		if (strchr(str, '-') != nullptr)
+			throw NumericOverflowException(_HERE_, "Out of range");
 
 		char *end;
 		errno = 0;

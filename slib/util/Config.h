@@ -58,7 +58,7 @@ public:
 	// ValueProvider interface
 	// Resolver interface
 public:
-	//virtual std::shared_ptr<std::string> get(std::string const& name) const override;
+	//virtual SPtr<std::string> get(std::string const& name) const override;
 	//virtual bool containsKey(std::string const& name) const override;
 	virtual SPtr<Object> getVar(String const& key) const override;
 };
@@ -68,7 +68,7 @@ private:
 	typedef Map<String, Object> VarMap;
 private:
 	Properties const& _props;
-	std::unique_ptr<VarMap> _vars;
+	UPtr<VarMap> _vars;
 public:
 	SimpleConfigProcessor(Properties const& props)
 	:_props(props) {}

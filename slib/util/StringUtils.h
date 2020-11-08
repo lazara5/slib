@@ -75,8 +75,8 @@ public:
 		return false;
 	}
 
-	static std::shared_ptr<std::string> interpolate(std::string const& src,
-													ValueProvider<std::string, std::string> const& vars, bool ignoreUndefined);
+	static SPtr<std::string> interpolate(std::string const& src,
+										 ValueProvider<std::string, std::string> const& vars, bool ignoreUndefined);
 };
 
 } // namespace slib

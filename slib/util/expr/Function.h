@@ -35,7 +35,7 @@ public:
 	virtual SPtr<Object> getNullable(size_t index) const = 0;
 
 	template<class T>
-	std::shared_ptr<T> getNullable(size_t index) const {
+	SPtr<T> getNullable(size_t index) const {
 		SPtr<Object> obj = getNullable(index);
 		if (!obj)
 			return nullptr;
@@ -60,7 +60,7 @@ public:
 		return obj;
 	}
 
-	//virtual ConstIterator<std::shared_ptr<Object>> varargIterator() const = 0;
+	//virtual ConstIterator<SPtr<Object>> varargIterator() const = 0;
 };
 
 class FunctionArgs : public ArgList {
@@ -95,8 +95,7 @@ typedef std::function<SPtr<Value>(Resolver const& resolver, ArgList const& args)
 
 class Function : virtual public Object {
 public:
-	static constexpr StringView _className {"Function"_SV};
-	typedef typename inherits<Object>::types _classInherits;
+	TYPE_INFO(Function, CLASS(Function), INHERITS(Object));
 private:
 	/** Number of fixed params */
 	size_t _fixedParams;
@@ -129,10 +128,6 @@ public:
 	}
 
 	virtual ~Function() override;
-
-	virtual Class const& getClass() const override {
-		return classOf<Function>::_class();
-	}
 
 	Class const& getParamType(size_t i) {
 		return (i < _fixedParams) ? (*_paramTypes)[i] : classOf<Object>::_class();

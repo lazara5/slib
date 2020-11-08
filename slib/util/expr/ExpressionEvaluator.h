@@ -86,7 +86,7 @@ protected:
 	static SPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
 
 	/** @throws EvaluationException */
-	static std::shared_ptr<Value> evaluateSymbol(std::shared_ptr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static SPtr<Value> evaluateSymbol(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
 };
 
 } // namespace expr

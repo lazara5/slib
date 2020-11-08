@@ -69,10 +69,6 @@ public:
 	virtual ~ArrayList() {
 	}
 
-	virtual Class const& getClass() const override {
-		return classOf<ArrayList<E>>::_class();
-	}
-
 	/**
 	 * Returns the number of elements in this list.
 	 * @return the number of elements in this list
@@ -209,7 +205,7 @@ private:
 			return ConstArrayListIterator::hasNext();
 		}
 
-		virtual const std::shared_ptr<E>& next() {
+		virtual const SPtr<E>& next() {
 			return ConstArrayListIterator::next();
 		}
 

@@ -35,12 +35,12 @@ T const* CPtr(T * obj) {
 }
 
 template <typename T>
-T const* CPtr(std::shared_ptr<T> const& obj) {
+T const* CPtr(SPtr<T> const& obj) {
 	return obj.get();
 }
 
 template <typename T>
-T const* CPtr(std::unique_ptr<T> const& obj) {
+T const* CPtr(UPtr<T> const& obj) {
 	return obj.get();
 }
 

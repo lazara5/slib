@@ -103,8 +103,8 @@ UPtr<ArrayList<std::string>> String::simpleSplit(const char *buffer, size_t len,
 	return results;
 }
 
-std::unique_ptr<ArrayList<String> > String::split(const char *buffer, size_t len, const char *pattern, int limit /* = 0 */) {
-	std::unique_ptr<ArrayList<String>> results = std::make_unique<ArrayList<String>>();
+UPtr<ArrayList<String> > String::split(const char *buffer, size_t len, const char *pattern, int limit /* = 0 */) {
+	UPtr<ArrayList<String>> results = std::make_unique<ArrayList<String>>();
 	if (len == 0)
 		return results;
 

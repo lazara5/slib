@@ -230,10 +230,6 @@ public:
 	LinkedHashMap(const LinkedHashMap& other)
 	:_internalMap(std::make_shared<InternalLinkedHashMap<K, V, Pred>>(*other._internalMap)) {}
 
-	virtual Class const& getClass() const override {
-		return classOf<LinkedHashMap<K, V, Pred>>::_class();
-	}
-
 	virtual void clear() override {
 		_internalMap->clear();
 	}

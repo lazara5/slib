@@ -17,8 +17,7 @@ class Resolver;
 
 class Expression : virtual public Object {
 public:
-	static constexpr StringView _className {"Expression"_SV};
-	typedef typename inherits<Object>::types _classInherits;
+	TYPE_INFO(Expression, CLASS(Expression), INHERITS(Object));
 private:
 	SPtr<String> _text;
 public:
@@ -27,12 +26,8 @@ public:
 
 	virtual ~Expression() override;
 
-	virtual Class const& getClass() const override {
-		return classOf<Expression>::_class();
-	}
-
 	/** @throws EvaluationException */
-	std::shared_ptr<Value> evaluate(Resolver const& resolver);
+	SPtr<Value> evaluate(Resolver const& resolver);
 };
 
 } // namespace expr

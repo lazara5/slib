@@ -251,11 +251,7 @@ class ConstIterable : virtual public Object {
 public:
 	TYPE_INFO(ConstIterable, CLASS(ConstIterable<T>), INHERITS(Object));
 public:
-	virtual Class const& getClass() const override {
-		return classOf<ConstIterable<T>>::_class();
-	}
-
-	virtual ConstIterator<std::shared_ptr<T>> constIterator() const = 0;
+	virtual ConstIterator<SPtr<T>> constIterator() const = 0;
 };
 
 } // namespace

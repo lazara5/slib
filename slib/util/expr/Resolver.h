@@ -15,14 +15,9 @@ namespace expr {
 
 class Resolver : virtual public Object {
 public:
-	static constexpr StringView _className {"Resolver"_SV};
-	typedef typename inherits<Object>::types _classInherits;
+	TYPE_INFO(Resolver, CLASS(Resolver), INHERITS(Object));
 public:
 	virtual ~Resolver() override;
-
-	virtual Class const& getClass() const override {
-		return classOf<Resolver>::_class();
-	}
 
 	/**
 	 * Resolves a variable
@@ -34,6 +29,8 @@ public:
 };
 
 class MapResolver : public Resolver {
+public:
+	TYPE_INFO(MapResolver, CLASS(MapResolver), INHERITS(Resolver));
 private:
 	SPtr<Map<String, Object>> _map;
 public:

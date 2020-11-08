@@ -107,7 +107,7 @@ public:
 	StringBuilder& add(ASCIICaseInsensitiveString const& src);
 	StringBuilder& add(std::string const& src);
 
-	StringBuilder& add(std::shared_ptr<std::string> const& src) {
+	StringBuilder& add(SPtr<std::string> const& src) {
 		add(*src);
 		return *this;
 	}

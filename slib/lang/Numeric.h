@@ -28,10 +28,6 @@ public:
 public:
 	virtual ~Number();
 
-	virtual Class const& getClass() const override {
-		return classOf<Number>::_class();
-	}
-
 	virtual int64_t longValue() const = 0;
 
 	virtual double doubleValue() const = 0;
@@ -59,10 +55,6 @@ public:
 
 	Integer(const Integer& other)
 	: _value(other._value) {}
-
-	virtual Class const& getClass() const override {
-		return classOf<Integer>::_class();
-	}
 
 	virtual int32_t hashCode() const override {
 		return _value;
@@ -238,10 +230,6 @@ public:
 	UInt(const UInt& other)
 	: _value(other._value) {}
 
-	virtual Class const& getClass() const override {
-		return classOf<UInt>::_class();
-	}
-
 	int32_t hashCode() const override {
 		return (int)_value;
 	}
@@ -364,10 +352,6 @@ public:
 	Short(const Short& other)
 	: _value(other._value) {}
 
-	virtual Class const& getClass() const override {
-		return classOf<Short>::_class();
-	}
-
 	virtual int32_t hashCode() const override {
 		return (int32_t)_value;
 	}
@@ -411,10 +395,6 @@ public:
 
 	Long(int64_t value)
 	:_value(value) {}
-
-	virtual Class const& getClass() const override {
-		return classOf<Long>::_class();
-	}
 
 	/**
 	 * Returns a hash code for this <code>Long</code>. The result is
@@ -551,10 +531,6 @@ public:
 	ULong(uint64_t value)
 	:_value(value) {}
 
-	virtual Class const& getClass() const override {
-		return classOf<ULong>::_class();
-	}
-
 	/**
 	 * Returns a hash code for this <code>Long</code>. The result is
 	 * the exclusive OR of the two halves of the primitive
@@ -687,10 +663,6 @@ public:
 	Double(double value)
 	:_value(value) {}
 
-	virtual Class const& getClass() const override {
-		return classOf<Double>::_class();
-	}
-
 	/**
 	 * Returns a hash code for this <code>Double</code>. The result is
 	 * the exclusive OR of the two halves of the primitive
@@ -781,10 +753,6 @@ public:
 	:_value(value) {}
 
 	virtual ~Boolean() override;
-
-	virtual Class const& getClass() const override {
-		return classOf<Boolean>::_class();
-	}
 
 	virtual int32_t hashCode() const override {
 		return _value ? 1231 : 1237;

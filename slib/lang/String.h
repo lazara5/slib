@@ -539,7 +539,7 @@ public:
 		return substring(str->c_str(), str->length(), beginIndex, endIndex);
 	}
 
-	std::unique_ptr<String> substring(size_t beginIndex, size_t endIndex) const {
+	UPtr<String> substring(size_t beginIndex, size_t endIndex) const {
 		return std::make_unique<String>(substring(CPtr(_str), beginIndex, endIndex));
 	}
 
@@ -550,7 +550,7 @@ public:
 		return substring(str, beginIndex, str->length());
 	}
 
-	std::unique_ptr<String> substring(size_t beginIndex) const {
+	UPtr<String> substring(size_t beginIndex) const {
 		return std::make_unique<String>(substring(CPtr(_str), beginIndex));
 	}
 
@@ -636,7 +636,7 @@ public:
 		return valueOf(obj.get());
 	}
 
-	virtual std::unique_ptr<String> toString() const override {
+	virtual UPtr<String> toString() const override {
 		return std::make_unique<String>(_str);
 	}
 };

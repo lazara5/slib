@@ -25,7 +25,7 @@ private:
 		return (ch == '$') || (ch == '#') || (ch == '?') || (ch == '@');
 	}
 
-	std::unique_ptr<String> readReal();
+	UPtr<String> readReal();
 public:
 	ExpressionInputStream(SPtr<BasicString> const& s)
 	:_iter(s) {
@@ -65,18 +65,18 @@ public:
 	 * @return name
 	 * @throws SyntaxErrorException
 	 */
-	std::unique_ptr<String> readName();
+	UPtr<String> readName();
 
-	std::unique_ptr<String> readDottedNameRemainder();
+	UPtr<String> readDottedNameRemainder();
 
 	/** @throws SyntaxErrorException */
 	SPtr<Value> readString();
 
 	/** @throws SyntaxErrorException */
-	std::shared_ptr<Expression> readArg();
+	SPtr<Expression> readArg();
 
 	/** @throws EvaluationException */
-	std::shared_ptr<Value> readNumber();
+	SPtr<Value> readNumber();
 };
 
 } // namespace expr

@@ -110,8 +110,8 @@ SPtr<Value> ExpressionInputStream::readString() {
 	return std::make_shared<Value>(str.toString());
 }
 
-std::shared_ptr<Value> ExpressionInputStream::readNumber() {
-	std::unique_ptr<String> str = readReal();
+SPtr<Value> ExpressionInputStream::readNumber() {
+	UPtr<String> str = readReal();
 	try {
 		return std::make_shared<Value>(Number::createNumber(str));
 	} catch (NumberFormatException const& e) {
@@ -119,7 +119,7 @@ std::shared_ptr<Value> ExpressionInputStream::readNumber() {
 	}
 }
 
-std::unique_ptr<String> ExpressionInputStream::readReal() {
+UPtr<String> ExpressionInputStream::readReal() {
 	StringBuilder s;
 	skipBlanks();
 	char ch = peek();
@@ -170,7 +170,7 @@ std::unique_ptr<String> ExpressionInputStream::readReal() {
 
 enum class ASMODE { SCAN, STRING, ESCAPE };
 
-std::shared_ptr<Expression> ExpressionInputStream::readArg() {
+SPtr<Expression> ExpressionInputStream::readArg() {
 	char delimiter = '\1';
 	int argDepth = 0;
 	StringBuilder str;

@@ -82,7 +82,7 @@ class ShFdMPMCQueue {
 private:
 	std::mutex _lock;
 	int _dataCounter = -1;
-	std::queue<std::shared_ptr<T> > _queue;
+	std::queue<SPtr<T> > _queue;
 public:
 	ShFdMPMCQueue() {
 		_dataCounter = eventfd(0, EFD_SEMAPHORE | EFD_NONBLOCK);
@@ -95,7 +95,7 @@ public:
 			close(_dataCounter);
 	}
 
-	void push(const std::shared_ptr<T>& object) {
+	void push(const SPtr<T>& object) {
 		{
 			std::lock_guard<std::mutex> aLock(_lock);
 			_queue.push(object);
@@ -105,7 +105,7 @@ public:
 			throw slib::Exception(_HERE_, fmt::format("eventfd write failed, errno = {}", slib::StringUtils::formatErrno()).c_str());
 	}
 
-	std::shared_ptr<T> pop() {
+	SPtr<T> pop() {
 		uint64_t data;
 		if (read(_dataCounter, &data, sizeof(int64_t)) != sizeof(uint64_t)) {
 			if (errno == EAGAIN)
@@ -114,7 +114,7 @@ public:
 		}
 
 		std::lock_guard<std::mutex> aLock(_lock);
-		std::shared_ptr<T> value = _queue.front();
+		SPtr<T> value = _queue.front();
 		_queue.pop();
 		return value;
 	}
@@ -130,12 +130,12 @@ class ShMPMCQueue {
 private:
 	std::mutex _lock;
 	slib::Semaphore _dataCounter;
-	std::queue<std::shared_ptr<T> > _queue;
+	std::queue<SPtr<T> > _queue;
 public:
 	ShMPMCQueue()
 	:_dataCounter(0) {}
 
-	void push(const std::shared_ptr<T>& object) {
+	void push(const SPtr<T>& object) {
 		{
 			std::lock_guard<std::mutex> aLock(_lock);
 			_queue.push(object);
@@ -143,13 +143,13 @@ public:
 		_dataCounter.release();
 	}
 
-	std::shared_ptr<T> pop(int timeout = -1) {
+	SPtr<T> pop(int timeout = -1) {
 		bool acquired = _dataCounter.acquire(timeout);
 		if (!acquired)
 			return nullptr;
 
 		std::lock_guard<std::mutex> aLock(_lock);
-		std::shared_ptr<T> value = _queue.front();
+		SPtr<T> value = _queue.front();
 		_queue.pop();
 		return value;
 	}

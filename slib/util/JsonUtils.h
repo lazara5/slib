@@ -139,10 +139,10 @@ const rapidjson::Value *getStringValue(const char *where, P path, const rapidjso
 }
 
 template <class P>
-std::unique_ptr<std::string> getStringIfExists(const char *where, P path, const rapidjson::Value& v) {
+UPtr<std::string> getStringIfExists(const char *where, P path, const rapidjson::Value& v) {
 	const rapidjson::Value *value = getValue(where, path, v);
 	if (value == nullptr)
-		return std::unique_ptr<std::string>();
+		return UPtr<std::string>();
 	if (value->IsString())
 		return std::make_unique<std::string>(String::trim(value->GetString()));
 	throw InvalidValueException(where, pathToString(path).c_str(), "String expected");

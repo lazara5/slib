@@ -18,10 +18,6 @@ class Collection : public ConstIterable<E> {
 public:
 	TYPE_INFO(Collection, CLASS(Collection<E>), INHERITS(ConstIterable<E>));
 public:
-	virtual Class const& getClass() const override {
-		return classOf<Collection<E>>::_class();
-	}
-
 	virtual size_t size() const = 0;
 
 	virtual bool isEmpty() const = 0;

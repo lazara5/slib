@@ -61,11 +61,11 @@ typedef enum {
 	IS_APPEND, IS_DOLLAR, IS_READVAR
 } IState;
 
-std::shared_ptr<std::string> StringUtils::interpolate(std::string const& src, ValueProvider<std::string, std::string> const& vars,
-													  bool ignoreUndefined) {
+SPtr<std::string> StringUtils::interpolate(std::string const& src, ValueProvider<std::string, std::string> const& vars,
+										   bool ignoreUndefined) {
 	const char *pattern = src.c_str();
 
-	std::shared_ptr<std::string> result = std::make_shared<std::string>();
+	SPtr<std::string> result = std::make_shared<std::string>();
 	IState state = IS_APPEND;
 	size_t pos = 0;
 	size_t dollarBegin = 0;
@@ -95,7 +95,7 @@ std::shared_ptr<std::string> StringUtils::interpolate(std::string const& src, Va
 			case IS_READVAR:
 				if (c == '}') {
 					std::string varName(pattern + dollarBegin + 2, pos - dollarBegin - 2);
-					std::shared_ptr<std::string> value = vars.get(varName);
+					SPtr<std::string> value = vars.get(varName);
 					if (value)
 						result->append(*value);
 					else {

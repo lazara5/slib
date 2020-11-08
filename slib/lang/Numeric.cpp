@@ -114,7 +114,7 @@ UPtr<Number> Number::createNumber(UPtr<String> const& str) {
 		if ((expPos > -1) && (expPos < (ptrdiff_t)str->length() - 1))
 			exponent = str->substring((size_t)expPos + 1, str->length() - 1);
 
-		std::unique_ptr<String> numeric = str->substring(0, str->length() - 1);
+		UPtr<String> numeric = str->substring(0, str->length() - 1);
 		bool allZeros = isAllZeros(mantissa) && isAllZeros(exponent);
 		switch (lastChar) {
 			case 'l':

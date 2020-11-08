@@ -281,6 +281,9 @@ D* Class::cast(S *from) {
 #define BASE_TYPE_INFO(NAME, TYPE) \
 	static constexpr StringView _className { #NAME ## _SV}; \
 	typedef typelist<> _classInherits; \
+	virtual Class const& getClass() const { \
+		return classOf<UNPAREN TYPE>::_class(); \
+	} \
 	virtual void *_classCast(TypeId typeId) { \
 		if (typeId == _typeId<UNPAREN TYPE>()) \
 			return this; \
@@ -290,6 +293,9 @@ D* Class::cast(S *from) {
 #define TYPE_INFO(NAME, TYPE, ...) \
 	static constexpr StringView _className { #NAME ## _SV }; \
 	typedef typename inherits<FOR_EACH(DO_LIST, __VA_ARGS__)>::types _classInherits; \
+	virtual Class const& getClass() const override { \
+		return classOf<UNPAREN TYPE>::_class(); \
+	} \
 	virtual void *_classCast(TypeId typeId) override { \
 		if (typeId == _typeId<UNPAREN TYPE>()) return this; \
 		void *ptr; \
@@ -300,10 +306,6 @@ D* Class::cast(S *from) {
 class Void {
 public:
 	BASE_TYPE_INFO(Void, CLASS(Void));
-public:
-	virtual Class const& getClass() const {
-		return classOf<Void>::_class();
-	}
 };
 
 } // namespace slib

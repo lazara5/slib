@@ -13,7 +13,7 @@ namespace slib {
 
 class StringCharacterIterator : public CharacterIterator {
 protected:
-	std::shared_ptr<BasicString> _text;
+	SPtr<BasicString> _text;
 	ptrdiff_t _pos;
 private:
 	const char *_buffer;

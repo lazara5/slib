@@ -19,7 +19,7 @@ public:
 public:
 	virtual ~ValueProvider() {}
 
-	virtual std::shared_ptr<V> get(const K& key) const = 0;
+	virtual SPtr<V> get(const K& key) const = 0;
 	virtual bool containsKey(const K& key) const = 0;
 };
 
@@ -50,10 +50,6 @@ public:
 
 public:
 	virtual ~Map() {}
-
-	virtual Class const& getClass() const override {
-		return classOf<Map<K, V, Pred>>::_class();
-	}
 
 	virtual SPtr<V> put(SPtr<K> const& key, SPtr<V> const& value) = 0;
 

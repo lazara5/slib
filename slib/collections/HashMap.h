@@ -545,10 +545,6 @@ public:
 		_internalMap->clear();
 	}
 
-	virtual Class const& getClass() const override {
-		return classOf<HashMap<K, V, Pred>>::_class();
-	}
-
 	/**
 	 * Returns the number of key-value mappings in this map.
 	 *
@@ -635,7 +631,7 @@ public:
 	}
 
 	template<class K1, class V1>
-	void emplace(K1&& k, std::shared_ptr<V1> v) {
+	void emplace(K1&& k, SPtr<V1> v) {
 		K key(std::forward<K1>(k));
 		int hash = _smudge(std::hash<K>()(key));
 		int i = indexFor(hash, _tableLength);

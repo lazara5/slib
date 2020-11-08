@@ -22,10 +22,6 @@ public:
 public:
 	virtual ~Object() {}
 
-	virtual Class const& getClass() const {
-		return classOf<Object>::_class();
-	}
-
 	virtual int32_t hashCode() const {
 		uint64_t value = (uint64_t)this;
 		return (int32_t)(value ^ (value >> 32));

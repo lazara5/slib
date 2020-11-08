@@ -20,10 +20,6 @@ public:
 public:
 	virtual ~List() {}
 
-	virtual Class const& getClass() const override {
-		return classOf<List<E>>::_class();
-	}
-
 	virtual size_t size() const override = 0;
 
 	virtual bool isEmpty() const override = 0;

@@ -486,7 +486,7 @@ static SPtr<String> formatArg(SPtr<FormatToken> const& token, SPtr<Object> const
 	return result;
 }
 
-void ExpressionFormatter::format(StringBuilder &out, ArgList const& args, Resolver const& resolver) {
+void ExpressionFormatter::format(StringBuilder &out, ArgList const& args, Resolver const& resolver SLIB_UNUSED) {
 	SPtr<String> format = args.get<String>(0);
 	SPtr<CharBuffer> formatBuffer = std::make_shared<CharBuffer>(format);
 	ParserStateMachine parser(formatBuffer);

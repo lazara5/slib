@@ -223,16 +223,20 @@ public:
 	static const int32_t MAXIMUM_CAPACITY = InternalLinkedHashMap<K, V, Pred>::MAXIMUM_CAPACITY;
 protected:
 	SPtr<InternalLinkedHashMap<K, V, Pred>> _internalMap;
+
+	virtual InternalHashMap<K, V, Pred> *internalMap() override {
+		return _internalMap.get();
+	}
+
+	virtual InternalHashMap<K, V, Pred> const* constInternalMap() const override {
+		return _internalMap.get();
+	}
 public:
 	LinkedHashMap(int32_t initialCapacity = DEFAULT_INITIAL_CAPACITY, float loadFactor = HASH_DEFAULT_LOAD_FACTOR)
 	:_internalMap(std::make_shared<InternalLinkedHashMap<K, V, Pred>>(initialCapacity, loadFactor)) {}
 
 	LinkedHashMap(const LinkedHashMap& other)
 	:_internalMap(std::make_shared<InternalLinkedHashMap<K, V, Pred>>(*other._internalMap)) {}
-
-	virtual void clear() override {
-		_internalMap->clear();
-	}
 
 	/**
 	 * Copies all mappings from <i>other</i> to this map. Does <b>not</b> clear

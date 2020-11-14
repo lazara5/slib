@@ -7,6 +7,7 @@
 
 #include "slib/lang/Object.h"
 #include "slib/util/Iterator.h"
+#include "slib/lang/StringBuilder.h"
 
 #include <memory>
 
@@ -43,6 +44,7 @@ public:
 	class Entry {
 	public:
 		virtual const SPtr<K> getKey() const = 0;
+		virtual K *getKeyPtr() const = 0;
 		virtual const SPtr<V> getValue() const = 0;
 		virtual V *getValuePtr() const = 0;
 		virtual ~Entry() {}
@@ -93,6 +95,37 @@ public:
 	virtual bool isEmpty() const = 0;
 
 	virtual void clear() = 0;
+
+	virtual UPtr<String> toString() const override {
+		ConstIterator<Entry> i = constIterator();
+		if (!i.hasNext())
+			return "{}"_UPTR;
+
+		StringBuilder sb;
+		sb.add('{');
+		do {
+			Entry const& e = i.next();
+
+			K const* key = e.getKeyPtr();
+			if (instanceof<Map>(key) && Class::constCast<Map>(key) == this)
+				sb.add("(this Map)");
+			else
+				sb.add(slib::toString(key));
+
+			sb.add('=');
+
+			const V *value = e.getValuePtr();
+			if (instanceof<Map>(value) && Class::constCast<Map>(value) == this)
+				sb.add("(this Map)");
+			else
+				sb.add(slib::toString(value));
+
+			if (!i.hasNext())
+				return sb.add('}').toString();
+			sb.add(", ");
+		} while (true);
+	}
+
 public:
 	virtual ConstIterator<Entry> constIterator() const = 0;
 };

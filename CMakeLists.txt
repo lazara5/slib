@@ -4,7 +4,7 @@ project (slib)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-SET(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_CXX_STANDARD 14)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 FILE(GLOB_RECURSE slibHeaders "slib/*.h" "slib/*.hpp")

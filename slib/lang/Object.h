@@ -39,6 +39,27 @@ public:
 };
 
 template <class T>
+UPtr<String> toStringImpl(T const* obj SLIB_UNUSED, std::false_type) {
+	return std::make_unique<String>("");
+}
+
+template <class T>
+UPtr<String> toStringImpl(T const* obj, std::true_type) {
+	return obj->toString();
+}
+
+template <class T>
+UPtr<String> toString(T const* obj) {
+	return toStringImpl<T>(obj, std::is_base_of<Object, T>{});
+}
+
+
+template <class T, class O>
+bool instanceof(O const* obj SLIB_UNUSED) {
+	return false;
+}
+
+template <class T>
 bool instanceof(Object const* obj) {
 	if (!obj)
 		return false;

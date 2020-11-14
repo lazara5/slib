@@ -5,6 +5,7 @@
 #include "slib/util/expr/ExpressionEvaluator.h"
 #include "slib/util/expr/Function.h"
 #include "slib/util/expr/ExpressionFormatter.h"
+#include "slib/collections/LinkedHashMap.h"
 
 #include <cmath>
 
@@ -23,17 +24,17 @@ public:
 		emplace_key<String>("math", math);
 
 		math->put("ceil", Function::impl<Double>(
-			[](Resolver const& /* resolver */, ArgList const& args) {
+			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
 				return Value::of(std::make_shared<Double>(ceil(args.get<Double>(0)->doubleValue())));
 			}
 		));
 		math->put("floor", Function::impl<Double>(
-			[](Resolver const& /* resolver */, ArgList const& args) {
+			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
 				return Value::of(std::make_shared<Double>(floor(args.get<Double>(0)->doubleValue())));
 			}
 		));
 		math->put("abs", Function::impl<Double>(
-			[](Resolver const& /* resolver */, ArgList const& args) {
+			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
 				return Value::of(std::make_shared<Double>(abs(args.get<Double>(0)->doubleValue())));
 			}
 		));
@@ -134,6 +135,17 @@ public:
 		emplace_key<String>("#", Function::impl<String>(
 			[](Resolver const& resolver, ArgList const& args) {
 				return ExpressionEvaluator::expressionValue(std::make_shared<ExpressionInputStream>(args.get<String>(0)), resolver);
+			}
+		));
+
+		emplace_key<String>("::makeObj", Function::impl<KeyValueTuple<String>>(
+			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
+				SPtr<Map<String, Object>> map = std::make_shared<LinkedHashMap<String, Object>>();
+				for (size_t i = 0; i < args.size(); i++) {
+					SPtr<KeyValueTuple<String>> tuple = args.get<KeyValueTuple<String>>(i);
+					map->put(tuple->key, tuple->value);
+				}
+				return Value::of(map);
 			}
 		));
 	}

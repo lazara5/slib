@@ -660,6 +660,9 @@ protected:
 		}
 	}
 public:
+	static constexpr int64_t MIN_SAFE_INTEGER = -9007199254740991;
+	static constexpr int64_t MAX_SAFE_INTEGER = 9007199254740991;
+
 	Double(double value)
 	:_value(value) {}
 
@@ -736,9 +739,12 @@ public:
 	}
 
 	static UPtr<String> toString(double d) {
-		std::stringstream stream;
-		stream << d;
-		return std::make_unique<String>(stream.str());
+		return newU<String>(fmt::format("{}", d));
+
+	}
+
+	virtual UPtr<String> toString() const override {
+		return toString(_value);
 	}
 };
 

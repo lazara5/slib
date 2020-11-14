@@ -375,7 +375,11 @@ SPtr<Value> ExpressionEvaluator::termValue(SPtr<ExpressionInputStream> const& in
 
 SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver) {
 	input->skipBlanks();
-	SPtr<Value> val = primaryValue(input, resolver);
+
+	PrimaryType primaryType = PrimaryType::NONE;
+	SPtr<Value> val = primaryValue(input, resolver, primaryType);
+
+	char functionClose = ')';
 
 	bool inFactor = true;
 	while (inFactor) {
@@ -393,6 +397,11 @@ SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 					val = val->index(arg);
 				}
 				break;
+			case '{':
+				if (primaryType == PrimaryType::OBJ_CONSTRUCTOR)
+					functionClose = '}';
+				else
+					throw SyntaxErrorException(_HERE_, "{ only permitted in object constructor");
 			case '(':
 				{
 					if (!instanceof<Function>(val->_value))
@@ -409,7 +418,7 @@ SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 
 					// check for 0 parameters
 					input->skipBlanks();
-					if (input->peek() == ')')
+					if (input->peek() == functionClose)
 						input->readChar();
 					else {
 						do {
@@ -422,7 +431,7 @@ SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 							if (input->peek() == ',') {
 								input->readChar();
 								continue;
-							} else if (input->peek() == ')') {
+							} else if (input->peek() == functionClose) {
 								input->readChar();
 								break;
 							} else
@@ -443,6 +452,16 @@ SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 					val = val->member(name, resolver);
 				}
 				break;
+			case '=':
+				{
+					if (primaryType != PrimaryType::LITERAL)
+						throw SyntaxErrorException(_HERE_, "Object key must be literal");
+					input->readChar();
+					SPtr<Value> tupleVal = expressionValue(input, resolver);
+					val = Value::of(newS<KeyValueTuple<String>>(Class::cast<String>(val->getValue()), tupleVal->getValue()));
+					inFactor = false;
+				}
+				break;
 			default:
 				inFactor = false;
 				break;
@@ -452,15 +471,19 @@ SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 	return val;
 }
 
-SPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver) {
+SPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type) {
+	type = PrimaryType::NONE;
+
 	input->skipBlanks();
 	char ch = input->peek();
-	if (std::isdigit(ch))
+	if (std::isdigit(ch)) {
+		type = PrimaryType::VALUE;
 		return input->readNumber();
-	else if (ExpressionInputStream::isIdentifierStart(ch)) {
-		// symbol
-		return evaluateSymbol(input, resolver);
+	} else if (ExpressionInputStream::isIdentifierStart(ch)) {
+		type = PrimaryType::VALUE;
+		return evaluateSymbol(input, resolver, type);
 	} else if (ch == '(') {
+		type = PrimaryType::VALUE;
 		input->readChar();
 		SPtr<Value> val = expressionValue(input, resolver);
 		input->skipBlanks();
@@ -469,9 +492,13 @@ SPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const&
 		input->readChar();
 		return val;
 	} else if (ch == '\'' || ch == '\"') {
+		type = PrimaryType::VALUE;
 		return input->readString();
+	} else if (ch == '{') {
+		type = PrimaryType::OBJ_CONSTRUCTOR;
+		return Value::of(resolver.getVar("::makeObj"), "::makeObj"_SPTR);
 	} else if (ch == CharacterIterator::DONE)
-		throw SyntaxErrorException(_HERE_, "Unexpected end of line");
+		throw SyntaxErrorException(_HERE_, "Unexpected end of stream");
 	else if (ch == ')')
 		throw SyntaxErrorException(_HERE_, "Extra right paranthesis");
 	else if (ch == '+' || ch == '-' || ch == '&' || ch == '|' || ch == '*' || ch == '/' || ch == '%')
@@ -480,12 +507,21 @@ SPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const&
 		throw SyntaxErrorException(_HERE_, fmt::format("Unexpected character '{}' encountered", ch).c_str());
 }
 
-SPtr<Value> ExpressionEvaluator::evaluateSymbol(SPtr<ExpressionInputStream> const& input, Resolver const& resolver) {
+SPtr<Value> ExpressionEvaluator::evaluateSymbol(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type) {
 	UPtr<String> symbolName = input->readName();
-	SPtr<Object> value = resolver.getVar(*symbolName);
-	if (value)
-		return std::make_shared<Value>(value, std::move(symbolName));
-	return Value::Nil(std::move(symbolName));
+	input->skipBlanks();
+	char ch = input->peek();
+	if (ch == '=') {
+		// tuple key literal
+		type = PrimaryType::LITERAL;
+		return Value::of(std::move(symbolName));
+	} else {
+		type = PrimaryType::VALUE;
+		SPtr<Object> value = resolver.getVar(*symbolName);
+		if (value)
+			return std::make_shared<Value>(value, std::move(symbolName));
+		return Value::Nil(std::move(symbolName));
+	}
 }
 
 } // namespace expr

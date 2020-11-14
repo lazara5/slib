@@ -23,6 +23,14 @@ friend class ResultHolder;
 private:
 	SPtr<Object> _value;
 	SPtr<String> _name;
+protected:
+	static SPtr<Value> valueOf(double d) {
+		if (Number::isMathematicalInteger(d)) {
+			if ((d <= Double::MAX_SAFE_INTEGER) && (d >= Double::MIN_SAFE_INTEGER))
+				return newS<Value>(newS<Long>((int64_t)d));
+		}
+		return newS<Value>(newS<Double>(d));
+	}
 public:
 	Value(SPtr<Object> const& value, SPtr<String> const& name = nullptr)
 	:_value(value)
@@ -137,7 +145,7 @@ public:
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return std::make_shared<Value>(std::make_shared<Double>(v1->doubleValue() + v2->doubleValue()));
+				return valueOf(v1->doubleValue() + v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "+", _value->getClass(), other->_value->getClass());
 		} else if (instanceof<BasicString>(_value)) {
@@ -161,7 +169,7 @@ public:
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return std::make_shared<Value>(std::make_shared<Double>(v1->doubleValue() - v2->doubleValue()));
+				return valueOf(v1->doubleValue() - v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "-", _value->getClass(), other->_value->getClass());
 		} else
@@ -184,7 +192,7 @@ public:
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return std::make_shared<Value>(std::make_shared<Double>(v1->doubleValue() * v2->doubleValue()));
+				return valueOf(v1->doubleValue() * v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "*", _value->getClass(), other->_value->getClass());
 		} else
@@ -199,7 +207,7 @@ public:
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return std::make_shared<Value>(std::make_shared<Double>(v1->doubleValue() / v2->doubleValue()));
+				return valueOf(v1->doubleValue() / v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "/", _value->getClass(), other->_value->getClass());
 		} else
@@ -214,7 +222,7 @@ public:
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return std::make_shared<Value>(std::make_shared<Double>(std::fmod(v1->doubleValue(), v2->doubleValue())));
+				return valueOf(std::fmod(v1->doubleValue(), v2->doubleValue()));
 			} else
 				throw EvaluationException(_HERE_, "%", _value->getClass(), other->_value->getClass());
 		} else
@@ -388,6 +396,18 @@ public:
 				throw EvaluationException(_HERE_, ".", _value->getClass());
 		}
 	}
+};
+template <class K>
+class KeyValueTuple : virtual public Object {
+public:
+	TYPE_INFO(KeyValueTuple, CLASS(KeyValueTuple<K>), INHERITS(Object));
+public:
+	const SPtr<K> key;
+	const SPtr<Object> value;
+
+	KeyValueTuple(SPtr<K> const& key, SPtr<Object> const& value)
+	: key(key)
+	, value(value) {}
 };
 
 } // namespace expr

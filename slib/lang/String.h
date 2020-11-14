@@ -29,13 +29,8 @@ public:
 
 class BasicString: virtual public Object {
 public:
-	static constexpr StringView _className {"BasicString"_SV};
-	typedef typename inherits<Object>::types _classInherits;
+	TYPE_INFO(BasicString, CLASS(BasicString), INHERITS(Object));
 public:
-	virtual Class const& getClass() const override {
-		return classOf<BasicString>::_class();
-	}
-
 	virtual size_t length() const = 0;
 	virtual const char *c_str() const = 0;
 
@@ -64,8 +59,7 @@ class ArrayList;
 class String : public BasicString {
 friend class BasicString;
 public:
-	static constexpr StringView _className {"String"_SV};
-	typedef typename inherits<BasicString>::types _classInherits;
+	TYPE_INFO(String, CLASS(String), INHERITS(BasicString));
 protected:
 	std::string _str;
 	mutable volatile int32_t _hash;
@@ -122,10 +116,6 @@ public:
 	String(char c);
 
 	virtual ~String() override;
-
-	virtual Class const& getClass() const override {
-		return classOf<String>::_class();
-	}
 
 	size_t length() const override {
 		return _str.length();
@@ -640,6 +630,14 @@ public:
 		return std::make_unique<String>(_str);
 	}
 };
+
+inline SPtr<String> operator ""_SPTR(const char* str, size_t len) {
+	return std::make_shared<String>(str, len);
+}
+
+inline UPtr<String> operator ""_UPTR(const char* str, size_t len) {
+	return std::make_unique<String>(str, len);
+}
 
 /**
  * Immutable ASCII string with case-insensitive comparison and hash code

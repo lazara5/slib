@@ -140,7 +140,7 @@ public:
 
 	bool operator ==(Class const& other) const {
 		// TODO: fix comparison
-		return (_hDepth == other._hDepth) && _typeStack[0].typeId == other._typeStack[0].typeId;
+		return (_hDepth == other._hDepth) && _typeStack[_hDepth - 1].typeId == other._typeStack[_hDepth - 1].typeId;
 	}
 
 	constexpr StringView const& getName() const {
@@ -198,7 +198,7 @@ struct classOf {
 	}
 };
 
-template <class D, class V>
+/*template <class D, class V>
 D const* Class::constCast(V const* from) {
 	if (from != nullptr) {
 		// Check if it is convertible to the base class or to itself
@@ -216,6 +216,35 @@ D const* Class::constCast(V const* from) {
 	}
 
 	return nullptr;
+}*/
+
+template <class D, class S>
+D const* constCastImpl(S const* from, std::true_type) {
+	if (from != nullptr) {
+		void const* res = const_cast<void const*>(const_cast<S *>(from)->_classCast(_typeId<D>()));
+		if (res)
+			return (D const*) res;
+
+		throw ClassCastException(_HERE_, classOf<S>::_class().getName().c_str(), classOf<D>::_class().getName().c_str());
+	}
+
+	return nullptr;
+}
+
+template <class D, class S>
+D const* constCastImpl(S const* from, std::false_type) {
+	if (from != nullptr) {
+		throw ClassCastException(_HERE_, "?", "?");
+	}
+
+	return nullptr;
+}
+
+class Object;
+
+template <class D, class S>
+D const* Class::constCast(S const* from) {
+	return constCastImpl<D, S>(from, std::is_base_of<Object, S>{});
 }
 
 template <class D, class S>

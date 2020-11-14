@@ -529,6 +529,14 @@ public:
 	static const int32_t MAXIMUM_CAPACITY = InternalHashMap<K, V, Pred>::MAXIMUM_CAPACITY;
 protected:
 	SPtr<InternalHashMap<K, V, Pred>> _internalMap;
+
+	virtual InternalHashMap<K, V, Pred> *internalMap() {
+		return _internalMap.get();
+	}
+
+	virtual InternalHashMap<K, V, Pred> const* constInternalMap() const {
+		return _internalMap.get();
+	}
 public:
 	HashMap(size_t initialCapacity = DEFAULT_INITIAL_CAPACITY, float loadFactor = HASH_DEFAULT_LOAD_FACTOR)
 	:_internalMap(std::make_shared<InternalHashMap<K, V, Pred>>(initialCapacity, loadFactor)) {}
@@ -542,7 +550,7 @@ public:
 
 	/** Removes all mappings from this map. */
 	virtual void clear() override {
-		_internalMap->clear();
+		internalMap()->clear();
 	}
 
 	/**
@@ -551,7 +559,7 @@ public:
 	 * @return the number of mappings in this map
 	 */
 	size_t size() const override {
-		return _internalMap->size();
+		return constInternalMap()->size();
 	}
 
 	/**
@@ -559,8 +567,8 @@ public:
 	 *
 	 * @return <i>true</i> if this map contains no mappings
 	 */
-	bool isEmpty() const {
-		return _internalMap->isEmpty();
+	virtual bool isEmpty() const {
+		return constInternalMap()->isEmpty();
 	}
 
 	/**
@@ -576,15 +584,15 @@ public:
 	 * HashMap::containsKey may be used to distinguish between these two cases.
 	 */
 	virtual SPtr<V> get(K const& key) const override {
-		return _internalMap->get(key);
+		return constInternalMap()->get(key);
 	}
 
 	virtual V *getPtr(K const& key) const override {
-		return _internalMap->getPtr(key);
+		return constInternalMap()->getPtr(key);
 	}
 
 	virtual const typename Map<K, V>::Entry *getEntry(const K& key) const override {
-		return _internalMap->getEntry(key);
+		return constInternalMap()->getEntry(key);
 	}
 
 	/**
@@ -593,7 +601,7 @@ public:
 	 * @return <i>true</i> if this map contains a mapping for the specified key.
 	 */
 	virtual bool containsKey(const K& key) const override {
-		return _internalMap->containsKey(key);
+		return constInternalMap()->containsKey(key);
 	}
 
 	/**
@@ -607,7 +615,7 @@ public:
 	 *		previously associated a <i>'NULL'</i> reference with <i>key</i>.)
 	 */
 	virtual SPtr<V> put(SPtr<K> const& key, SPtr<V> const& value) override {
-		return _internalMap->put(key, value);
+		return internalMap()->put(key, value);
 	}
 
 	/**
@@ -621,7 +629,7 @@ public:
 	 *		previously associated a <i>'NULL'</i> reference with <i>key</i>.)
 	 */
 	void insert(const K& key, const V& value) {
-		_internalMap->insert(key, value);
+		internalMap()->insert(key, value);
 	}
 
 	/*template<class K1, class V1>
@@ -664,11 +672,11 @@ public:
 	 *		previously associated a <i>'NULL'</i> reference with <i>key</i>.)
 	 */
 	virtual SPtr<V> remove(const K& key) override {
-		return _internalMap->remove(key);
+		return internalMap()->remove(key);
 	}
 
 	void erase(const K& key) {
-		_internalMap->eraseEntryForKey(key);
+		internalMap()->eraseEntryForKey(key);
 	}
 
 	/** 

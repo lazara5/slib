@@ -13,6 +13,14 @@
 namespace slib {
 namespace expr {
 
+typedef enum {
+	NONE,
+	VALUE,
+	LITERAL,
+	OBJ_CONSTRUCTOR,
+	ARRAY_CONSTRUCTOR
+} PrimaryType;
+
 class ExpressionEvaluator {
 friend class Expression;
 friend class ResultHolder;
@@ -83,10 +91,10 @@ protected:
 	static SPtr<Value> factorValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
 
 	/** @throws EvaluationException */
-	static SPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static SPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type);
 
 	/** @throws EvaluationException */
-	static SPtr<Value> evaluateSymbol(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static SPtr<Value> evaluateSymbol(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type);
 };
 
 } // namespace expr

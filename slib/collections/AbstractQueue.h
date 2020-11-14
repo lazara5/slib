@@ -13,6 +13,8 @@ namespace slib {
 template <class E>
 class AbstractQueue: public Queue<E> {
 public:
+	TYPE_INFO(AbstractQueue, CLASS(AbstractQueue<E>), INHERITS(Queue<E>));
+public:
 	virtual size_t size() const override = 0;
 
 	virtual bool isEmpty() const override {

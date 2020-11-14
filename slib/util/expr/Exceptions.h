@@ -41,6 +41,12 @@ public:
 	:EvaluationException(where, "SyntaxErrorException", msg) {}
 };
 
+class AssertException : public EvaluationException {
+public:
+	AssertException(const char *where, const char *msg)
+	:EvaluationException(where, "AssertException", msg) {}
+};
+
 class MissingSymbolException : public EvaluationException {
 private:
 	SPtr<String> _name;

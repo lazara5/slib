@@ -40,6 +40,11 @@ public:
 		return std::make_shared<Value>(value);
 	}
 
+	template <class T, enableIf<std::is_base_of<Number, T>>...>
+	static SPtr<Value> of(SPtr<T> const& value) {
+		return valueOf(value->doubleValue());
+	}
+
 	static SPtr<Value> of(SPtr<Object> const& value, SPtr<String> const& varName) {
 		return std::make_shared<Value>(value, varName);
 	}
@@ -108,7 +113,7 @@ public:
 		checkNil(*this);
 		if (instanceof<Number>(_value)) {
 			Number *n = Class::castPtr<Number>(_value);
-			return std::make_shared<Value>(std::make_shared<Double>(-n->doubleValue()));
+			return valueOf(-n->doubleValue());
 		}
 		throw EvaluationException(_HERE_, "-", _value->getClass());
 	}
@@ -134,7 +139,7 @@ public:
 
 	/** @throws EvaluationException */
 	SPtr<Value> logicalNegate() {
-		return std::make_shared<Value>(std::make_shared<Integer>(isTrue(_value) ? 0 : 1));
+		return newS<Value>(newS<Integer>(isTrue(_value) ? 0 : 1));
 	}
 
 	/** @throws EvaluationException */
@@ -154,7 +159,7 @@ public:
 				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
 				StringBuilder result(*v1);
 				result += *v2;
-				return std::make_shared<Value>(result.toString());
+				return newS<Value>(result.toString());
 			} else
 				throw EvaluationException(_HERE_, "+", _value->getClass(), other->_value->getClass());
 		} else

@@ -381,10 +381,30 @@ SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 
 	char functionClose = ')';
 
+	// override next char to skip to function
+	char peekOverride = '\0';
+
+	switch(primaryType) {
+		case OBJ_CONSTRUCTOR:
+			functionClose = '}';
+			peekOverride = '(';
+			break;
+		case ARRAY_CONSTRUCTOR:
+			functionClose = ']';
+			peekOverride = '(';
+			break;
+		default:
+			break;
+	}
+
 	bool inFactor = true;
 	while (inFactor) {
 		input->skipBlanks();
 		char nextChar = input->peek();
+		if (peekOverride != '\0') {
+			nextChar = peekOverride;
+			peekOverride = '\0';
+		}
 		switch (nextChar) {
 			case '[':
 				{
@@ -397,11 +417,6 @@ SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 					val = val->index(arg);
 				}
 				break;
-			case '{':
-				if (primaryType == PrimaryType::OBJ_CONSTRUCTOR)
-					functionClose = '}';
-				else
-					throw SyntaxErrorException(_HERE_, "{ only permitted in object constructor");
 			case '(':
 				{
 					if (!instanceof<Function>(val->_value))
@@ -418,9 +433,10 @@ SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 
 					// check for 0 parameters
 					input->skipBlanks();
-					if (input->peek() == functionClose)
+					if (input->peek() == functionClose) {
+						functionClose = ')';
 						input->readChar();
-					else {
+					} else {
 						do {
 							Class const& argClass = params.peek();
 							if (argClass == classOf<Expression>::_class())
@@ -432,6 +448,7 @@ SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 								input->readChar();
 								continue;
 							} else if (input->peek() == functionClose) {
+								functionClose = ')';
 								input->readChar();
 								break;
 							} else
@@ -497,6 +514,9 @@ SPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const&
 	} else if (ch == '{') {
 		type = PrimaryType::OBJ_CONSTRUCTOR;
 		return Value::of(resolver.getVar("::makeObj"), "::makeObj"_SPTR);
+	} else if (ch == '[') {
+		type = PrimaryType::ARRAY_CONSTRUCTOR;
+		return Value::of(resolver.getVar("::makeArray"), "::makeArray"_SPTR);
 	} else if (ch == CharacterIterator::DONE)
 		throw SyntaxErrorException(_HERE_, "Unexpected end of stream");
 	else if (ch == ')')

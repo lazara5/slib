@@ -61,4 +61,9 @@ TEST(ExprTests, ExtraTests) {
 	UPtr<String> res2 = res1->toString();
 	CHECK((instanceof<Map<String, Object>>(res1)));
 	STRCMP_EQUAL("{a=3, b=6, c={d=123, e=3}}", res2->c_str());
+
+	res1 = ExpressionEvaluator::expressionValue(std::make_shared<String>("[1, 2, 3 * 5, {a = 'b', c = [1, 'x'], d = math.abs(-2), e = -1}]"), *resolver);
+	res2 = res1->toString();
+	CHECK((instanceof<List<Object>>(res1)));
+	STRCMP_EQUAL("[1, 2, 15, {a=b, c=[1, x], d=2, e=-1}]", res2->c_str());
 }

@@ -17,6 +17,8 @@ namespace slib {
 
 template <class E, class Cmp = std::less<E>, class Eq = std::equal_to<E> >
 class PriorityQueue : public AbstractQueue<E> {
+public:
+	TYPE_INFO(PriorityQueue, CLASS(PriorityQueue<E, Cmp, Eq>), INHERITS(AbstractQueue<E>));
 private:
 	static const int DEFAULT_CAPACITY = 10;
 
@@ -76,10 +78,6 @@ public:
 		if (initialCapacity < 0)
 			throw IllegalArgumentException(_HERE_, fmt::format("Illegal capacity: {:d}", initialCapacity).c_str());
 		_queue.reserve(initialCapacity);
-	}
-
-	virtual Class const* getClass() const override {
-		return PRIORITYQUEUECLASS();
 	}
 
 	virtual size_t size() const override {

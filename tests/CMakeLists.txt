@@ -17,7 +17,7 @@ set(TESTS_SOURCES
 	Global.h
 	AllTests.cpp
 	TestConfig.cpp
-	TestExpr.cpp
+	TestExpression.cpp
 	TestTypeSystem.cpp
 	TestNumeric.cpp
 )

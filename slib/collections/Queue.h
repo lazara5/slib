@@ -12,6 +12,8 @@ namespace slib {
 template <class E>
 class Queue : public Collection<E> {
 public:
+	TYPE_INFO(Queue, CLASS(Queue<E>), INHERITS(Collection<E>));
+public:
 	virtual bool offer(SPtr<E> const& e) = 0;
 
 	virtual bool offer(const E& e) {

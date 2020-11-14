@@ -7,6 +7,7 @@
 
 #include "slib/lang/Object.h"
 #include "slib/util/Iterator.h"
+#include "slib/lang/StringBuilder.h"
 
 #include <sys/types.h>
 #include <memory>
@@ -40,6 +41,28 @@ public:
 	virtual bool remove(const E& o) = 0;
 
 	virtual void clear() = 0;
+
+	virtual UPtr<String> toString() const override {
+		ConstIterator<SPtr<E>> i = constIterator();
+		if (!i.hasNext())
+			return "[]"_UPTR;
+
+		StringBuilder sb;
+		sb.add('[');
+		do {
+			SPtr<E> const& e = i.next();
+
+			E const* obj = e.get();
+			if (instanceof<Collection<E>>(obj) && Class::constCast<Collection<E>>(obj) == this)
+				sb.add("(this Collection)");
+			else
+				sb.add(slib::toString(obj));
+
+			if (!i.hasNext())
+				return sb.add(']').toString();
+			sb.add(", ");
+		} while (true);
+	}
 };
 
 } // namespace slib

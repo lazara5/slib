@@ -33,9 +33,9 @@ public:
 				return Value::of(std::make_shared<Double>(floor(args.get<Double>(0)->doubleValue())));
 			}
 		));
-		math->put("abs", Function::impl<Double>(
+		math->put("abs", Function::impl<Number>(
 			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
-				return Value::of(std::make_shared<Double>(abs(args.get<Double>(0)->doubleValue())));
+				return Value::of(std::make_shared<Double>(abs(args.get<Number>(0)->doubleValue())));
 			}
 		));
 
@@ -124,6 +124,21 @@ public:
 			}
 		));
 
+		emplace_key<String>("assert", Function::impl<Object>(
+			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
+				int nArgs = args.size();
+				for (int i = 0; i < nArgs - 1; i += 2) {
+					bool val = Value::isTrue(args.getNullable(i));
+					if (!val)
+						throw AssertException(_HERE_, args.get<String>(i + 1)->c_str());
+				}
+				if (nArgs %2 != 0)
+					return Value::of(args.get(nArgs - 1));
+				else
+					return Value::of(""_SPTR);
+			}
+		));
+
 		emplace_key<String>("$", Function::impl<String>(
 			[](Resolver const& resolver, ArgList const& args) {
 				SPtr<String> varName = args.get<String>(0);
@@ -140,12 +155,23 @@ public:
 
 		emplace_key<String>("::makeObj", Function::impl<KeyValueTuple<String>>(
 			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
-				SPtr<Map<String, Object>> map = std::make_shared<LinkedHashMap<String, Object>>();
+				SPtr<Map<String, Object>> map = newS<LinkedHashMap<String, Object>>();
 				for (size_t i = 0; i < args.size(); i++) {
 					SPtr<KeyValueTuple<String>> tuple = args.get<KeyValueTuple<String>>(i);
 					map->put(tuple->key, tuple->value);
 				}
 				return Value::of(map);
+			}
+		));
+
+		emplace_key<String>("::makeArray", Function::impl<Object>(
+			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
+				SPtr<ArrayList<Object>> array = newS<ArrayList<Object>>();
+				for (size_t i = 0; i < args.size(); i++) {
+					SPtr<Object> e = args.get(i);
+					array->add(e);
+				}
+				return Value::of(array);
 			}
 		));
 	}

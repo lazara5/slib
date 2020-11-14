@@ -117,6 +117,18 @@ struct cat<C<Ts1...>, C<Ts2...>, Ts3...>
 
 // ---------------
 
+//Remastered enable_if
+//http://web.archive.org/web/20140703021445/http://flamingdangerzone.com/cxx11/2012/06/01/almost-static-if.html
+
+namespace detail {
+		enum class enabler {};
+}
+
+template <typename Condition>
+using enableIf = typename std::enable_if<Condition::value, detail::enabler>::type;
+
+// ---------------
+
 } // namespace slib
 
 #endif // H_SLIB_UTIL_TEMPLATEUTILS_H

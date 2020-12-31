@@ -37,7 +37,7 @@ UPtr<String> ExpressionInputStream::readDottedNameRemainder() {
 enum class SSMODE { SCAN, ESCAPE, ESCAPE2 };
 
 /** @throws SyntaxErrorException */
-SPtr<Value> ExpressionInputStream::readString() {
+UPtr<Value> ExpressionInputStream::readString() {
 	// read ' or "
 	char delimiter = readChar();
 	StringBuilder str;
@@ -107,13 +107,13 @@ SPtr<Value> ExpressionInputStream::readString() {
 				break;
 		}
 	} while (!complete);
-	return std::make_shared<Value>(str.toString());
+	return Value::of(str.toString());
 }
 
-SPtr<Value> ExpressionInputStream::readNumber() {
+UPtr<Value> ExpressionInputStream::readNumber() {
 	UPtr<String> str = readReal();
 	try {
-		return std::make_shared<Value>(Number::createNumber(str));
+		return Value::of(Number::createNumber(str));
 	} catch (NumberFormatException const& e) {
 		throw EvaluationException(_HERE_, "Error parsing numeric value", e);
 	}
@@ -124,7 +124,7 @@ UPtr<String> ExpressionInputStream::readReal() {
 	skipBlanks();
 	char ch = peek();
 	if (ch == CharacterIterator::DONE)
-		return std::make_unique<String>("");
+		return ""_UPTR;
 	if ((ch == '-') || (ch == '+')) {
 		s.add(readChar());
 		skipBlanks();
@@ -223,7 +223,7 @@ SPtr<Expression> ExpressionInputStream::readArg() {
 				break;
 		}
 	} while (!complete);
-	return std::make_shared<Expression>(str.toString());
+	return newS<Expression>(str.toString());
 }
 
 } // namespace expr

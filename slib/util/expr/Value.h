@@ -24,37 +24,37 @@ private:
 	SPtr<Object> _value;
 	SPtr<String> _name;
 protected:
-	static SPtr<Value> valueOf(double d) {
+	static UPtr<Value> valueOf(double d) {
 		if (Number::isMathematicalInteger(d)) {
 			if ((d <= Double::MAX_SAFE_INTEGER) && (d >= Double::MIN_SAFE_INTEGER))
-				return newS<Value>(newS<Long>((int64_t)d));
+				return newU<Value>(newS<Long>((int64_t)d));
 		}
-		return newS<Value>(newS<Double>(d));
+		return newU<Value>(newS<Double>(d));
 	}
 public:
 	Value(SPtr<Object> const& value, SPtr<String> const& name = nullptr)
 	:_value(value)
 	,_name(name) {}
 
-	static SPtr<Value> of(SPtr<Object> const& value) {
-		return std::make_shared<Value>(value);
+	static UPtr<Value> of(SPtr<Object> const& value) {
+		return newU<Value>(value);
 	}
 
 	template <class T, enableIf<std::is_base_of<Number, T>>...>
-	static SPtr<Value> of(SPtr<T> const& value) {
+	static UPtr<Value> of(SPtr<T> const& value) {
 		return valueOf(value->doubleValue());
 	}
 
-	static SPtr<Value> of(SPtr<Object> const& value, SPtr<String> const& varName) {
-		return std::make_shared<Value>(value, varName);
+	static UPtr<Value> of(SPtr<Object> const& value, SPtr<String> const& varName) {
+		return newU<Value>(value, varName);
 	}
 
-	static SPtr<Value> Nil() {
-		return std::make_shared<Value>(nullptr, nullptr);
+	static UPtr<Value> Nil() {
+		return newU<Value>(nullptr, nullptr);
 	}
 
-	static SPtr<Value> Nil(SPtr<String> const& varName) {
-		return std::make_shared<Value>(nullptr, varName);
+	static UPtr<Value> Nil(SPtr<String> const& varName) {
+		return newU<Value>(nullptr, varName);
 	}
 
 	SPtr<Object> getValue() const {
@@ -65,8 +65,8 @@ public:
 		return _name;
 	}
 
-	SPtr<Value> clone() {
-		return std::make_shared<Value>(_value, _name);
+	UPtr<Value> clone() {
+		return newU<Value>(_value, _name);
 	}
 
 	bool isNil() const {
@@ -109,7 +109,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	SPtr<Value> inverse() {
+	UPtr<Value> inverse() {
 		checkNil(*this);
 		if (instanceof<Number>(_value)) {
 			Number *n = Class::castPtr<Number>(_value);
@@ -133,17 +133,17 @@ public:
 		return true;
 	}
 
-	static bool isTrue(SPtr<Value> const& v) {
+	static bool isTrue(UPtr<Value> const& v) {
 		return isTrue(v->_value);
 	}
 
 	/** @throws EvaluationException */
-	SPtr<Value> logicalNegate() {
-		return newS<Value>(newS<Integer>(isTrue(_value) ? 0 : 1));
+	UPtr<Value> logicalNegate() {
+		return newU<Value>(newS<Integer>(isTrue(_value) ? 0 : 1));
 	}
 
 	/** @throws EvaluationException */
-	SPtr<Value> add(SPtr<Value> const& other) {
+	UPtr<Value> add(UPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -159,7 +159,7 @@ public:
 				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
 				StringBuilder result(*v1);
 				result += *v2;
-				return newS<Value>(result.toString());
+				return newU<Value>(result.toString());
 			} else
 				throw EvaluationException(_HERE_, "+", _value->getClass(), other->_value->getClass());
 		} else
@@ -167,7 +167,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	SPtr<Value> subtract(SPtr<Value> const& other) {
+	UPtr<Value> subtract(UPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -181,16 +181,16 @@ public:
 			throw EvaluationException(_HERE_, "-", _value->getClass(), other->_value->getClass());
 	}
 
-	SPtr<Value> logicalAnd(SPtr<Value> const& other) {
-		return (isTrue(_value) ? other : clone());
+	UPtr<Value> logicalAnd(UPtr<Value> &other) {
+		return (isTrue(_value) ? std::move(other) : clone());
 	}
 
-	SPtr<Value> logicalOr(SPtr<Value> const& other) {
-		return (isTrue(_value) ? clone() : other);
+	UPtr<Value> logicalOr(UPtr<Value> &other) {
+		return (isTrue(_value) ? clone() : std::move(other));
 	}
 
 	/** @throws EvaluationException */
-	SPtr<Value> multiply(SPtr<Value> const& other) {
+	UPtr<Value> multiply(UPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -205,7 +205,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	SPtr<Value> divide(SPtr<Value> const& other) {
+	UPtr<Value> divide(UPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -220,7 +220,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	SPtr<Value> remainder(SPtr<Value> const& other) {
+	UPtr<Value> remainder(UPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -235,7 +235,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool gt(SPtr<Value> const& other) {
+	bool gt(UPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -257,7 +257,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool gte(SPtr<Value> const& other) {
+	bool gte(UPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -279,7 +279,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool lt(SPtr<Value> const& other) {
+	bool lt(UPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -301,7 +301,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool lte(SPtr<Value> const& other) {
+	bool lte(UPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
@@ -323,7 +323,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool eq(SPtr<Value> const& other) {
+	bool eq(UPtr<Value> const& other) {
 		if ((!this->_value) || (!other->_value))
 			return ((!this->_value) && (!other->_value));
 		if (instanceof<Number>(_value)) {
@@ -346,7 +346,7 @@ public:
 
 private:
 	/** @throws EvaluationException */
-	int64_t getIndex(SPtr<Value> const& arg) {
+	int64_t getIndex(UPtr<Value> const& arg) {
 		if (!instanceof<Number>(arg->_value))
 			throw EvaluationException(_HERE_, fmt::format("Operator '[]': expected numeric index, got '{}'", arg->_value->getClass().getName()).c_str());
 		Number *index = Class::castPtr<Number>(arg->_value);
@@ -357,7 +357,7 @@ private:
 
 public:
 	/** @throws EvaluationException */
-	SPtr<Value> index(SPtr<Value> const& arg) {
+	UPtr<Value> index(UPtr<Value> const& arg) {
 		checkNil(*this);
 		checkNil(*arg);
 		/*if (instanceof<Map<String, Object>>(_value)) {
@@ -365,7 +365,7 @@ public:
 				(Class::castPtr<Map<String, Object>>(_value))->get(*Class::castPtr<String>(arg->_value))
 			);*/
 		if (instanceof<Map<Object, Object>>(_value)) {
-			return std::make_shared<Value>(
+			return newU<Value>(
 					(Class::castPtr<Map<Object, Object>>(_value))->get(*Class::castPtr<Object>(arg->_value))
 			);
 		// TODO: Array
@@ -374,13 +374,13 @@ public:
 			int64_t i = getIndex(arg);
 			if ((i < 0) || (i >= (int64_t)list->size()))
 				throw EvaluationException(_HERE_, "Array index out of bounds");
-			return std::make_shared<Value>(list->get((int)i));
+			return newU<Value>(list->get((int)i));
 		} else
 			throw EvaluationException(_HERE_, "[]", _value->getClass());
 	}
 
 	/** @throws EvaluationException */
-	SPtr<Value> member(SPtr<String> const& memberName, Resolver const& resolver) {
+	UPtr<Value> member(SPtr<String> const& memberName, Resolver const& resolver) {
 		if (isNil()) {
 			// maybe it is a dotted variable name
 			if (!_name) {
@@ -390,13 +390,13 @@ public:
 			SPtr<String> dottedName = std::make_shared<String>(fmt::format("{}.{}", *_name, *memberName));
 			SPtr<Object> val = resolver.getVar(*dottedName);
 			if (val)
-				return std::make_shared<Value>(val);
+				return newU<Value>(val);
 			return Nil(dottedName);
 		} else {
 			if (instanceof<Resolver>(_value))
-				return std::make_shared<Value>((Class::cast<Resolver>(_value))->getVar(*memberName), memberName);
+				return newU<Value>((Class::cast<Resolver>(_value))->getVar(*memberName), memberName);
 			else if (instanceof<Map<String, Object>>(_value)) {
-				return std::make_shared<Value>((Class::cast<Map<String, Object>>(_value))->get(*memberName), memberName);
+				return newU<Value>((Class::cast<Map<String, Object>>(_value))->get(*memberName), memberName);
 			} else
 				throw EvaluationException(_HERE_, ".", _value->getClass());
 		}

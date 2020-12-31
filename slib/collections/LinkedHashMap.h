@@ -84,7 +84,7 @@ protected:
 public:
 	InternalLinkedHashMap(int32_t initialCapacity = DEFAULT_INITIAL_CAPACITY, float loadFactor = HASH_DEFAULT_LOAD_FACTOR)
 	:InternalHashMap<K, V, Pred>(initialCapacity, loadFactor) {
-		_header = new Entry(-1, std::make_shared<K>(), nullptr, nullptr);
+		_header = new Entry(-1, newS<K>(), nullptr, nullptr);
 		_header->_before = _header->_after = _header;
 	}
 
@@ -233,10 +233,12 @@ protected:
 	}
 public:
 	LinkedHashMap(int32_t initialCapacity = DEFAULT_INITIAL_CAPACITY, float loadFactor = HASH_DEFAULT_LOAD_FACTOR)
-	:_internalMap(std::make_shared<InternalLinkedHashMap<K, V, Pred>>(initialCapacity, loadFactor)) {}
+	: HashMap<K,V,Pred>(nullptr)
+	, _internalMap(std::make_shared<InternalLinkedHashMap<K, V, Pred>>(initialCapacity, loadFactor)) {}
 
 	LinkedHashMap(const LinkedHashMap& other)
-	:_internalMap(std::make_shared<InternalLinkedHashMap<K, V, Pred>>(*other._internalMap)) {}
+	: HashMap<K,V,Pred>(nullptr)
+	, _internalMap(std::make_shared<InternalLinkedHashMap<K, V, Pred>>(*other._internalMap)) {}
 
 	/**
 	 * Copies all mappings from <i>other</i> to this map. Does <b>not</b> clear

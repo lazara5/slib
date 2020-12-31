@@ -10,7 +10,7 @@ namespace expr {
 
 Expression::~Expression() {}
 
-SPtr<Value> Expression::evaluate(Resolver const& resolver) {
+UPtr<Value> Expression::evaluate(Resolver const& resolver) {
 	return ExpressionEvaluator::expressionValue(std::make_shared<ExpressionInputStream>(_text), resolver);
 }
 

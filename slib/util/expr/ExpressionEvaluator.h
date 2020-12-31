@@ -70,7 +70,7 @@ public:
 	static SPtr<Object> expressionValue(SPtr<BasicString> const& input, Resolver const& resolver);
 
 	/** @throws EvaluationException */
-	static SPtr<Value> expressionValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static UPtr<Value> expressionValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
 
 	/** @throws EvaluationException */
 	static UPtr<String> interpolate(String const& pattern, Resolver const& resolver, bool ignoreMissing);
@@ -82,19 +82,19 @@ protected:
 	static UPtr<String> strExpressionValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
 
 	/** @throws EvaluationException */
-	static SPtr<Value> prefixTermValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static UPtr<Value> prefixTermValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
 
 	/** @throws EvaluationException */
-	static SPtr<Value> termValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static UPtr<Value> termValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
 
 	/** @throws EvaluationException */
-	static SPtr<Value> factorValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static UPtr<Value> factorValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
 
 	/** @throws EvaluationException */
-	static SPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type);
+	static UPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type);
 
 	/** @throws EvaluationException */
-	static SPtr<Value> evaluateSymbol(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type);
+	static UPtr<Value> evaluateSymbol(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type);
 };
 
 } // namespace expr

@@ -10,18 +10,11 @@
 namespace slib {
 
 class Character : virtual public Object {
-public:
-	static constexpr StringView _className {"Character"_SV};
-	typedef typename inherits<Object>::types _classInherits;
 private:
 	char _value;
 public:
 	Character(char value)
 	:_value(value) {}
-
-	virtual Class const& getClass() const override {
-		return classOf<Character>::_class();
-	}
 
 	virtual int32_t hashCode() const override {
 		return (int32_t)_value;
@@ -32,7 +25,7 @@ public:
 	}
 
 	static UPtr<String> toString(char c) {
-		return std::make_unique<String>(c);
+		return newU<String>(c);
 	}
 
 	virtual UPtr<String> toString() const override {

@@ -75,7 +75,7 @@ bool FormatToken::setFlag(char c) {
 //--------------------------------------------------------------------------------------
 
 SPtr<FormatToken> ParserStateMachine::getNextFormatToken() {
-	_token = std::make_shared<FormatToken>();
+	_token = newS<FormatToken>();
 	_token->setFormatStringStartIndex(_format->position());
 
 	// FINITE STATE MACHINE
@@ -417,7 +417,7 @@ static SPtr<String> formatInteger(SPtr<FormatToken> const& token, SPtr<Object> c
 	else
 		throw IllegalFormatConversionException(_HERE_, token->getConversionType(), arg->getClass());
 
-	return std::make_shared<String>(fmt::sprintf(token->getFormat()->c_str(), value));
+	return newS<String>(fmt::sprintf(token->getFormat()->c_str(), value));
 }
 
 static SPtr<String> formatFloat(SPtr<FormatToken> const& token, SPtr<Object> const& arg) {
@@ -441,7 +441,7 @@ static SPtr<String> formatFloat(SPtr<FormatToken> const& token, SPtr<Object> con
 	else
 		throw IllegalFormatConversionException(_HERE_, token->getConversionType(), arg->getClass());
 
-	return std::make_shared<String>(fmt::sprintf(token->getFormat()->c_str(), value));
+	return newS<String>(fmt::sprintf(token->getFormat()->c_str(), value));
 }
 
 static SPtr<String> formatArg(SPtr<FormatToken> const& token, SPtr<Object> const& arg) {
@@ -488,7 +488,7 @@ static SPtr<String> formatArg(SPtr<FormatToken> const& token, SPtr<Object> const
 
 void ExpressionFormatter::format(StringBuilder &out, ArgList const& args, Resolver const& resolver SLIB_UNUSED) {
 	SPtr<String> format = args.get<String>(0);
-	SPtr<CharBuffer> formatBuffer = std::make_shared<CharBuffer>(format);
+	SPtr<CharBuffer> formatBuffer = newS<CharBuffer>(format);
 	ParserStateMachine parser(formatBuffer);
 
 	bool allowNil = false;

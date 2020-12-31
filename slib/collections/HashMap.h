@@ -537,12 +537,14 @@ protected:
 	virtual InternalHashMap<K, V, Pred> const* constInternalMap() const {
 		return _internalMap.get();
 	}
+	HashMap(SPtr<InternalHashMap<K, V, Pred>> internalMap)
+	: _internalMap(internalMap) {}
 public:
 	HashMap(size_t initialCapacity = DEFAULT_INITIAL_CAPACITY, float loadFactor = HASH_DEFAULT_LOAD_FACTOR)
-	:_internalMap(std::make_shared<InternalHashMap<K, V, Pred>>(initialCapacity, loadFactor)) {}
+	: HashMap(newS<InternalHashMap<K, V, Pred>>(initialCapacity, loadFactor)) {}
 
 	HashMap(const HashMap& other)
-	:_internalMap(std::make_shared<InternalHashMap<K, V, Pred>>(other._internalMap)) {}
+	: HashMap(newS<InternalHashMap<K, V, Pred>>(other._internalMap)) {}
 
 	HashMap(std::initializer_list<std::pair<K, SPtr<V>>> args) {
 		put(args);
@@ -655,7 +657,7 @@ public:
 
 	void put(std::initializer_list<std::pair<const K, V>> args) {
 		for (auto i = args.begin(); i != args.end(); ++i)
-			put(i->first, std::make_shared<V>(i->second));
+			put(i->first, newS<V>(i->second));
 	}
 
 	void put(std::initializer_list<std::pair<const K, SPtr<V>>> args) {

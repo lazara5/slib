@@ -70,13 +70,13 @@ public:
 	UPtr<String> readDottedNameRemainder();
 
 	/** @throws SyntaxErrorException */
-	SPtr<Value> readString();
+	UPtr<Value> readString();
 
 	/** @throws SyntaxErrorException */
 	SPtr<Expression> readArg();
 
 	/** @throws EvaluationException */
-	SPtr<Value> readNumber();
+	UPtr<Value> readNumber();
 };
 
 } // namespace expr

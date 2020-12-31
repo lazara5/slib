@@ -40,7 +40,7 @@ public:
 
 template <class T>
 UPtr<String> toStringImpl(T const* obj SLIB_UNUSED, std::false_type) {
-	return std::make_unique<String>("");
+	return newU<String>("");
 }
 
 template <class T>

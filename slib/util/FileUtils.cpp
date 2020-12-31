@@ -107,7 +107,7 @@ bool FileUtils::isPathAbsolute(String const& path) {
 UPtr<String> FileUtils::buildPath(String const& dir, String const& name) {
 	StringBuilder path(name);
 	if (dir.isEmpty())
-		return std::make_unique<String>(name);
+		return newU<String>(name);
 	if (!isPathAbsolute(name)) {
 		size_t l = dir.length();
 		if (l > 0 && String::endsWith(CPtr(dir), '/'))
@@ -121,7 +121,7 @@ UPtr<String> FileUtils::buildPath(String const& dir, String const& name) {
 UPtr<String> FileUtils::getPath(String const& fileName) {
 	std::ptrdiff_t lastSep = String::lastIndexOf(CPtr(fileName), '/');
 	if (lastSep < 0)
-		return std::make_unique<String>(fileName);
+		return newU<String>(fileName);
 	return fileName.substring(0, (size_t)lastSep);
 }
 

@@ -28,19 +28,19 @@ SPtr<Object> ExpressionEvaluator::InternalResolver::getVar(const String &key) co
 ExpressionEvaluator::LoopResolver::~LoopResolver() {}
 
 UPtr<String> ExpressionEvaluator::strExpressionValue(SPtr<BasicString> const& input, Resolver const& resolver) {
-	return strExpressionValue(std::make_shared<ExpressionInputStream>(input), InternalResolver(resolver));
+	return strExpressionValue(newS<ExpressionInputStream>(input), InternalResolver(resolver));
 }
 
 SPtr<Object> ExpressionEvaluator::expressionValue(const SPtr<BasicString> &input, Resolver const& resolver) {
-	SPtr<Value> val = expressionValue(std::make_shared<ExpressionInputStream>(input), InternalResolver(resolver));
+	SPtr<Value> val = expressionValue(newS<ExpressionInputStream>(input), InternalResolver(resolver));
 	if (val->_value) {
 		if (instanceof<Double>(val->_value)) {
 			double d = Class::cast<Double>(val->_value)->doubleValue();
 			if (Number::isMathematicalInteger(d)) {
 				int32_t i = (int32_t)d;
 				if (i == d)
-					return std::make_shared<Integer>(i);
-				return std::make_shared<Long>((uint64_t)d);
+					return newS<Integer>(i);
+				return newS<Long>((uint64_t)d);
 			}
 		}
 	}
@@ -66,10 +66,10 @@ UPtr<String> ExpressionEvaluator::strExpressionValue(const SPtr<ExpressionInputS
 		return val->_value->toString();
 }
 
-SPtr<Value> ExpressionEvaluator::expressionValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver) {
+UPtr<Value> ExpressionEvaluator::expressionValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver) {
 	input->skipBlanks();
 
-	SPtr<Value> val = prefixTermValue(input, resolver);
+	UPtr<Value> val = prefixTermValue(input, resolver);
 	input->skipBlanks();
 	while (input->peek() == '+' || input->peek() == '-' ||
 		   input->peek() == '&' || input->peek() == '|' ||
@@ -100,7 +100,7 @@ SPtr<Value> ExpressionEvaluator::expressionValue(SPtr<ExpressionInputStream> con
 		}
 
 		input->skipBlanks();
-		SPtr<Value> nextVal = prefixTermValue(input, resolver);
+		UPtr<Value> nextVal = prefixTermValue(input, resolver);
 		switch (op) {
 			case '+':
 				val = val->add(nextVal);
@@ -115,22 +115,22 @@ SPtr<Value> ExpressionEvaluator::expressionValue(SPtr<ExpressionInputStream> con
 				val = val->logicalOr(nextVal);
 				break;
 			case '<':
-				val = std::make_shared<Value>(std::make_shared<Integer>(val->lt(nextVal) ? 1 : 0));
+				val = newU<Value>(newS<Integer>(val->lt(nextVal) ? 1 : 0));
 				break;
 			case OP_LTE:
-				val = std::make_shared<Value>(std::make_shared<Integer>(val->lte(nextVal) ? 1 : 0));
+				val = newU<Value>(newS<Integer>(val->lte(nextVal) ? 1 : 0));
 				break;
 			case '>':
-				val = std::make_shared<Value>(std::make_shared<Integer>(val->gt(nextVal) ? 1 : 0));
+				val = newU<Value>(newS<Integer>(val->gt(nextVal) ? 1 : 0));
 				break;
 			case OP_GTE:
-				val = std::make_shared<Value>(std::make_shared<Integer>(val->gte(nextVal) ? 1 : 0));
+				val = newU<Value>(newS<Integer>(val->gte(nextVal) ? 1 : 0));
 				break;
 			case OP_EQ:
-				val = std::make_shared<Value>(std::make_shared<Integer>(val->eq(nextVal) ? 1 : 0));
+				val = newU<Value>(newS<Integer>(val->eq(nextVal) ? 1 : 0));
 				break;
 			case OP_NEQ:
-				val = std::make_shared<Value>(std::make_shared<Integer>(val->eq(nextVal) ? 0 : 1));
+				val = newU<Value>(newS<Integer>(val->eq(nextVal) ? 0 : 1));
 				break;
 			default:
 				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
@@ -184,7 +184,7 @@ UPtr<String> ExpressionEvaluator::interpolate(String const& pattern, Resolver co
 				if (c == '}') {
 					SPtr<String> expr = pattern.substring(dollarBegin + 2, pos);
 					try {
-						UPtr<String> exprValue = strExpressionValue(std::make_shared<ExpressionInputStream>(expr), resolver);
+						UPtr<String> exprValue = strExpressionValue(newS<ExpressionInputStream>(expr), resolver);
 						result.add(*exprValue);
 					} catch (MissingSymbolException const& e) {
 						if (ignoreMissing) {
@@ -219,7 +219,7 @@ private:
 
 	/** @throws EvaluationException */
 	void convertToString() {
-		_strResult = std::make_unique<StringBuilder>();
+		_strResult = newU<StringBuilder>();
 		if (_result) {
 			_strResult->add(*_result->asString());
 			_result = nullptr;
@@ -232,9 +232,9 @@ public:
 			convertToString();
 
 		if (_strResult)
-			_strResult->add(ExpressionEvaluator::strExpressionValue(std::make_shared<ExpressionInputStream>(expr), resolver));
+			_strResult->add(ExpressionEvaluator::strExpressionValue(newS<ExpressionInputStream>(expr), resolver));
 		else
-			_result = ExpressionEvaluator::expressionValue(std::make_shared<ExpressionInputStream>(expr), ExpressionEvaluator::InternalResolver(resolver));
+			_result = ExpressionEvaluator::expressionValue(newS<ExpressionInputStream>(expr), ExpressionEvaluator::InternalResolver(resolver));
 	}
 
 	/** @throws EvaluationException */
@@ -264,7 +264,7 @@ public:
 	SPtr<Object> toObject() {
 		if (!_strResult) {
 			if (!_result)
-				return std::make_shared<String>("");
+				return ""_SPTR;
 			return _result->_value;
 		} else
 			return _strResult->toString();
@@ -334,7 +334,7 @@ SPtr<Object> ExpressionEvaluator::smartInterpolate(String const& pattern, Resolv
 		return result.toObject();
 	}
 
-SPtr<Value> ExpressionEvaluator::prefixTermValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver) {
+UPtr<Value> ExpressionEvaluator::prefixTermValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver) {
 	bool negative = false;
 	bool negate = false;
 
@@ -346,7 +346,7 @@ SPtr<Value> ExpressionEvaluator::prefixTermValue(SPtr<ExpressionInputStream> con
 		negate = true;
 	}
 
-	SPtr<Value> val = termValue(input, resolver);
+	UPtr<Value> val = termValue(input, resolver);
 	if (negative)
 		val = val->inverse();
 	else if (negate)
@@ -355,13 +355,13 @@ SPtr<Value> ExpressionEvaluator::prefixTermValue(SPtr<ExpressionInputStream> con
 	return val;
 }
 
-SPtr<Value> ExpressionEvaluator::termValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver) {
+UPtr<Value> ExpressionEvaluator::termValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver) {
 	input->skipBlanks();
-	SPtr<Value> val = factorValue(input, resolver);
+	UPtr<Value> val = factorValue(input, resolver);
 	input->skipBlanks();
 	while (input->peek() == '*' || input->peek() == '/' || input->peek() == '%') {
 		char op = input->readChar();
-		SPtr<Value> nextVal = factorValue(input, resolver);
+		UPtr<Value> nextVal = factorValue(input, resolver);
 		if (op == '*')
 			val = val->multiply(nextVal);
 		else if (op == '/')
@@ -373,11 +373,11 @@ SPtr<Value> ExpressionEvaluator::termValue(SPtr<ExpressionInputStream> const& in
 	return val;
 }
 
-SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver) {
+UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver) {
 	input->skipBlanks();
 
 	PrimaryType primaryType = PrimaryType::NONE;
-	SPtr<Value> val = primaryValue(input, resolver, primaryType);
+	UPtr<Value> val = primaryValue(input, resolver, primaryType);
 
 	char functionClose = ')';
 
@@ -409,7 +409,7 @@ SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 			case '[':
 				{
 					input->readChar();
-					SPtr<Value> arg = expressionValue(input, resolver);
+					UPtr<Value> arg = expressionValue(input, resolver);
 					input->skipBlanks();
 					if (input->peek() != ']')
 						throw SyntaxErrorException(_HERE_, "Missing right bracket after array argument");
@@ -428,7 +428,7 @@ SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 					SPtr<Function> func = Class::cast<Function>(val->_value);
 					SPtr<String> symbolName = val->getName();
 					if (!symbolName)
-						symbolName = std::make_shared<String>("<unknown>");
+						symbolName = "<unknown>"_SPTR;
 					FunctionArgs params(func, symbolName);
 
 					// check for 0 parameters
@@ -488,7 +488,7 @@ SPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 	return val;
 }
 
-SPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type) {
+UPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type) {
 	type = PrimaryType::NONE;
 
 	input->skipBlanks();
@@ -502,7 +502,7 @@ SPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const&
 	} else if (ch == '(') {
 		type = PrimaryType::VALUE;
 		input->readChar();
-		SPtr<Value> val = expressionValue(input, resolver);
+		UPtr<Value> val = expressionValue(input, resolver);
 		input->skipBlanks();
 		if (input->peek() != ')')
 			throw SyntaxErrorException(_HERE_, "Missing right paranthesis");
@@ -527,7 +527,7 @@ SPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const&
 		throw SyntaxErrorException(_HERE_, fmt::format("Unexpected character '{}' encountered", ch).c_str());
 }
 
-SPtr<Value> ExpressionEvaluator::evaluateSymbol(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type) {
+UPtr<Value> ExpressionEvaluator::evaluateSymbol(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type) {
 	UPtr<String> symbolName = input->readName();
 	input->skipBlanks();
 	char ch = input->peek();
@@ -539,7 +539,7 @@ SPtr<Value> ExpressionEvaluator::evaluateSymbol(SPtr<ExpressionInputStream> cons
 		type = PrimaryType::VALUE;
 		SPtr<Object> value = resolver.getVar(*symbolName);
 		if (value)
-			return std::make_shared<Value>(value, std::move(symbolName));
+			return newU<Value>(value, std::move(symbolName));
 		return Value::Nil(std::move(symbolName));
 	}
 }

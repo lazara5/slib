@@ -18,28 +18,28 @@ public:
 		// constants
 		emplace<String, Boolean>("true", true);
 		emplace<String, Boolean>("false", false);
-		put(std::make_shared<String>("nil"), nullptr);
+		put("nil"_SPTR, nullptr);
 
-		SPtr<Map<String, Object>> math = std::make_shared<HashMap<String, Object>>();
-		emplace_key<String>("math", math);
+		SPtr<Map<String, Object>> math = newS<HashMap<String, Object>>();
+		emplaceKey<String>("math", math);
 
-		math->put("ceil", Function::impl<Double>(
+		math->emplaceKey<String>("ceil", Function::impl<Double>(
 			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
-				return Value::of(std::make_shared<Double>(ceil(args.get<Double>(0)->doubleValue())));
+				return Value::of(newS<Double>(ceil(args.get<Double>(0)->doubleValue())));
 			}
 		));
-		math->put("floor", Function::impl<Double>(
+		math->emplaceKey<String>("floor", Function::impl<Double>(
 			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
-				return Value::of(std::make_shared<Double>(floor(args.get<Double>(0)->doubleValue())));
+				return Value::of(newS<Double>(floor(args.get<Double>(0)->doubleValue())));
 			}
 		));
-		math->put("abs", Function::impl<Number>(
+		math->emplaceKey<String>("abs", Function::impl<Number>(
 			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
-				return Value::of(std::make_shared<Double>(abs(args.get<Number>(0)->doubleValue())));
+				return Value::of(newS<Double>(abs(args.get<Number>(0)->doubleValue())));
 			}
 		));
 
-		emplace_key<String>("format", Function::impl<String>(
+		emplaceKey<String>("format", Function::impl<String>(
 			[](Resolver const& resolver, ArgList const& args) {
 				StringBuilder result;
 				ExpressionFormatter::format(result, args, resolver);
@@ -47,7 +47,7 @@ public:
 			}
 		));
 
-		emplace_key<String>("if", Function::impl<Object, Expression, Expression>(
+		emplaceKey<String>("if", Function::impl<Object, Expression, Expression>(
 			[](Resolver const& resolver, ArgList const& args) {
 				bool val = Value::isTrue(args.getNullable(0));
 				if (val)
@@ -56,12 +56,12 @@ public:
 					if (args.size() > 2)
 						return (args.get<Expression>(2))->evaluate(resolver);
 					else
-						return Value::of(std::make_shared<String>(""));
+						return Value::of(""_SPTR);
 				}
 			}
 		));
 
-		emplace_key<String>("for", Function::impl<String, Object, Expression, Expression, Expression>(
+		emplaceKey<String>("for", Function::impl<String, Object, Expression, Expression, Expression>(
 			[](Resolver const& resolver, ArgList const& args) {
 				size_t nArgs = args.size();
 				if (nArgs == 5) {
@@ -75,16 +75,16 @@ public:
 					ExpressionEvaluator::LoopResolver loopResolver(loopVarName, resolver);
 					loopResolver.setVar(initialValue);
 
-					SPtr<Value> finalValue = Value::Nil();
+					UPtr<Value> finalValue = Value::Nil();
 					bool cond = true;
 
 					while (cond) {
-						SPtr<Value> condValue = condExpression->evaluate(loopResolver);
+						UPtr<Value> condValue = condExpression->evaluate(loopResolver);
 						if (!Value::isTrue(condValue))
 							break;
-						SPtr<Value> exprValue = evalExpression->evaluate(loopResolver);
+						UPtr<Value> exprValue = evalExpression->evaluate(loopResolver);
 						if (finalValue->isNil())
-							finalValue = exprValue;
+							finalValue = std::move(exprValue);
 						else
 							finalValue = finalValue->add(exprValue);
 						SPtr<Value> updatedValue = updateExpression->evaluate(loopResolver);
@@ -101,7 +101,7 @@ public:
 
 						ExpressionEvaluator::LoopResolver loopResolver(loopVarName, resolver);
 
-						SPtr<Value> finalValue = Value::Nil();
+						UPtr<Value> finalValue = Value::Nil();
 
 						ConstIterable<Object> *i = Class::castPtr<ConstIterable<Object>>(iterable);
 						ConstIterator<SPtr<Object>> iter = i->constIterator();
@@ -109,9 +109,9 @@ public:
 							SPtr<Object> val = iter.next();
 							loopResolver.setVar(val);
 
-							SPtr<Value> exprValue = evalExpression->evaluate(loopResolver);
+							UPtr<Value> exprValue = evalExpression->evaluate(loopResolver);
 							if (finalValue->isNil())
-								finalValue = exprValue;
+								finalValue = std::move(exprValue);
 							else
 								finalValue = finalValue->add(exprValue);
 						}
@@ -124,7 +124,7 @@ public:
 			}
 		));
 
-		emplace_key<String>("assert", Function::impl<Object>(
+		emplaceKey<String>("assert", Function::impl<Object>(
 			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
 				int nArgs = args.size();
 				for (int i = 0; i < nArgs - 1; i += 2) {
@@ -139,7 +139,7 @@ public:
 			}
 		));
 
-		emplace_key<String>("$", Function::impl<String>(
+		emplaceKey<String>("$", Function::impl<String>(
 			[](Resolver const& resolver, ArgList const& args) {
 				SPtr<String> varName = args.get<String>(0);
 				SPtr<Object> value = resolver.getVar(*varName);
@@ -147,13 +147,13 @@ public:
 			}
 		));
 
-		emplace_key<String>("#", Function::impl<String>(
+		emplaceKey<String>("#", Function::impl<String>(
 			[](Resolver const& resolver, ArgList const& args) {
 				return ExpressionEvaluator::expressionValue(std::make_shared<ExpressionInputStream>(args.get<String>(0)), resolver);
 			}
 		));
 
-		emplace_key<String>("::makeObj", Function::impl<KeyValueTuple<String>>(
+		emplaceKey<String>("::makeObj", Function::impl<KeyValueTuple<String>>(
 			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
 				SPtr<Map<String, Object>> map = newS<LinkedHashMap<String, Object>>();
 				for (size_t i = 0; i < args.size(); i++) {
@@ -164,7 +164,7 @@ public:
 			}
 		));
 
-		emplace_key<String>("::makeArray", Function::impl<Object>(
+		emplaceKey<String>("::makeArray", Function::impl<Object>(
 			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
 				SPtr<ArrayList<Object>> array = newS<ArrayList<Object>>();
 				for (size_t i = 0; i < args.size(); i++) {
@@ -181,7 +181,7 @@ public:
 
 Builtins::~Builtins() {}
 
-UPtr<Map<String, Object>> ExpressionEvaluator::_builtins = std::make_unique<Builtins>();
+UPtr<Map<String, Object>> ExpressionEvaluator::_builtins = newU<Builtins>();
 
 } // namespace expr
 } // namespace slib

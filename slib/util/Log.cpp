@@ -31,7 +31,7 @@ Log::Level Log::_staticLevel = Log::Level::Info;
 template <typename Mutex>
 class syslogSink : public spdlog::sinks::base_sink<Mutex> {
 public:
-	syslogSink(int syslog_option = 0, int facility = LOG_USER)
+	syslogSink(int syslog_option SLIB_UNUSED = 0, int facility = LOG_USER)
 	:_facility(facility) {
 		_priorities[static_cast<int>(spdlog::level::trace)] = LOG_DEBUG;
 		_priorities[static_cast<int>(spdlog::level::debug)] = LOG_DEBUG;
@@ -127,7 +127,7 @@ static UPtr<String> getNextParam(ConstIterator<SPtr<String>> &params, String con
 	if (params.hasNext())
 		return params.next()->trim();
 	else
-		return std::make_unique<String>(defaultValue);
+		return newU<String>(defaultValue);
 }
 
 static int getNextIntParam(ConstIterator<SPtr<String>> &params, int defaultValue) {
@@ -222,7 +222,7 @@ void Log::staticInit(const Config& cfg, String const& name, String const& defaul
 static UPtr<String> createLogPath(const Config& cfg, String const& fileName) {
 	UPtr<String> logFileName;
 	if (FileUtils::isPathAbsolute(fileName))
-		logFileName = std::make_unique<String>(fileName);
+		logFileName = newU<String>(fileName);
 	else
 		logFileName = FileUtils::buildPath(*cfg.getLogDir(), fileName);
 

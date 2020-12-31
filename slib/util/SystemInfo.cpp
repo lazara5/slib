@@ -44,13 +44,13 @@ static int getIPAddrs(SPtr<String>& ip, SPtr<String>& ipv4, SPtr<String>& ipv6) 
 
 			if (ipaddr) {
 				if (!ip)
-					ip = std::make_shared<String>(ipaddr);
+					ip = newS<String>(ipaddr);
 				if (family == AF_INET) {
 					if (!ipv4)
-						ipv4 = ip = std::make_shared<String>(ipaddr);
+						ipv4 = ip = newS<String>(ipaddr);
 				} else if (family == AF_INET6) {
 					if (!ipv6)
-						ipv6 = ip = std::make_shared<String>(ipaddr);
+						ipv6 = ip = newS<String>(ipaddr);
 				}
 			}
 		}
@@ -67,9 +67,9 @@ void SystemInfo::initialize() {
 
 	if (gethostname(hostname, sizeof(hostname)) < 0) {
 		logger.warnf("[SystemInfo] Failed to determine hostname, errno={}", StringUtils::formatErrno());
-		_hostname = std::make_shared<String>("localhost");
+		_hostname = "localhost"_SPTR;
 	} else
-		_hostname = std::make_shared<String>(hostname);
+		_hostname = newS<String>(hostname);
 }
 
 } // namespace slib

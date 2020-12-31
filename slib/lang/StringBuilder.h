@@ -21,8 +21,7 @@ namespace slib {
  */
 class StringBuilder : public BasicString {
 public:
-	static constexpr StringView _className {"StringBuilder"_SV};
-	typedef typename inherits<BasicString>::types _classInherits;
+	TYPE_INFO(StringBuilder, CLASS(StringBuilder), INHERITS(BasicString));
 private:
 	void build(const char *format, ...);
 protected:
@@ -62,10 +61,6 @@ public:
 	StringBuilder(int64_t val);
 	StringBuilder(uint64_t val);
 	StringBuilder(double val);
-
-	virtual Class const& getClass() const override {
-		return classOf<StringBuilder>::_class();
-	}
 
 	void alloc(size_t newLen);
 	void setLength(size_t newLen);
@@ -438,7 +433,7 @@ public:
 	}
 
 	virtual UPtr<String> toString() const override {
-		return std::make_unique<String>((const char *)_buffer, _len);
+		return newU<String>((const char *)_buffer, _len);
 	}
 
 	/**

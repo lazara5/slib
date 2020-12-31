@@ -48,13 +48,13 @@ public:
 	template <class AVT, typename... A>
 	typename std::enable_if<sizeof...(A) != 0, void>::type
 	emplace(int index, A&&... args) {
-		return add(index, std::make_shared<AVT>(std::forward<A>(args)...));
+		return add(index, newS<AVT>(std::forward<A>(args)...));
 	}
 
 	template <class AVT>
 	void emplace(int index, AVT const& value) {
 		static_assert(std::is_same<AVT, E>::value, "Only use with the exact value type");
-		return add(index, std::make_shared<E>(value));
+		return add(index, newS<E>(value));
 	}
 	
 	virtual int indexOf(const E& o) = 0;

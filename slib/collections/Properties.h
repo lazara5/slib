@@ -13,9 +13,6 @@ namespace slib {
 
 class Properties : public LinkedHashMap<String, String> {
 public:
-	static constexpr StringView _className {"Properties"_SV};
-	typedef typename inherits<LinkedHashMap<String, String>>::types _classInherits;
-public:
 	class LineProcessor {
 	public:
 		typedef Map<String, String> Props;
@@ -59,10 +56,6 @@ protected:
 public:
 	virtual ~Properties() override {}
 
-	virtual Class const& getClass() const override {
-		return classOf<Properties>::_class();
-	}
-
 	/**
 	 * Searches for the property with the specified key in this property list.
 	 * The method returns the default value argument if the property is not found.
@@ -85,7 +78,7 @@ public:
 		SPtr<String> value = get(name);
 		if (value)
 			return value;
-		return std::make_shared<String>(defaultValue);
+		return newS<String>(defaultValue);
 	}
 
 	/**
@@ -94,7 +87,7 @@ public:
 	 * @param value the value corresponding to the key
 	 */
 	virtual void setProperty(String const& name, String const& value) {
-		put(std::make_shared<String>(name), std::make_shared<String>(value));
+		put(newS<String>(name), newS<String>(value));
 	}
 
 	/**
@@ -186,7 +179,7 @@ public:
 		try {
 			return getString(name);
 		} catch (MissingValueException const&) {
-			return std::make_shared<String>(defaultValue);
+			return newS<String>(defaultValue);
 		}
 	}
 

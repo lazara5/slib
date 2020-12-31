@@ -17,7 +17,7 @@ public:
 	virtual bool offer(SPtr<E> const& e) = 0;
 
 	virtual bool offer(const E& e) {
-		return offer(std::make_shared<E>(e));
+		return offer(newS<E>(e));
 	}
 
 	/** @throws NoSuchElementException */

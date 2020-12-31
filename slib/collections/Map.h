@@ -56,32 +56,32 @@ public:
 	virtual SPtr<V> put(SPtr<K> const& key, SPtr<V> const& value) = 0;
 
 	virtual SPtr<V> put(K const& key, SPtr<V> const& value) {
-		return put(std::make_shared<K>(key), value);
+		return put(newS<K>(key), value);
 	}
 
 	template <class AVT, typename... A>
 	SPtr<V> emplace(const K& key, A&&... args) {
-		return put(std::make_shared<K>(key), std::make_shared<AVT>(std::forward<A>(args)...));
+		return put(newS<K>(key), newS<AVT>(std::forward<A>(args)...));
 	}
 
 	/*template <class AVT>
 	SPtr<V> emplace(const K& key, AVT const& value) {
 		static_assert(std::is_same<AVT, V>::value, "Only use with the exact value type");
-		return put(std::make_shared<K>(key), std::make_shared<V>(value));
+		return put(newS<K>(key), newS<V>(value));
 	}*/
 
 	template <class AKT, class AVT, typename KAT, typename VAT>
 	SPtr<V> emplace(KAT&& key_arg, VAT&& value_arg) {
 		static_assert(std::is_base_of<K, AKT>::value, "");
 		static_assert(std::is_base_of<V, AVT>::value, "");
-		return put(std::make_shared<AKT>(std::forward<KAT>(key_arg)), std::make_shared<AVT>(std::forward<VAT>(value_arg)));
+		return put(newS<AKT>(std::forward<KAT>(key_arg)), newS<AVT>(std::forward<VAT>(value_arg)));
 	}
 
 	template <class AKT, typename KAT, typename AVT>
-	SPtr<V> emplace_key(KAT&& key_arg, SPtr<AVT> const& value) {
+	SPtr<V> emplaceKey(KAT&& key_arg, SPtr<AVT> const& value) {
 		static_assert(std::is_base_of<K, AKT>::value, "");
 		static_assert(std::is_base_of<V, AVT>::value, "");
-		return put(std::make_shared<AKT>(std::forward<KAT>(key_arg)), value);
+		return put(newS<AKT>(std::forward<KAT>(key_arg)), value);
 	}
 
 	virtual SPtr<V> get(K const& key) const override = 0;

@@ -65,7 +65,7 @@ SPtr<std::string> StringUtils::interpolate(std::string const& src, ValueProvider
 										   bool ignoreUndefined) {
 	const char *pattern = src.c_str();
 
-	SPtr<std::string> result = std::make_shared<std::string>();
+	SPtr<std::string> result = newS<std::string>();
 	IState state = IS_APPEND;
 	size_t pos = 0;
 	size_t dollarBegin = 0;

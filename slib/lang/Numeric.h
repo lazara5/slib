@@ -181,7 +181,7 @@ public:
 	static UPtr<String> toString(int32_t i) {
 		std::stringstream stream;
 		stream << i;
-		return std::make_unique<String>(stream.str());
+		return newU<String>(stream.str());
 	}
 
 	/**
@@ -304,7 +304,7 @@ public:
 	static UPtr<String> toString(uint32_t i) {
 		std::stringstream stream;
 		stream << i;
-		return std::make_unique<String>(stream.str());
+		return newU<String>(stream.str());
 	}
 
 	/**
@@ -511,7 +511,7 @@ public:
 	static UPtr<String> toString(int64_t i) {
 		std::stringstream stream;
 		stream << i;
-		return std::make_unique<String>(stream.str());
+		return newU<String>(stream.str());
 	}
 
 	virtual UPtr<String> toString() const override {
@@ -634,7 +634,7 @@ public:
 	static UPtr<String> toString(uint64_t i) {
 		std::stringstream stream;
 		stream << i;
-		return std::make_unique<String>(stream.str());
+		return newU<String>(stream.str());
 	}
 
 	virtual UPtr<String> toString() const override {
@@ -802,7 +802,7 @@ public:
 	}
 
 	virtual UPtr<String> toString() const override {
-		return std::make_unique<String>(_value ? "true" : "false");
+		return (_value ? "true"_UPTR : "false"_UPTR);
 	}
 };
 

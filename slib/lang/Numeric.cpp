@@ -76,8 +76,8 @@ UPtr<Number> Number::createNumber(UPtr<String> const& str) {
 			throw NumberFormatException("Overflow");
 		}
 		if (hexDigits > 8 || (hexDigits == 8 && firstNzDigit > '7'))
-			return std::make_unique<Long>(Long::decode(CPtr(str)));
-		return std::make_unique<Integer>(Integer::decode(CPtr(str)));
+			return newU<Long>(Long::decode(CPtr(str)));
+		return newU<Integer>(Integer::decode(CPtr(str)));
 	}
 
 	char lastChar = str->charAt(str->length() - 1);
@@ -121,7 +121,7 @@ UPtr<Number> Number::createNumber(UPtr<String> const& str) {
 			case 'L':
 				if ((!decimal) && (!exponent) &&
 					(((numeric->charAt(0) == '-') && (isDigits(numeric->substring(1)))) || isDigits(numeric))) {
-					return std::make_unique<Long>(Long::decode(CPtr(str)));
+					return newU<Long>(Long::decode(CPtr(str)));
 					//we don't have a BigInteger yet, if we crash so be it
 				}
 				throw NumberFormatException(_HERE_, "Invalid number");
@@ -133,7 +133,7 @@ UPtr<Number> Number::createNumber(UPtr<String> const& str) {
 				{
 					double d = Double::parseDouble(CPtr(numeric));
 					if (!(Double::isInfinite(d) || (d == 0.0 && !allZeros)))
-						return std::make_unique<Double>(d);
+						return newU<Double>(d);
 				}
 				//we don't have a BigInteger yet, if we crash so be it
 				[[clang::fallthrough]];
@@ -146,11 +146,11 @@ UPtr<Number> Number::createNumber(UPtr<String> const& str) {
 		exponent = str->substring((size_t)expPos + 1, str->length());
 	if ((!decimal) && (!exponent)) {
 		try {
-			return std::make_unique<Integer>(Integer::decode(CPtr(str)));
+			return newU<Integer>(Integer::decode(CPtr(str)));
 		} catch (NumberFormatException const&) {
 			// ignore
 		}
-		return std::make_unique<Long>(Long::decode(CPtr(str)));
+		return newU<Long>(Long::decode(CPtr(str)));
 		//we don't have a BigInteger yet, if we crash so be it
 	}
 
@@ -158,7 +158,7 @@ UPtr<Number> Number::createNumber(UPtr<String> const& str) {
 	if (numDecimals <= 16) {
 		double d = Double::parseDouble(CPtr(str));
 		if (!(Double::isInfinite(d) || (d == 0.0 && !allZeros)))
-			return std::make_unique<Double>(d);
+			return newU<Double>(d);
 		throw NumberFormatException(_HERE_, "Invalid number");
 	}
 

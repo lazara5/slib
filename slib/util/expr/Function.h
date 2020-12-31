@@ -91,7 +91,7 @@ public:
 };
 
 /** @throws EvaluationException */
-typedef std::function<SPtr<Value>(Resolver const& resolver, ArgList const& args)> Evaluate;
+typedef std::function<UPtr<Value>(Resolver const& resolver, ArgList const& args)> Evaluate;
 
 class Function : virtual public Object {
 public:
@@ -110,7 +110,7 @@ public:
 	:_evaluate(evaluate) {
 		auto functionParams = argTypes.size();
 		if (functionParams > 0) {
-			_paramTypes = std::make_unique<std::vector<Class>>();
+			_paramTypes = newU<std::vector<Class>>();
 			_paramTypes->reserve(functionParams);
 			//_paramTypes->insert(_paramTypes->end(), argTypes);
 			for (Class const& c : argTypes)
@@ -124,7 +124,7 @@ public:
 
 	template <typename ...Args>
 	static SPtr<Function> impl(Evaluate evaluate) {
-		return std::make_shared<Function>(true, std::initializer_list<Class>({classOf<Args>::_class()...}), evaluate);
+		return newS<Function>(true, std::initializer_list<Class>({classOf<Args>::_class()...}), evaluate);
 	}
 
 	virtual ~Function() override;
@@ -138,7 +138,7 @@ public:
 	}
 
 	/** @throws EvaluationException; */
-	SPtr<Value> evaluate(Resolver const& resolver, ArgList const& args) {
+	UPtr<Value> evaluate(Resolver const& resolver, ArgList const& args) {
 		return _evaluate(resolver, args);
 	}
 };

@@ -372,7 +372,7 @@ public:
 	}
 
 	UPtr<String> trim() {
-		return std::make_unique<String>(trim(CPtr(_str)));
+		return newU<String>(trim(CPtr(_str)));
 	}
 
 	static std::string trim(const char *str) {
@@ -530,7 +530,7 @@ public:
 	}
 
 	UPtr<String> substring(size_t beginIndex, size_t endIndex) const {
-		return std::make_unique<String>(substring(CPtr(_str), beginIndex, endIndex));
+		return newU<String>(substring(CPtr(_str), beginIndex, endIndex));
 	}
 
 	template <class S>
@@ -541,7 +541,7 @@ public:
 	}
 
 	UPtr<String> substring(size_t beginIndex) const {
-		return std::make_unique<String>(substring(CPtr(_str), beginIndex));
+		return newU<String>(substring(CPtr(_str), beginIndex));
 	}
 
 	/*static void simpleSplit(const std::string& str, List<std::string> &results, const char delim, int limit = 65535) {
@@ -615,7 +615,7 @@ public:
 	static UPtr<String> valueOf(char c);
 
 	static UPtr<String> valueOf(Object const* obj) {
-		return (!obj) ? std::make_unique<String>("null") : obj->toString();
+		return (!obj) ? newU<String>("null") : obj->toString();
 	}
 
 	static UPtr<String> valueOf(SPtr<Object> const& obj) {
@@ -627,16 +627,16 @@ public:
 	}
 
 	virtual UPtr<String> toString() const override {
-		return std::make_unique<String>(_str);
+		return newU<String>(_str);
 	}
 };
 
 inline SPtr<String> operator ""_SPTR(const char* str, size_t len) {
-	return std::make_shared<String>(str, len);
+	return newS<String>(str, len);
 }
 
 inline UPtr<String> operator ""_UPTR(const char* str, size_t len) {
-	return std::make_unique<String>(str, len);
+	return newU<String>(str, len);
 }
 
 /**

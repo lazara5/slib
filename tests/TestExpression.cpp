@@ -12,25 +12,25 @@ static UPtr<Resolver> resolver;
 
 TEST_GROUP(ExprTests) {
 	void setup() {
-		vars = std::make_shared<HashMap<String, Object>>();
+		vars = newS<HashMap<String, Object>>();
 
 		vars->emplace<String>("var1", "val1");
 		vars->emplace<Integer>("var2", 2);
 		vars->emplace<String>("var3", "val3");
-		SPtr<ArrayList<Object>> list = std::make_shared<ArrayList<Object>>();
+		SPtr<ArrayList<Object>> list = newS<ArrayList<Object>>();
 		vars->put("varr", std::dynamic_pointer_cast<Object>(list));
 		list->emplace<Integer>(1);
 		list->emplace<Integer>(2);
 		list->emplace<Integer>(3);
 
-		auto map = std::make_shared<HashMap<Object, Object>>();
+		auto map = newS<HashMap<Object, Object>>();
 		vars->put("oo", map);
 		map->emplace<Integer, String>(3, "xxx");
 
-		auto map1 = std::make_shared<HashMap<Object, Object>>();
+		auto map1 = newS<HashMap<Object, Object>>();
 		auto *map2 = dynamic_cast<Map<Object, Object>*>(map1.get());
 
-		resolver = std::make_unique<MapResolver>(vars);
+		resolver = newU<MapResolver>(vars);
 	}
 
 	void teardown() {
@@ -40,7 +40,7 @@ TEST_GROUP(ExprTests) {
 };
 
 UPtr<String> strEval(const char *expr) {
-	return ExpressionEvaluator::strExpressionValue(std::make_shared<String>(expr), *resolver);
+	return ExpressionEvaluator::strExpressionValue(newS<String>(expr), *resolver);
 }
 
 TEST(ExprTests, BasicTests) {
@@ -57,12 +57,12 @@ TEST(ExprTests, ExtraTests) {
 	UPtr<String> res = strEval("oo[3]");
 	printf("\n");
 
-	SPtr<Object> res1 = ExpressionEvaluator::expressionValue(std::make_shared<String>("{a = 3, b = 2 * (2 + 1), c = {d = '123', e = 1 + 2}}"), *resolver);
+	SPtr<Object> res1 = ExpressionEvaluator::expressionValue(newS<String>("{a = 3, b = 2 * (2 + 1), c = {d = '123', e = 1 + 2}}"), *resolver);
 	UPtr<String> res2 = res1->toString();
 	CHECK((instanceof<Map<String, Object>>(res1)));
 	STRCMP_EQUAL("{a=3, b=6, c={d=123, e=3}}", res2->c_str());
 
-	res1 = ExpressionEvaluator::expressionValue(std::make_shared<String>("[1, 2, 3 * 5, {a = 'b', c = [1, 'x'], d = math.abs(-2), e = -1}]"), *resolver);
+	res1 = ExpressionEvaluator::expressionValue(newS<String>("[1, 2, 3 * 5, {a = 'b', c = [1, 'x'], d = math.abs(-2), e = -1}]"), *resolver);
 	res2 = res1->toString();
 	CHECK((instanceof<List<Object>>(res1)));
 	STRCMP_EQUAL("[1, 2, 15, {a=b, c=[1, x], d=2, e=-1}]", res2->c_str());

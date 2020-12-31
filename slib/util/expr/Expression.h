@@ -27,7 +27,7 @@ public:
 	virtual ~Expression() override;
 
 	/** @throws EvaluationException */
-	SPtr<Value> evaluate(Resolver const& resolver);
+	UPtr<Value> evaluate(Resolver const& resolver);
 };
 
 } // namespace expr

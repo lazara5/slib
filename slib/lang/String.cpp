@@ -33,7 +33,7 @@ UPtr<String> BasicString::toUpperCase() const {
 	if (!buffer)
 		return nullptr;
 	size_t len = length();
-	UPtr<String> res = std::make_unique<String>(buffer, length());
+	UPtr<String> res = newU<String>(buffer, length());
 	char *resBuffer = res->str();
 	for (size_t i = 0; i < len; i++)
 		resBuffer[i] = ((char)toupper(resBuffer[i]));
@@ -45,7 +45,7 @@ UPtr<String> BasicString::toLowerCase() const {
 	if (!buffer)
 		return nullptr;
 	size_t len = length();
-	UPtr<String> res = std::make_unique<String>(buffer, length());
+	UPtr<String> res = newU<String>(buffer, length());
 	char *resBuffer = res->str();
 	for (size_t i = 0; i < len; i++)
 		resBuffer[i] = ((char)tolower(resBuffer[i]));
@@ -78,7 +78,7 @@ String::String(char c)
 String::~String() {}
 
 UPtr<ArrayList<std::string>> String::simpleSplit(const char *buffer, size_t len, const char delim, int limit /* = 65535 */) {
-	UPtr<ArrayList<std::string>> results = std::make_unique<ArrayList<std::string>>();
+	UPtr<ArrayList<std::string>> results = newU<ArrayList<std::string>>();
 	if (len == 0)
 		return results;
 
@@ -104,7 +104,7 @@ UPtr<ArrayList<std::string>> String::simpleSplit(const char *buffer, size_t len,
 }
 
 UPtr<ArrayList<String> > String::split(const char *buffer, size_t len, const char *pattern, int limit /* = 0 */) {
-	UPtr<ArrayList<String>> results = std::make_unique<ArrayList<String>>();
+	UPtr<ArrayList<String>> results = newU<ArrayList<String>>();
 	if (len == 0)
 		return results;
 
@@ -157,7 +157,7 @@ int32_t String::hashCode() const {
 }
 
 UPtr<String> String::valueOf(char c) {
-	return std::make_unique<String>(c);
+	return newU<String>(c);
 }
 
 /*void format_arg(fmt::BasicFormatter<char> &f, const char *&format_str, String const& s) {
@@ -186,6 +186,8 @@ ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, ptrdiff_
 		if (len < 0)
 			len = (ptrdiff_t)strlen(str);
 		_buffer = (char*)malloc((size_t)len + 1);
+		if (!_buffer)
+			throw OutOfMemoryError(_HERE_);
 		memcpy(_buffer, str, (size_t)len);
 		_len = (size_t)len;
 		_buffer[_len] = 0;
@@ -195,6 +197,8 @@ ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, ptrdiff_
 ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const char *str, size_t offset, size_t count)
 :_hash(0) {
 	_buffer = (char*) malloc(count + 1);
+	if (!_buffer)
+		throw OutOfMemoryError(_HERE_);
 	if (count > 0)
 		memcpy(_buffer, str + offset, count);
 	_len = count;
@@ -206,6 +210,8 @@ ASCIICaseInsensitiveString::ASCIICaseInsensitiveString(const ASCIICaseInsensitiv
 		_buffer = nullptr;
 	} else {
 		_buffer = (char*) malloc(other._len + 1);
+		if (!_buffer)
+			throw OutOfMemoryError(_HERE_);
 		memcpy(_buffer, other._buffer, other._len + 1);
 	}
 

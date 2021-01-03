@@ -136,7 +136,7 @@ UPtr<Number> Number::createNumber(UPtr<String> const& str) {
 						return newU<Double>(d);
 				}
 				//we don't have a BigInteger yet, if we crash so be it
-				[[clang::fallthrough]];
+				/* fall through */
 			default:
 				throw NumberFormatException(_HERE_, "Invalid number");
 		}
@@ -152,6 +152,117 @@ UPtr<Number> Number::createNumber(UPtr<String> const& str) {
 		}
 		return newU<Long>(Long::decode(CPtr(str)));
 		//we don't have a BigInteger yet, if we crash so be it
+	}
+
+	bool allZeros = isAllZeros(mantissa) && isAllZeros(exponent);
+	if (numDecimals <= 16) {
+		double d = Double::parseDouble(CPtr(str));
+		if (!(Double::isInfinite(d) || (d == 0.0 && !allZeros)))
+			return newU<Double>(d);
+		throw NumberFormatException(_HERE_, "Invalid number");
+	}
+
+	throw NumberFormatException(_HERE_, "Overflow");
+}
+
+/** adapted from Apache Commons Lang3 Numberutils, under Apache License-2.0 */
+UPtr<Number> Number::createLongOrDouble(UPtr<String> const& str) {
+	if (!str)
+		return nullptr;
+	if (StringUtils::isBlank(CPtr(str)))
+		throw NumberFormatException(_HERE_, "Cannot convert blank string to number");
+
+	static const std::vector<std::string> hexPrefixes {"0x", "0X", "-0x", "-0X", "#", "-#"};
+
+	size_t prefixLen = 0;
+	for (std::string const& prefix : hexPrefixes) {
+		if (str->startsWith(CPtr(prefix))) {
+			prefixLen += prefix.length();
+			break;
+		}
+	}
+	if (prefixLen > 0) {
+		// Hex
+		char firstNzDigit = 0;
+		for (size_t i = prefixLen; i < str->length(); i++) {
+			firstNzDigit = str->charAt(i);
+			if (firstNzDigit == '0')
+				prefixLen++;
+			else
+				break;
+		}
+
+		size_t hexDigits = str->length() - prefixLen;
+		if (hexDigits > 16 || ((hexDigits == 16) && (firstNzDigit > '7'))) {
+			// cannot fit into a Long, we don't have a BigInteger yet, abort
+			throw NumberFormatException("Overflow");
+		}
+		return newU<Long>(Long::decode(CPtr(str)));
+	}
+
+	char lastChar = str->charAt(str->length() - 1);
+
+	UPtr<String> mantissa;
+	UPtr<String> decimal;
+	UPtr<String> exponent;
+
+	ptrdiff_t decPos = str->indexOf('.');
+	ptrdiff_t expPos = str->indexOf('e') + str->indexOf('E') + 1; // assumes both not present
+	// if both e and E are present, this is caught by the checks on expPos and the parsing which
+	// will detect if e or E appear in a number due to using the wrong offset
+
+	size_t numDecimals = 0;
+	if (decPos > -1) {
+		if (expPos > -1) {
+			if ((expPos < decPos) || ((size_t)expPos > str->length()))
+				throw NumberFormatException(_HERE_, "Invalid number");
+			decimal = str->substring((size_t)decPos + 1, (size_t)expPos);
+		} else
+			decimal = str->substring((size_t)decPos + 1);
+		mantissa = getMantissa(str, decPos);
+		numDecimals = decimal->length();
+	} else {
+		if (expPos > -1) {
+			if ((size_t)expPos > str->length())
+				throw NumberFormatException(_HERE_, "Invalid number");
+			mantissa = getMantissa(str, expPos);
+		} else
+			mantissa = getMantissa(str);
+	}
+
+	if ((!std::isdigit(lastChar)) && (lastChar != '.')) {
+		if ((expPos > -1) && (expPos < (ptrdiff_t)str->length() - 1))
+			exponent = str->substring((size_t)expPos + 1, str->length() - 1);
+
+		UPtr<String> numeric = str->substring(0, str->length() - 1);
+		bool allZeros = isAllZeros(mantissa) && isAllZeros(exponent);
+		switch (lastChar) {
+			case 'l':
+			case 'L':
+				if ((!decimal) && (!exponent) &&
+					(((numeric->charAt(0) == '-') && (isDigits(numeric->substring(1)))) || isDigits(numeric))) {
+					return newU<Long>(Long::decode(CPtr(str)));
+				}
+				throw NumberFormatException(_HERE_, "Invalid number");
+			case 'f':
+			case 'F':
+			case 'd':
+			case 'D':
+				{
+					double d = Double::parseDouble(CPtr(numeric));
+					if (!(Double::isInfinite(d) || (d == 0.0 && !allZeros)))
+						return newU<Double>(d);
+				}
+				/* fall through */
+			default:
+				throw NumberFormatException(_HERE_, "Invalid number");
+		}
+	}
+
+	if ((expPos > -1) && (expPos < (ptrdiff_t)str->length() - 1))
+		exponent = str->substring((size_t)expPos + 1, str->length());
+	if ((!decimal) && (!exponent)) {
+		return newU<Long>(Long::decode(CPtr(str)));
 	}
 
 	bool allZeros = isAllZeros(mantissa) && isAllZeros(exponent);

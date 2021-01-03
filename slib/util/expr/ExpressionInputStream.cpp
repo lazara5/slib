@@ -113,7 +113,7 @@ UPtr<Value> ExpressionInputStream::readString() {
 UPtr<Value> ExpressionInputStream::readNumber() {
 	UPtr<String> str = readReal();
 	try {
-		return Value::of(Number::createNumber(str));
+		return Value::of(Number::createLongOrDouble(str));
 	} catch (NumberFormatException const& e) {
 		throw EvaluationException(_HERE_, "Error parsing numeric value", e);
 	}

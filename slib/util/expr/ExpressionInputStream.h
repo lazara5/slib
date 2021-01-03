@@ -26,6 +26,11 @@ private:
 	}
 
 	UPtr<String> readReal();
+
+	static inline bool isSpace(char ch) {
+		// newline is NOT whitespace
+		return (ch == ' ') || (ch == '\t') || (ch == '\r');
+	}
 public:
 	ExpressionInputStream(SPtr<BasicString> const& s)
 	:_iter(s) {
@@ -33,7 +38,7 @@ public:
 	}
 
 	void skipBlanks() {
-		while ((_currentChar != CharacterIterator::DONE) && (std::isspace(_currentChar)))
+		while ((_currentChar != CharacterIterator::DONE) && (isSpace(_currentChar)))
 			_currentChar = _iter.next();
 	}
 

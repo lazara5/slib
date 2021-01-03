@@ -32,18 +32,7 @@ UPtr<String> ExpressionEvaluator::strExpressionValue(SPtr<BasicString> const& in
 }
 
 SPtr<Object> ExpressionEvaluator::expressionValue(const SPtr<BasicString> &input, Resolver const& resolver) {
-	SPtr<Value> val = expressionValue(newS<ExpressionInputStream>(input), InternalResolver(resolver));
-	if (val->_value) {
-		if (instanceof<Double>(val->_value)) {
-			double d = Class::cast<Double>(val->_value)->doubleValue();
-			if (Number::isMathematicalInteger(d)) {
-				int32_t i = (int32_t)d;
-				if (i == d)
-					return newS<Integer>(i);
-				return newS<Long>((uint64_t)d);
-			}
-		}
-	}
+	UPtr<Value> val = expressionValue(newS<ExpressionInputStream>(input), InternalResolver(resolver));
 	return val->_value;
 }
 
@@ -115,22 +104,22 @@ UPtr<Value> ExpressionEvaluator::expressionValue(SPtr<ExpressionInputStream> con
 				val = val->logicalOr(nextVal);
 				break;
 			case '<':
-				val = newU<Value>(newS<Integer>(val->lt(nextVal) ? 1 : 0));
+				val = val->lt(nextVal);
 				break;
 			case OP_LTE:
-				val = newU<Value>(newS<Integer>(val->lte(nextVal) ? 1 : 0));
+				val = val->lte(nextVal);
 				break;
 			case '>':
-				val = newU<Value>(newS<Integer>(val->gt(nextVal) ? 1 : 0));
+				val = val->gt(nextVal);
 				break;
 			case OP_GTE:
-				val = newU<Value>(newS<Integer>(val->gte(nextVal) ? 1 : 0));
+				val = val->gte(nextVal);
 				break;
 			case OP_EQ:
-				val = newU<Value>(newS<Integer>(val->eq(nextVal) ? 1 : 0));
+				val = val->eq(nextVal);
 				break;
 			case OP_NEQ:
-				val = newU<Value>(newS<Integer>(val->eq(nextVal) ? 0 : 1));
+				val = val->neq(nextVal);
 				break;
 			default:
 				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
@@ -139,7 +128,7 @@ UPtr<Value> ExpressionEvaluator::expressionValue(SPtr<ExpressionInputStream> con
 		input->skipBlanks();
 	}
 
-	return val;
+	return Value::normalize(std::move(val));
 }
 
 /**
@@ -373,24 +362,59 @@ UPtr<Value> ExpressionEvaluator::termValue(SPtr<ExpressionInputStream> const& in
 	return val;
 }
 
+static void swallowSeparators(SPtr<ExpressionInputStream> const& input, bool newlineIsSep) {
+	do {
+		input->skipBlanks();
+		switch (input->peek()) {
+			case '\n':
+				if (!newlineIsSep)
+					return;
+				/* fall through */
+			case ',':
+				input->readChar();
+				input->skipBlanks();
+				continue;
+			default:
+				return;
+		}
+	} while (true);
+}
+
+typedef struct {
+	char functionClose;
+	bool newlineIsSep;
+} FunctionParseOpts;
+
+static void resetFPO(FunctionParseOpts &fpo) {
+	fpo = {
+		.functionClose = ')',
+		.newlineIsSep = false
+	};
+}
+
 UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver) {
 	input->skipBlanks();
 
 	PrimaryType primaryType = PrimaryType::NONE;
 	UPtr<Value> val = primaryValue(input, resolver, primaryType);
 
-	char functionClose = ')';
+	FunctionParseOpts fpo = {
+		.functionClose = ')',
+		.newlineIsSep = false
+	};
 
 	// override next char to skip to function
 	char peekOverride = '\0';
 
 	switch(primaryType) {
 		case OBJ_CONSTRUCTOR:
-			functionClose = '}';
+			fpo.functionClose = '}';
+			fpo.newlineIsSep = true;
 			peekOverride = '(';
 			break;
 		case ARRAY_CONSTRUCTOR:
-			functionClose = ']';
+			fpo.functionClose = ']';
+			fpo.newlineIsSep = true;
 			peekOverride = '(';
 			break;
 		default:
@@ -431,7 +455,23 @@ UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 						symbolName = "<unknown>"_SPTR;
 					FunctionArgs params(func, symbolName);
 
-					// check for 0 parameters
+					do {
+						swallowSeparators(input, fpo.newlineIsSep);
+
+						if (input->peek() == fpo.functionClose) {
+							input->readChar();
+							resetFPO(fpo);
+							break;
+						}
+
+						Class const& argClass = params.peek();
+						if (argClass == classOf<Expression>::_class())
+							params.add(input->readArg());
+						else
+							params.add(expressionValue(input, resolver)->_value);
+					} while (true);
+
+					/*// check for 0 parameters
 					input->skipBlanks();
 					if (input->peek() == functionClose) {
 						functionClose = ')';
@@ -454,7 +494,7 @@ UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 							} else
 								throw SyntaxErrorException(_HERE_, fmt::format("Missing right paranthesis after function arguments ({})", *symbolName).c_str());
 						} while (true);
-					}
+					}*/
 					try {
 						val = func->evaluate(resolver, params);
 					} catch (ClassCastException const& e) {

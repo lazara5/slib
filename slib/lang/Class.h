@@ -139,7 +139,7 @@ public:
 	Class& operator=(Class const&) = delete;
 
 	bool operator ==(Class const& other) const {
-		// TODO: fix comparison
+		// TODO: do we need to compare depth?
 		return (_hDepth == other._hDepth) && _typeStack[_hDepth - 1].typeId == other._typeStack[_hDepth - 1].typeId;
 	}
 

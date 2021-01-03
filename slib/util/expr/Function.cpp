@@ -9,10 +9,6 @@ namespace expr {
 
 Function::~Function() {}
 
-ArgList::~ArgList() {}
-
-FunctionArgs::~FunctionArgs() {}
-
 void FunctionArgs::add(SPtr<Object> const& obj) {
 	size_t np = _args.size();
 	Class const& clazz = _function->getParamType(np);

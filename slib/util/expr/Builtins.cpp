@@ -23,14 +23,14 @@ public:
 		SPtr<Map<String, Object>> math = newS<HashMap<String, Object>>();
 		emplaceKey<String>("math", math);
 
-		math->emplaceKey<String>("ceil", Function::impl<Double>(
+		math->emplaceKey<String>("ceil", Function::impl<Number>(
 			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
-				return Value::of(newS<Double>(ceil(args.get<Double>(0)->doubleValue())));
+				return Value::of(newS<Double>(ceil(args.get<Number>(0)->doubleValue())));
 			}
 		));
-		math->emplaceKey<String>("floor", Function::impl<Double>(
+		math->emplaceKey<String>("floor", Function::impl<Number>(
 			[](Resolver const& resolver SLIB_UNUSED, ArgList const& args) {
-				return Value::of(newS<Double>(floor(args.get<Double>(0)->doubleValue())));
+				return Value::of(newS<Double>(floor(args.get<Number>(0)->doubleValue())));
 			}
 		));
 		math->emplaceKey<String>("abs", Function::impl<Number>(
@@ -149,7 +149,7 @@ public:
 
 		emplaceKey<String>("#", Function::impl<String>(
 			[](Resolver const& resolver, ArgList const& args) {
-				return ExpressionEvaluator::expressionValue(std::make_shared<ExpressionInputStream>(args.get<String>(0)), resolver);
+				return ExpressionEvaluator::expressionValue(newS<ExpressionInputStream>(args.get<String>(0)), resolver);
 			}
 		));
 

@@ -24,15 +24,20 @@ namespace expr {
 class ArgList {
 protected:
 	SPtr<String> _symbolName;
+	ArrayList<Object> _args;
 public:
 	ArgList(SPtr<String> const& symbolName)
 	:_symbolName(symbolName) {}
 
-	virtual ~ArgList();
+	size_t size() const {
+		return _args.size();
+	}
 
-	virtual size_t size() const = 0;
-
-	virtual SPtr<Object> getNullable(size_t index) const = 0;
+	SPtr<Object> getNullable(size_t index) const {
+		if (_args.size() <= index)
+			throw EvaluationException(_HERE_, fmt::format("Function {}(): invalid argument index: ", *_symbolName, index).c_str());
+		return _args.get(index);
+	}
 
 	template<class T>
 	SPtr<T> getNullable(size_t index) const {
@@ -66,23 +71,10 @@ public:
 class FunctionArgs : public ArgList {
 private:
 	SPtr<Function> const& _function;
-	ArrayList<Object> _args;
 public:
 	FunctionArgs(SPtr<Function> const& function, SPtr<String> const& symbolName)
-	:ArgList(symbolName)
-	,_function(function) {}
-
-	virtual ~FunctionArgs() override;
-
-	virtual size_t size() const override {
-		return _args.size();
-	}
-
-	virtual SPtr<Object> getNullable(size_t index) const override {
-		if (_args.size() <= index)
-			throw EvaluationException(_HERE_, fmt::format("Function {}(): invalid argument index: ", *_symbolName, index).c_str());
-		return _args.get(index);
-	}
+	: ArgList(symbolName)
+	, _function(function) {}
 
 	/** @throws CastException */
 	void add(const SPtr<Object> &obj);

@@ -33,6 +33,7 @@ public:
 	virtual double doubleValue() const = 0;
 
 	static UPtr<Number> createNumber(UPtr<String> const& str);
+	static UPtr<Number> createLongOrDouble(UPtr<String> const& str);
 
 	static bool isMathematicalInteger(double val);
 };
@@ -422,6 +423,12 @@ public:
 		return (_value == other._value);
 	}
 
+	virtual bool equals(Object const& other) const override {
+		if (instanceof<Long>(other))
+			return _value == Class::constCast<Long>(&other)->_value;
+		return false;
+	}
+
 	bool equals(SPtr<Long> const& other) const {
 		if (!other)
 			return false;
@@ -691,6 +698,12 @@ public:
 
 	bool equals(const Double& other) const {
 		return (doubleToLongBits(_value) == doubleToLongBits(other._value));
+	}
+
+	virtual bool equals(Object const& other) const override {
+		if (instanceof<Double>(other))
+			return _value == Class::constCast<Double>(&other)->_value;
+		return false;
 	}
 
 	bool equals(SPtr<Double> const& other) const {

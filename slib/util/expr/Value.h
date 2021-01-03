@@ -23,14 +23,6 @@ friend class ResultHolder;
 private:
 	SPtr<Object> _value;
 	SPtr<String> _name;
-protected:
-	static UPtr<Value> valueOf(double d) {
-		if (Number::isMathematicalInteger(d)) {
-			if ((d <= Double::MAX_SAFE_INTEGER) && (d >= Double::MIN_SAFE_INTEGER))
-				return newU<Value>(newS<Long>((int64_t)d));
-		}
-		return newU<Value>(newS<Double>(d));
-	}
 public:
 	Value(SPtr<Object> const& value, SPtr<String> const& name = nullptr)
 	:_value(value)
@@ -40,10 +32,35 @@ public:
 		return newU<Value>(value);
 	}
 
-	template <class T, enableIf<std::is_base_of<Number, T>>...>
+	static UPtr<Value> of(double value) {
+		return newU<Value>(newS<Double>(value));
+	}
+
+	static UPtr<Value> of(int64_t value) {
+		return newU<Value>(newS<Long>(value));
+	}
+
+	static UPtr<Value> of(bool value) {
+		return newU<Value>(newS<Long>(value));
+	}
+
+	static UPtr<Value> normalize(UPtr<Value> && val) {
+		if (instanceof<Number>(val->_value)) {
+			double d = Class::cast<Number>(val->_value)->doubleValue();
+
+			if (Number::isMathematicalInteger(d)) {
+				if ((d <= Double::MAX_SAFE_INTEGER) && (d >= Double::MIN_SAFE_INTEGER))
+					return newU<Value>(newS<Long>((int64_t)d));
+			}
+
+		}
+		return std::move(val);
+	}
+
+	/*template <class T, enableIf<std::is_base_of<Number, T>>...>
 	static UPtr<Value> of(SPtr<T> const& value) {
 		return valueOf(value->doubleValue());
-	}
+	}*/
 
 	static UPtr<Value> of(SPtr<Object> const& value, SPtr<String> const& varName) {
 		return newU<Value>(value, varName);
@@ -88,7 +105,6 @@ public:
 		checkNil(v._value, v._name);
 	}
 
-
 	/** @throws EvaluationException */
 	static UPtr<String> asString(SPtr<Object> const& value, SPtr<String> const& name = nullptr) {
 		if (instanceof<Number>(value)) {
@@ -113,7 +129,7 @@ public:
 		checkNil(*this);
 		if (instanceof<Number>(_value)) {
 			Number *n = Class::castPtr<Number>(_value);
-			return valueOf(-n->doubleValue());
+			return Value::of(-n->doubleValue());
 		}
 		throw EvaluationException(_HERE_, "-", _value->getClass());
 	}
@@ -150,7 +166,7 @@ public:
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return valueOf(v1->doubleValue() + v2->doubleValue());
+				return Value::of(v1->doubleValue() + v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "+", _value->getClass(), other->_value->getClass());
 		} else if (instanceof<BasicString>(_value)) {
@@ -174,7 +190,7 @@ public:
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return valueOf(v1->doubleValue() - v2->doubleValue());
+				return Value::of(v1->doubleValue() - v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "-", _value->getClass(), other->_value->getClass());
 		} else
@@ -197,7 +213,7 @@ public:
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return valueOf(v1->doubleValue() * v2->doubleValue());
+				return Value::of(v1->doubleValue() * v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "*", _value->getClass(), other->_value->getClass());
 		} else
@@ -212,7 +228,7 @@ public:
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return valueOf(v1->doubleValue() / v2->doubleValue());
+				return Value::of(v1->doubleValue() / v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "/", _value->getClass(), other->_value->getClass());
 		} else
@@ -227,7 +243,7 @@ public:
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return valueOf(std::fmod(v1->doubleValue(), v2->doubleValue()));
+				return Value::of(std::fmod(v1->doubleValue(), v2->doubleValue()));
 			} else
 				throw EvaluationException(_HERE_, "%", _value->getClass(), other->_value->getClass());
 		} else
@@ -235,21 +251,21 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool gt(UPtr<Value> const& other) {
+	UPtr<Value> gt(UPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return (v1->doubleValue() > v2->doubleValue());
+				return Value::of(v1->doubleValue() > v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, ">", _value->getClass(), other->_value->getClass());
 		} else if (instanceof<BasicString>(_value)) {
 			BasicString *v1 = Class::castPtr<BasicString>(_value);
 			if (instanceof<BasicString>(other->_value)) {
 				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
-				return v1->compareTo(*v2) > 0;
+				return Value::of(v1->compareTo(*v2) > 0);
 			} else
 				throw EvaluationException(_HERE_, ">", _value->getClass(), other->_value->getClass());
 		} else
@@ -257,21 +273,21 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool gte(UPtr<Value> const& other) {
+	UPtr<Value> gte(UPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return (v1->doubleValue() >= v2->doubleValue());
+				return Value::of(v1->doubleValue() >= v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, ">=", _value->getClass(), other->_value->getClass());
 		} else if (instanceof<BasicString>(_value)) {
 			BasicString *v1 = Class::castPtr<BasicString>(_value);
 			if (instanceof<BasicString>(other->_value)) {
 				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
-				return v1->compareTo(*v2) >= 0;
+				return Value::of(v1->compareTo(*v2) >= 0);
 			} else
 				throw EvaluationException(_HERE_, ">=", _value->getClass(), other->_value->getClass());
 		} else
@@ -279,21 +295,21 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool lt(UPtr<Value> const& other) {
+	UPtr<Value> lt(UPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return (v1->doubleValue() < v2->doubleValue());
+				return Value::of(v1->doubleValue() < v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "<", _value->getClass(), other->_value->getClass());
 		} else if (instanceof<BasicString>(_value)) {
 			BasicString *v1 = Class::castPtr<BasicString>(_value);
 			if (instanceof<BasicString>(other->_value)) {
 				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
-				return v1->compareTo(*v2) < 0;
+				return Value::of(v1->compareTo(*v2) < 0);
 			} else
 				throw EvaluationException(_HERE_, "<", _value->getClass(), other->_value->getClass());
 		} else
@@ -301,29 +317,30 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	bool lte(UPtr<Value> const& other) {
+	UPtr<Value> lte(UPtr<Value> const& other) {
 		checkNil(*this);
 		checkNil(*other);
 		if (instanceof<Number>(_value)) {
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
 				Number *v2 = Class::castPtr<Number>(other->_value);
-				return (v1->doubleValue() <= v2->doubleValue());
+				return Value::of(v1->doubleValue() <= v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "<=", _value->getClass(), other->_value->getClass());
 		} else if (instanceof<BasicString>(_value)) {
 			BasicString *v1 = Class::castPtr<BasicString>(_value);
 			if (instanceof<BasicString>(other->_value)) {
 				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
-				return v1->compareTo(*v2) <= 0;
+				return Value::of(v1->compareTo(*v2) <= 0);
 			} else
 				throw EvaluationException(_HERE_, "<=", _value->getClass(), other->_value->getClass());
 		} else
 			throw EvaluationException(_HERE_, "<=", _value->getClass(), other->_value->getClass());
 	}
 
+private:
 	/** @throws EvaluationException */
-	bool eq(UPtr<Value> const& other) {
+	bool _eq(UPtr<Value> const& other) {
 		if ((!this->_value) || (!other->_value))
 			return ((!this->_value) && (!other->_value));
 		if (instanceof<Number>(_value)) {
@@ -344,9 +361,18 @@ public:
 			throw EvaluationException(_HERE_, "==", _value->getClass(), other->_value->getClass());
 	}
 
+public:
+	UPtr<Value> eq(UPtr<Value> const& other) {
+		return Value::of(_eq(other));
+	}
+
+	UPtr<Value> neq(UPtr<Value> const& other) {
+		return Value::of(!_eq(other));
+	}
+
 private:
 	/** @throws EvaluationException */
-	int64_t getIndex(UPtr<Value> const& arg) {
+	static int64_t getIndex(UPtr<Value> const& arg) {
 		if (!instanceof<Number>(arg->_value))
 			throw EvaluationException(_HERE_, fmt::format("Operator '[]': expected numeric index, got '{}'", arg->_value->getClass().getName()).c_str());
 		Number *index = Class::castPtr<Number>(arg->_value);
@@ -360,14 +386,22 @@ public:
 	UPtr<Value> index(UPtr<Value> const& arg) {
 		checkNil(*this);
 		checkNil(*arg);
-		/*if (instanceof<Map<String, Object>>(_value)) {
-			return std::make_shared<Value>(
-				(Class::castPtr<Map<String, Object>>(_value))->get(*Class::castPtr<String>(arg->_value))
-			);*/
-		if (instanceof<Map<Object, Object>>(_value)) {
+		if (instanceof<Map<String, Object>>(_value)) {
 			return newU<Value>(
-					(Class::castPtr<Map<Object, Object>>(_value))->get(*Class::castPtr<Object>(arg->_value))
+				(Class::castPtr<Map<String, Object>>(_value))->get(*Class::castPtr<String>(arg->_value))
 			);
+		} else if (instanceof<Map<Object, Object>>(_value)) {
+			SPtr<Object> val = (Class::castPtr<Map<Object, Object>>(_value))->get(*(arg->_value));
+			if (val)
+				return newU<Value>(std::move(val));
+
+			// expression indices are internally normalized to Long. Retry with Double
+			if (arg->_value->getClass() == classOf<Long>::_class()) {
+				SPtr<Object> dVal = newS<Double>(Class::castPtr<Long>(arg->_value)->doubleValue());
+				return Value::of((Class::castPtr<Map<Object, Object>>(_value))->get(*dVal));
+			}
+
+			return Value::Nil();
 		// TODO: Array
 		} else if (instanceof<List<Object>>(_value)) {
 			List<Object> *list = Class::castPtr<List<Object>>(_value);

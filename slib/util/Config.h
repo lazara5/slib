@@ -19,6 +19,18 @@
 
 namespace slib {
 
+class ResolverProxy : public expr::Resolver {
+private:
+	expr::Resolver *_resolver;
+public:
+	ResolverProxy(Resolver *resolver)
+	: _resolver(resolver) {}
+
+	virtual SPtr<Object> getVar(String const& key) const override {
+		return _resolver->getVar(key);
+	}
+};
+
 class ConfigProcessor : public Properties::LineProcessor, /*public ValueProvider<std::string, std::string>,*/ public expr::Resolver {
 public:
 	typedef std::function<void(String const&, SPtr<Object> const&)> PropertySink;
@@ -35,9 +47,11 @@ private:
 	UPtr<VarMap> _vars;
 	UPtr<SourceMap> _sources;
 	SinkMap _sinks;
+	SPtr<Resolver> _resolver;
 public:
 	ConfigProcessor(Properties const& props)
-	:_props(props) {}
+	: _props(props)
+	, _resolver(newS<ResolverProxy>(this)) {}
 
 	virtual ~ConfigProcessor() override {}
 
@@ -45,7 +59,7 @@ public:
 
 	void registerSource(String const& name, SPtr<PropertySource> const& src) {
 		if (!_sources)
-			_sources = std::make_unique<SourceMap>();
+			_sources = newU<SourceMap>();
 		(*_sources)[name] = src;
 	}
 
@@ -69,9 +83,11 @@ private:
 private:
 	Properties const& _props;
 	UPtr<VarMap> _vars;
+	SPtr<Resolver> _resolver;
 public:
 	SimpleConfigProcessor(Properties const& props)
-	:_props(props) {}
+	: _props(props)
+	, _resolver(newS<ResolverProxy>(this)) {}
 
 	virtual UPtr<String> processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) override;
 

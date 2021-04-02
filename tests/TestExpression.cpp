@@ -3,12 +3,13 @@
 #include "slib/collections/HashMap.h"
 #include "slib/collections/ArrayList.h"
 #include "slib/util/expr/ExpressionEvaluator.h"
+#include "slib/util/SystemInfo.h"
 
 using namespace slib;
 using namespace slib::expr;
 
 static SPtr<Map<String, Object>> vars;
-static UPtr<Resolver> resolver;
+static SPtr<Resolver> resolver;
 
 TEST_GROUP(ExprTests) {
 	void setup() {
@@ -31,7 +32,7 @@ TEST_GROUP(ExprTests) {
 		auto map1 = newS<HashMap<Object, Object>>();
 		auto *map2 = dynamic_cast<Map<Object, Object>*>(map1.get());
 
-		resolver = newU<MapResolver>(vars);
+		resolver = newS<MapResolver>(vars);
 	}
 
 	void teardown() {
@@ -41,7 +42,7 @@ TEST_GROUP(ExprTests) {
 };
 
 UPtr<String> strEval(const char *expr) {
-	return ExpressionEvaluator::strExpressionValue(newS<String>(expr), *resolver);
+	return ExpressionEvaluator::strExpressionValue(newS<String>(expr), resolver, 0);
 }
 
 TEST(ExprTests, BasicTests) {
@@ -73,19 +74,32 @@ TEST(ExprTests, ExtraTests) {
 	res = strEval("oo[4]");
 	STRCMP_EQUAL("yyy", res->c_str());
 
-	SPtr<Object> res1 = ExpressionEvaluator::expressionValue(newS<String>("{a = 3, b = 2 * (2 + 1), c = {d = '123', e = 1 + 2}}"), *resolver);
+	SPtr<Object> res1 = ExpressionEvaluator::expressionValue(newS<String>("{a = 3, b = 2 * (2 + 1), c = {d = '123', e = 1 + 2}}"), resolver, 0);
 	UPtr<String> res2 = res1->toString();
 	CHECK((instanceof<Map<String, Object>>(res1)));
 	STRCMP_EQUAL("{a=3, b=6, c={d=123, e=3}}", res2->c_str());
 
-	res2 = ExpressionEvaluator::expressionValue(newS<String>("{a = 3\r\n b = 2 * (2 + 1)\n c = {\nd = '123',\r\n e = 1 + 2}\n}"), *resolver)->toString();
+	res2 = ExpressionEvaluator::expressionValue(newS<String>("{a = 3\r\n b = 2 * (2 + 1)\n c = {\nd = '123',\r\n e = 1 + 2}\n}"), resolver, 0)->toString();
 	STRCMP_EQUAL("{a=3, b=6, c={d=123, e=3}}", res2->c_str());
 
-	res1 = ExpressionEvaluator::expressionValue(newS<String>("[1, 2, 3 * 5, {a = 'b', c = [1, 'x'], d = math.abs(-2), e = -1}]"), *resolver);
+	res1 = ExpressionEvaluator::expressionValue(newS<String>("[1, 2, 3 * 5, {a = xxx, c = [1, 'x'], d = math.abs(-2), e = -1}]"), resolver, 0);
 	res2 = res1->toString();
 	CHECK((instanceof<List<Object>>(res1)));
+	STRCMP_EQUAL("[1, 2, 15, {a=null, c=[1, x], d=2, e=-1}]", res2->c_str());
+
+	res2 = ExpressionEvaluator::expressionValue(newS<String>("[\n1, , 2\n 3 * 5\r\n\n {a = 'b', c = [1, \t'x'\r\n], d = math.abs(-2), e = -1},]"), resolver, 0)->toString();
 	STRCMP_EQUAL("[1, 2, 15, {a=b, c=[1, x], d=2, e=-1}]", res2->c_str());
 
-	res2 = ExpressionEvaluator::expressionValue(newS<String>("[\n1, , 2\n 3 * 5\r\n\n {a = 'b', c = [1, \t'x'\r\n], d = math.abs(-2), e = -1},]"), *resolver)->toString();
-	STRCMP_EQUAL("[1, 2, 15, {a=b, c=[1, x], d=2, e=-1}]", res2->c_str());
+	res1 = ExpressionEvaluator::expressionValue("[1, 2, 3 * 5, {a = 'b', c = [1 + xxx, 'x'], d = math.abs(-2), e = -1}]"_SPTR, resolver, EXPR_ALLOW_UNDEFINED);
+	res2 = res1->toString();
+	STRCMP_EQUAL("[1, 2, 15, {a=b, c=[null, x], d=2, e=-1}]", res2->c_str());
+
+	SPtr<SystemInfo> systemInfo = newS<SystemInfo>();
+	SPtr<Map<String, Object>> vars = newS<HashMap<String, Object>>();
+	SPtr<ChainedResolver> resolver1 = ChainedResolver::over("system"_SPTR, systemInfo);
+	(*resolver1).with(vars, false);
+	res1 = ExpressionEvaluator::expressionValue(":config:{hostname = system.hostname, ip=system.ip, a = 1, b = config.a + 1}"_SPTR, resolver1, 0);
+	res2 = res1->toString();
+	fmt::print("Expr: {}", *res2);
+
 }

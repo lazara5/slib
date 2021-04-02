@@ -21,7 +21,7 @@ private:
 public:
 	SystemInfo();
 
-	void initialize();
+	virtual void initialize() override;
 
 	/** get host name */
 	SPtr<Object> getHostname() const {

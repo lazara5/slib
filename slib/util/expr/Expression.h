@@ -12,6 +12,10 @@ namespace slib {
 
 namespace expr {
 
+typedef uint32_t EvalFlags;
+
+EvalFlags const EXPR_ALLOW_UNDEFINED = 1 << 0;
+
 class Value;
 class Resolver;
 
@@ -27,7 +31,7 @@ public:
 	virtual ~Expression() override;
 
 	/** @throws EvaluationException */
-	UPtr<Value> evaluate(Resolver const& resolver);
+	UPtr<Value> evaluate(SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 };
 
 } // namespace expr

@@ -23,10 +23,12 @@ friend class ResultHolder;
 private:
 	SPtr<Object> _value;
 	SPtr<String> _name;
+	SPtr<String> _tag;
 public:
-	Value(SPtr<Object> const& value, SPtr<String> const& name = nullptr)
-	:_value(value)
-	,_name(name) {}
+	Value(SPtr<Object> const& value, SPtr<String> const& name = nullptr, SPtr<String> const& tag = nullptr)
+	: _value(value)
+	, _name(name)
+	, _tag(tag) {}
 
 	static UPtr<Value> of(SPtr<Object> const& value) {
 		return newU<Value>(value);
@@ -66,6 +68,10 @@ public:
 		return newU<Value>(value, varName);
 	}
 
+	static UPtr<Value> taggedOf(SPtr<Object> const& value, SPtr<String> const& tag) {
+		return newU<Value>(value, nullptr, tag);
+	}
+
 	static UPtr<Value> Nil() {
 		return newU<Value>(nullptr, nullptr);
 	}
@@ -80,6 +86,10 @@ public:
 
 	SPtr<String> getName() const {
 		return _name;
+	}
+
+	SPtr<String> getTag() const {
+		return _tag;
 	}
 
 	UPtr<Value> clone() {
@@ -414,15 +424,15 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	UPtr<Value> member(SPtr<String> const& memberName, Resolver const& resolver) {
+	UPtr<Value> member(SPtr<String> const& memberName, SPtr<Resolver> const& resolver) {
 		if (isNil()) {
 			// maybe it is a dotted variable name
 			if (!_name) {
 				// this is not a named variable, no dotted expression possible
 				checkNil(*this);
 			}
-			SPtr<String> dottedName = std::make_shared<String>(fmt::format("{}.{}", *_name, *memberName));
-			SPtr<Object> val = resolver.getVar(*dottedName);
+			SPtr<String> dottedName = newS<String>(fmt::format("{}.{}", *_name, *memberName));
+			SPtr<Object> val = resolver->getVar(*dottedName);
 			if (val)
 				return newU<Value>(val);
 			return Nil(dottedName);

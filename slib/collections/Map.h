@@ -64,6 +64,11 @@ public:
 		return put(newS<K>(key), newS<AVT>(std::forward<A>(args)...));
 	}
 
+	template <class AVT, typename... A>
+	SPtr<V> emplaceValue(SPtr<K> const& key, A&&... args) {
+		return put(key, newS<AVT>(std::forward<A>(args)...));
+	}
+
 	/*template <class AVT>
 	SPtr<V> emplace(const K& key, AVT const& value) {
 		static_assert(std::is_same<AVT, V>::value, "Only use with the exact value type");

@@ -10,6 +10,7 @@
 #include "slib/lang/String.h"
 #include "slib/collections/HashMap.h"
 
+
 namespace slib {
 namespace expr {
 
@@ -29,12 +30,20 @@ private:
 
 	class InternalResolver : public Resolver {
 	private:
-		Resolver const& _externalResolver;
+		SPtr<Resolver> const& _externalResolver;
 	public:
-		InternalResolver(Resolver const& externalResolver)
+		InternalResolver(SPtr<Resolver> const& externalResolver)
 		:_externalResolver(externalResolver) {}
 
 		virtual SPtr<Object> getVar(const String &key) const override;
+
+		virtual bool isReadOnly() const override {
+			return _externalResolver->isReadOnly();
+		}
+
+		virtual void setVar(String const& key, SPtr<Object> const& value) {
+			_externalResolver->setVar(key, value);
+		}
 	};
 public:
 	/** Resolver that provides the for loop variable */
@@ -42,12 +51,12 @@ public:
 	private:
 		SPtr<String> _varName;
 		SPtr<Object> _value;
-		Resolver const& _parentResolver;
+		SPtr<Resolver> _parentResolver;
 	public:
 		virtual ~LoopResolver() override;
 
 		LoopResolver(SPtr<String> const& varName,
-					 Resolver const& parentResolver)
+					 SPtr<Resolver> const& parentResolver)
 		:_varName(varName)
 		,_parentResolver(parentResolver) {}
 
@@ -59,42 +68,50 @@ public:
 			if (_varName->equals(key))
 				return _value;
 
-			return _parentResolver.getVar(key);
+			return _parentResolver->getVar(key);
+		}
+
+		virtual bool isReadOnly() const override {
+			return _parentResolver->isReadOnly();
+		}
+
+		virtual void setVar(String const& key, SPtr<Object> const& value) {
+			_parentResolver->setVar(key, value);
 		}
 	};
 public:
 	/** @throws EvaluationException */
-	static UPtr<String> strExpressionValue(SPtr<BasicString> const& input, Resolver const& resolver);
+	static UPtr<String> strExpressionValue(SPtr<BasicString> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
-	static SPtr<Object> expressionValue(SPtr<BasicString> const& input, Resolver const& resolver);
+	static SPtr<Object> expressionValue(SPtr<BasicString> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
-	static UPtr<Value> expressionValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static UPtr<Value> expressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
-	static UPtr<String> interpolate(String const& pattern, Resolver const& resolver, bool ignoreMissing);
+	static UPtr<String> interpolate(String const& pattern, SPtr<Resolver> const& resolver, bool ignoreMissing);
 
 	/** @throws EvaluationException */
-	static SPtr<Object> smartInterpolate(String const& pattern, Resolver const& resolver, bool ignoreMissing);
+	static SPtr<Object> smartInterpolate(String const& pattern, SPtr<Resolver> const& resolver, bool ignoreMissing);
 protected:
 	/** @throws EvaluationException */
-	static UPtr<String> strExpressionValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static UPtr<String> strExpressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
-	static UPtr<Value> prefixTermValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static UPtr<Value> prefixTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
-	static UPtr<Value> termValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static UPtr<Value> termValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
-	static UPtr<Value> factorValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver);
+	static UPtr<Value> factorValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
-	static UPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type);
+	static UPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, PrimaryType &type, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
-	static UPtr<Value> evaluateSymbol(SPtr<ExpressionInputStream> const& input, Resolver const& resolver, PrimaryType &type);
+	static UPtr<Value> evaluateSymbol(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, PrimaryType &type);
 };
 
 } // namespace expr

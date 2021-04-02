@@ -362,7 +362,7 @@ public:
 	/**
 	 * @throws EvaluationException
 	 */
-	static void format(StringBuilder &out, ArgList const& args, Resolver const& resolver);
+	static void format(StringBuilder &out, ArgList const& args, SPtr<Resolver> const& resolver);
 };
 
 } // namespace expr

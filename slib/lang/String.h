@@ -210,7 +210,7 @@ public:
 	}
 
 	template <class S1, class S2>
-	static bool startsWith(S1 const* str,  S2 const* prefix) {
+	static bool startsWith(S1 const* str, S2 const* prefix) {
 		const char *buffer = str ? str->c_str() : nullptr;
 		const char *prefixBuffer = prefix? prefix->c_str() : nullptr;
 
@@ -220,7 +220,7 @@ public:
 	}
 
 	template <class S1, class S2>
-	static bool startsWith(S1 const* str,  const char *prefix, ssize_t prefixLen = -1) {
+	static bool startsWith(S1 const* str, const char *prefix, ssize_t prefixLen = -1) {
 		const char *buffer = str ? str->c_str() : nullptr;
 
 		if ((!buffer) || (!prefix))

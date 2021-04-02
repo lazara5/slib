@@ -50,6 +50,8 @@ UPtr<String> toStringImpl(T const* obj, std::true_type) {
 
 template <class T>
 UPtr<String> toString(T const* obj) {
+	if (!obj)
+		return newU<String>("null");
 	return toStringImpl<T>(obj, std::is_base_of<Object, T>{});
 }
 

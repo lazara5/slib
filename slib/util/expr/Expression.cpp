@@ -10,8 +10,8 @@ namespace expr {
 
 Expression::~Expression() {}
 
-UPtr<Value> Expression::evaluate(Resolver const& resolver) {
-	return ExpressionEvaluator::expressionValue(std::make_shared<ExpressionInputStream>(_text), resolver);
+UPtr<Value> Expression::evaluate(SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
+	return ExpressionEvaluator::expressionValue(std::make_shared<ExpressionInputStream>(_text), resolver, evalFlags);
 }
 
 } // namespace expr

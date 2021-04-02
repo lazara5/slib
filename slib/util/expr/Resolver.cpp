@@ -11,5 +11,26 @@ Resolver::~Resolver() {}
 
 MapResolver::~MapResolver() {}
 
+ChainedResolver::~ChainedResolver() {}
+
+SPtr<Object> ChainedResolver::getVar(const String &key) const {
+	SPtr<Resolver> res = _namedResolvers->get(key);
+	if (res)
+		return res;
+	for (auto resolver : _resolvers->constIterator()) {
+		SPtr<Object> res = resolver->getVar(key);
+		if (res)
+			return res;
+	}
+	return nullptr;
+}
+
+void ChainedResolver::setVar(String const& key, SPtr<Object> const& value) {
+	if (_writableResolver)
+		_writableResolver->setVar(key, value);
+	else
+		Resolver::setVar(key, value);
+}
+
 } // namespace expr
 } // namespace slib

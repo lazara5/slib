@@ -22,12 +22,12 @@ using namespace expr;
 
 UPtr<String> ConfigProcessor::processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) {
 	//SPtr<String> value = StringUtils::interpolate(rawProperty, *this, false);
-	SPtr<Object> value = ExpressionEvaluator::smartInterpolate(*rawProperty, *this, false);
+	SPtr<Object> value = ExpressionEvaluator::smartInterpolate(*rawProperty, _resolver, false);
 
 	if (String::startsWith(CPtr(name), '@')) {
 		if (!_vars)
-			_vars = std::make_unique<HashMap<String, Object>>();
-		_vars->put(std::make_shared<String>(String::substring(CPtr(name), 1)), value);
+			_vars = newU<HashMap<String, Object>>();
+		_vars->put(newS<String>(String::substring(CPtr(name), 1)), value);
 		return nullptr;
 	} else if (String::endsWith(CPtr(name), ']')) {
 		ptrdiff_t openBracket = String::lastIndexOf(CPtr(name), '[');
@@ -89,10 +89,10 @@ SPtr<Object> ConfigProcessor::getVar(String const& name) const {
 
 UPtr<String> SimpleConfigProcessor::processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) {
 	//SPtr<String> value = StringUtils::interpolate(rawProperty, *this, true);
-	SPtr<Object> value = ExpressionEvaluator::smartInterpolate(*rawProperty, *this, true);
+	SPtr<Object> value = ExpressionEvaluator::smartInterpolate(*rawProperty, _resolver, true);
 	if (String::startsWith(CPtr(name), '@')) {
 		if (!_vars)
-			_vars = std::make_unique<HashMap<String, Object>>();
+			_vars = newU<HashMap<String, Object>>();
 		_vars->put(std::make_shared<String>(String::substring(CPtr(name), 1)), value);
 		return nullptr;
 	}

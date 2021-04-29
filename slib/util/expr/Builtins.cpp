@@ -24,23 +24,23 @@ public:
 		emplaceKey<String>("math", math);
 
 		math->emplaceKey<String>("ceil", Function::impl<Number>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, UPtr<ExpressionContext> const& ctx SLIB_UNUSED, ArgList const& args) {
 				return Value::of(newS<Double>(ceil(args.get<Number>(0)->doubleValue())));
 			}
 		));
 		math->emplaceKey<String>("floor", Function::impl<Number>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED,EvalFlags evalFlags SLIB_UNUSED,  ArgList const& args) {
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED,EvalFlags evalFlags SLIB_UNUSED, UPtr<ExpressionContext> const& ctx SLIB_UNUSED, ArgList const& args) {
 				return Value::of(newS<Double>(floor(args.get<Number>(0)->doubleValue())));
 			}
 		));
 		math->emplaceKey<String>("abs", Function::impl<Number>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED,EvalFlags evalFlags SLIB_UNUSED,  ArgList const& args) {
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED,EvalFlags evalFlags SLIB_UNUSED, UPtr<ExpressionContext> const& ctx SLIB_UNUSED, ArgList const& args) {
 				return Value::of(newS<Double>(abs(args.get<Number>(0)->doubleValue())));
 			}
 		));
 
 		emplaceKey<String>("format", Function::impl<String>(
-			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags SLIB_UNUSED, UPtr<ExpressionContext> const& ctx SLIB_UNUSED, ArgList const& args) {
 				StringBuilder result;
 				ExpressionFormatter::format(result, args, resolver);
 				return Value::of(result.toString());
@@ -48,7 +48,7 @@ public:
 		));
 
 		emplaceKey<String>("if", Function::impl<Object, Expression, Expression>(
-			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args) {
+			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags, UPtr<ExpressionContext> const& ctx SLIB_UNUSED, ArgList const& args) {
 				bool val = Value::isTrue(args.getNullable(0));
 				if (val)
 					return (args.get<Expression>(1))->evaluate(resolver, evalFlags);
@@ -62,7 +62,7 @@ public:
 		));
 
 		emplaceKey<String>("for", Function::impl<String, Object, Expression, Expression, Expression>(
-			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args) {
+			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags, UPtr<ExpressionContext> const& ctx SLIB_UNUSED, ArgList const& args) {
 				size_t nArgs = args.size();
 				if (nArgs == 5) {
 					// classic "for"
@@ -125,7 +125,7 @@ public:
 		));
 
 		emplaceKey<String>("assert", Function::impl<Object>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, UPtr<ExpressionContext> const& ctx SLIB_UNUSED, ArgList const& args) {
 				int nArgs = args.size();
 				for (int i = 0; i < nArgs - 1; i += 2) {
 					bool val = Value::isTrue(args.getNullable(i));
@@ -140,7 +140,7 @@ public:
 		));
 
 		emplaceKey<String>("$", Function::impl<String>(
-			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags SLIB_UNUSED, UPtr<ExpressionContext> const& ctx SLIB_UNUSED, ArgList const& args) {
 				SPtr<String> varName = args.get<String>(0);
 				SPtr<Object> value = resolver->getVar(*varName);
 				return value ? Value::of(value, varName) : Value::Nil(varName);
@@ -148,54 +148,58 @@ public:
 		));
 
 		emplaceKey<String>("#", Function::impl<String>(
-			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args) {
-				return ExpressionEvaluator::expressionValue(newS<ExpressionInputStream>(args.get<String>(0)), resolver, evalFlags);
+			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags, UPtr<ExpressionContext> const& ctx, ArgList const& args) {
+				return ExpressionEvaluator::expressionValue(newS<ExpressionInputStream>(args.get<String>(0)), resolver, evalFlags, ctx);
 			}
 		));
 
-		class ObjParseContext : public ParseContext {
+		class ObjParseContext : public FunctionParseContext {
 		private:
 			SPtr<Map<String, Object>> _obj;
 			int _numVal;
 		public:
 			ObjParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName,
-							SPtr<Resolver> const& resolver, SPtr<String> const& tag)
-			: ParseContext(function, symbolName, resolver, tag)
+							SPtr<Resolver> const& resolver, UPtr<ExpressionContext> const& ctx)
+			: FunctionParseContext(function, symbolName, resolver)
 			, _obj(newS<LinkedHashMap<String, Object>>()) {
-				if (tag)
-					resolver->setVar(*tag, _obj);
+				ctx->setNamedObject(_obj);
+				ctx->pushNamespace(_obj);
 			}
 
-			virtual void addArg(SPtr<Object> const& obj) override {
+			virtual void addArg(SPtr<Object> const& obj, UPtr<ExpressionContext> const& ctx) override {
 				SPtr<KeyValueTuple<String>> tuple = Class::cast<KeyValueTuple<String>>(obj);
-				_obj->put(tuple->key, tuple->value);
-				_numVal++;
+				if (tuple->global)
+					_resolver->setVar(*tuple->key, tuple->value);
+				else {
+					_obj->put(tuple->key, tuple->value);
+					_numVal++;
+				}
 			}
 
 			Class const& peekArg() {
 				return _function->getParamType(_numVal);
 			}
 
-			virtual UPtr<Value> evaluate(SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED) override {
+			virtual UPtr<Value> evaluate(SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, UPtr<ExpressionContext> const& ctx SLIB_UNUSED) override {
 				return Value::of(_obj);
 			}
 		};
 
 		emplaceKey<String>("::makeObj", Function::impl<KeyValueTuple<String>>(
 			/* LCOV_EXCL_START */
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args SLIB_UNUSED) {
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, UPtr<ExpressionContext> const& ctx, ArgList const& args SLIB_UNUSED) {
 				// unused, the parse context evaluates directly
+				ctx->popNamespace();
 				return nullptr;
 			},
 			/* LCOV_EXCL_STOP */
-			[](SPtr<Function> const& function, SPtr<String> const& symbolName,
-			   SPtr<Resolver> const& resolver, SPtr<String> const& tag) {
-				return newU<ObjParseContext>(function, symbolName, resolver, tag);
+			[](SPtr<Function> const& function, SPtr<String> const& symbolName, SPtr<Resolver> const& resolver, UPtr<ExpressionContext> const& ctx) {
+				return newU<ObjParseContext>(function, symbolName, resolver, ctx);
 			}
 		));
 
 		emplaceKey<String>("::makeArray", Function::impl<Object>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, UPtr<ExpressionContext> const& ctx SLIB_UNUSED, ArgList const& args) {
 				SPtr<ArrayList<Object>> array = newS<ArrayList<Object>>();
 				for (size_t i = 0; i < args.size(); i++) {
 					SPtr<Object> e = args.getNullable(i);

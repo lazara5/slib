@@ -1,4 +1,4 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
+/* This Source Cod Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
@@ -7,6 +7,49 @@
 
 namespace slib {
 namespace expr {
+
+void ExpressionContext::pushNamespace(SPtr<Object> const& obj) {
+	_namespaceStack.push(newS<Namespace>(obj));
+}
+
+void ExpressionContext::popNamespace() {
+	try {
+		_namespaceStack.pop();
+	} catch (NoSuchElementException const&) {
+		throw EvaluationException(_HERE_, "Namespace close mismatch");
+	}
+}
+
+void ExpressionContext::setName(SPtr<String> const& name) {
+	SPtr<Namespace> nspace = _namespaceStack.peek();
+	if (!nspace) {
+		throw EvaluationException(_HERE_, "Named object cannot be declared outside a namespace");
+	}
+	nspace->_name = name;
+}
+
+void ExpressionContext::clearName() {
+	SPtr<Namespace> nspace = _namespaceStack.peek();
+	if (!nspace) {
+		throw EvaluationException(_HERE_, "Named object closed outside namespace");
+		nspace->_name = nullptr;
+	}
+}
+
+void ExpressionContext::setNamedObject(SPtr<Object> const& obj) {
+	SPtr<Namespace> nspace = _namespaceStack.peek();
+	if (nspace) {
+		if (nspace->_name) {
+			if (instanceof<Map<String, Object>>(nspace->_obj)) {
+				SPtr<Map<String, Object>> map = Class::cast<Map<String, Object>>(nspace->_obj);
+				map->put(nspace->_name, obj);
+			} else if (instanceof<Resolver>(nspace->_obj)) {
+				SPtr<Resolver> resolver = Class::cast<Resolver>(nspace->_obj);
+				resolver->setVar(*nspace->_name, obj);
+			}
+		}
+	}
+}
 
 SPtr<Object> ExpressionEvaluator::InternalResolver::getVar(const String &key) const {
 	SPtr<Object> value = _externalResolver->getVar(key);
@@ -55,10 +98,13 @@ UPtr<String> ExpressionEvaluator::strExpressionValue(const SPtr<ExpressionInputS
 		return val->_value->toString();
 }
 
-UPtr<Value> ExpressionEvaluator::expressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
+UPtr<Value> ExpressionEvaluator::expressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags,
+												 UPtr<ExpressionContext> const& ctx /*= nullptr*/) {
+	UPtr<ExpressionContext> localCtx = ctx ? nullptr : newU<ExpressionContext>(resolver);
+
 	input->skipBlanks();
 
-	UPtr<Value> val = prefixTermValue(input, resolver, evalFlags);
+	UPtr<Value> val = prefixTermValue(input, resolver, evalFlags, ctx ? ctx : localCtx);
 	input->skipBlanks();
 	while (input->peek() == '+' || input->peek() == '-' ||
 		   input->peek() == '&' || input->peek() == '|' ||
@@ -89,7 +135,7 @@ UPtr<Value> ExpressionEvaluator::expressionValue(SPtr<ExpressionInputStream> con
 		}
 
 		input->skipBlanks();
-		UPtr<Value> nextVal = prefixTermValue(input, resolver, evalFlags);
+		UPtr<Value> nextVal = prefixTermValue(input, resolver, evalFlags, ctx ? ctx : localCtx);
 		switch (op) {
 			case '+':
 				val = val->add(nextVal);
@@ -174,7 +220,7 @@ UPtr<String> ExpressionEvaluator::interpolate(String const& pattern, SPtr<Resolv
 					SPtr<String> expr = pattern.substring(dollarBegin + 2, pos);
 					try {
 						UPtr<String> exprValue = strExpressionValue(newS<ExpressionInputStream>(expr), resolver,
-																	ignoreMissing ? EXPR_ALLOW_UNDEFINED : 0);
+																	ignoreMissing ? EXPR_IGNORE_UNDEFINED : 0);
 						result.add(*exprValue);
 					} catch (MissingSymbolException const& e) {
 						if (ignoreMissing) {
@@ -304,7 +350,7 @@ SPtr<Object> ExpressionEvaluator::smartInterpolate(String const& pattern, SPtr<R
 						UPtr<String> expr = pattern.substring(dollarBegin + 2, pos);
 						try {
 							result.appendExpr(std::move(expr), resolver,
-											  ignoreMissing ? EXPR_ALLOW_UNDEFINED : 0);
+											  ignoreMissing ? EXPR_IGNORE_UNDEFINED : 0);
 						} catch (MissingSymbolException const& e) {
 							if (ignoreMissing)
 								result.add("${").add(*expr).add('}');
@@ -335,7 +381,8 @@ SPtr<Object> ExpressionEvaluator::smartInterpolate(String const& pattern, SPtr<R
 		return result.toObject();
 	}
 
-UPtr<Value> ExpressionEvaluator::prefixTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
+UPtr<Value> ExpressionEvaluator::prefixTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
+												 EvalFlags evalFlags, const UPtr<ExpressionContext> &ctx) {
 	bool negative = false;
 	bool negate = false;
 
@@ -347,7 +394,7 @@ UPtr<Value> ExpressionEvaluator::prefixTermValue(SPtr<ExpressionInputStream> con
 		negate = true;
 	}
 
-	UPtr<Value> val = termValue(input, resolver, evalFlags);
+	UPtr<Value> val = termValue(input, resolver, evalFlags, ctx);
 	if (negative)
 		val = val->inverse();
 	else if (negate)
@@ -356,13 +403,14 @@ UPtr<Value> ExpressionEvaluator::prefixTermValue(SPtr<ExpressionInputStream> con
 	return val;
 }
 
-UPtr<Value> ExpressionEvaluator::termValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
+UPtr<Value> ExpressionEvaluator::termValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
+										   EvalFlags evalFlags, UPtr<ExpressionContext> const& ctx) {
 	input->skipBlanks();
-	UPtr<Value> val = factorValue(input, resolver, evalFlags);
+	UPtr<Value> val = factorValue(input, resolver, evalFlags, ctx);
 	input->skipBlanks();
 	while (input->peek() == '*' || input->peek() == '/' || input->peek() == '%') {
 		char op = input->readChar();
-		UPtr<Value> nextVal = factorValue(input, resolver, evalFlags);
+		UPtr<Value> nextVal = factorValue(input, resolver, evalFlags, ctx);
 		if (op == '*')
 			val = val->multiply(nextVal);
 		else if (op == '/')
@@ -405,27 +453,29 @@ static void resetFPO(FunctionParseOpts &fpo) {
 }
 
 /** @throws EvaluationException */
-static UPtr<Value> checkedExpressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
+static UPtr<Value> checkedExpressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
+										  EvalFlags evalFlags, const UPtr<ExpressionContext> &ctx) {
 	try {
-		return ExpressionEvaluator::expressionValue(input, resolver, evalFlags);
+		return ExpressionEvaluator::expressionValue(input, resolver, evalFlags, ctx);
 	} catch (MissingSymbolException const& e) {
-		if (evalFlags & EXPR_ALLOW_UNDEFINED) {
+		if (evalFlags & EXPR_IGNORE_UNDEFINED) {
 			return Value::Nil(e.getSymbolName());
 		} else
 			throw;
 	} catch (NilValueException const& e) {
-		if (evalFlags & EXPR_ALLOW_UNDEFINED) {
+		if (evalFlags & EXPR_IGNORE_UNDEFINED) {
 			return Value::Nil();
 		} else
 			throw;
 	}
 }
 
-UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
+UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
+											 EvalFlags evalFlags, const UPtr<ExpressionContext> &ctx) {
 	input->skipBlanks();
 
 	PrimaryType primaryType = PrimaryType::NONE;
-	UPtr<Value> val = primaryValue(input, resolver, primaryType, evalFlags);
+	UPtr<Value> val = primaryValue(input, resolver, primaryType, evalFlags, ctx);
 
 	FunctionParseOpts fpo = {
 		.functionClose = ')',
@@ -482,7 +532,7 @@ UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 					SPtr<String> symbolName = val->getName();
 					if (!symbolName)
 						symbolName = "<unknown>"_SPTR;
-					UPtr<ParseContext> parseCtx = ParseContext::forFunction(func, symbolName, resolver, val->_tag);
+					UPtr<FunctionParseContext> parseCtx = FunctionParseContext::forFunction(func, symbolName, resolver, ctx);
 
 					do {
 						swallowSeparators(input, fpo.newlineIsSep);
@@ -495,9 +545,9 @@ UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 
 						Class const& argClass = parseCtx->peekArg();
 						if (argClass == classOf<Expression>::_class())
-							parseCtx->addArg(input->readArg());
+							parseCtx->addArg(input->readArg(), ctx);
 						else {
-							parseCtx->addArg(checkedExpressionValue(input, resolver, evalFlags)->_value);
+							parseCtx->addArg(checkedExpressionValue(input, resolver, evalFlags, ctx)->_value, ctx);
 						}
 					} while (true);
 
@@ -526,7 +576,7 @@ UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 						} while (true);
 					}*/
 					try {
-						val = parseCtx->evaluate(resolver, evalFlags);
+						val = parseCtx->evaluate(resolver, evalFlags, ctx);
 					} catch (ClassCastException const& e) {
 						throw CastException(_HERE_, fmt::format("Cast exception in function {}()", *symbolName).c_str(), e);
 					}
@@ -544,8 +594,11 @@ UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 					if (primaryType != PrimaryType::LITERAL)
 						throw SyntaxErrorException(_HERE_, "Object key must be literal");
 					input->readChar();
-					UPtr<Value> tupleVal = checkedExpressionValue(input, resolver, evalFlags);
-					val = Value::of(newS<KeyValueTuple<String>>(Class::cast<String>(val->getValue()), tupleVal->getValue()));
+					SPtr<String> tupleName = Class::cast<String>(val->getValue());
+					ctx->setName(tupleName);
+					UPtr<Value> tupleVal = checkedExpressionValue(input, resolver, evalFlags, ctx);
+					ctx->clearName();
+					val = Value::of(newS<KeyValueTuple<String>>(tupleName, val->isGlobal(), tupleVal->getValue()));
 					inFactor = false;
 				}
 				break;
@@ -558,33 +611,28 @@ UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 	return val;
 }
 
-UPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, PrimaryType &type, EvalFlags evalFlags) {
+UPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, PrimaryType &type,
+											  EvalFlags evalFlags, const UPtr<ExpressionContext> &ctx) {
 	type = PrimaryType::NONE;
-	SPtr<String> tag = nullptr;
+	bool global = false;
 
 	input->skipBlanks();
 	char ch = input->peek();
 	if (ch == ':') {
+		global = true;
 		input->readChar();
-		tag = input->readName();
 		ch = input->peek();
-		if (ch == ':') {
-			input->readChar();
-			ch = input->peek();
-		} else {
-			throw SyntaxErrorException(_HERE_, "Unterminated tag");
-		}
 	}
 	if (std::isdigit(ch)) {
 		type = PrimaryType::VALUE;
 		return input->readNumber();
 	} else if (ExpressionInputStream::isIdentifierStart(ch)) {
 		type = PrimaryType::VALUE;
-		return evaluateSymbol(input, resolver, type);
+		return evaluateSymbol(input, resolver, type, global);
 	} else if (ch == '(') {
 		type = PrimaryType::VALUE;
 		input->readChar();
-		UPtr<Value> val = expressionValue(input, resolver, evalFlags);
+		UPtr<Value> val = expressionValue(input, resolver, evalFlags, ctx);
 		input->skipBlanks();
 		if (input->peek() != ')')
 			throw SyntaxErrorException(_HERE_, "Missing right paranthesis");
@@ -595,7 +643,7 @@ UPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const&
 		return input->readString();
 	} else if (ch == '{') {
 		type = PrimaryType::OBJ_CONSTRUCTOR;
-		return Value::taggedOf(resolver->getVar("::makeObj"), tag);
+		return Value::of(resolver->getVar("::makeObj"));
 	} else if (ch == '[') {
 		type = PrimaryType::ARRAY_CONSTRUCTOR;
 		return Value::of(resolver->getVar("::makeArray"));
@@ -609,14 +657,15 @@ UPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const&
 		throw SyntaxErrorException(_HERE_, fmt::format("Unexpected character '{}' encountered", ch).c_str());
 }
 
-UPtr<Value> ExpressionEvaluator::evaluateSymbol(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, PrimaryType &type) {
+UPtr<Value> ExpressionEvaluator::evaluateSymbol(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
+												PrimaryType &type, bool global) {
 	UPtr<String> symbolName = input->readName();
 	input->skipBlanks();
 	char ch = input->peek();
 	if (ch == '=') {
 		// tuple key literal
 		type = PrimaryType::LITERAL;
-		return Value::of(std::move(symbolName));
+		return Value::scopedOf(std::move(symbolName), global);
 	} else {
 		type = PrimaryType::VALUE;
 		SPtr<Object> value = resolver->getVar(*symbolName);

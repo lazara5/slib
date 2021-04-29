@@ -14,7 +14,7 @@
 namespace slib {
 
 template <class E>
-class List : public Collection<E> {
+class List : virtual public Collection<E> {
 public:
 	TYPE_INFO(List, CLASS(List<E>), INHERITS(Collection<E>));
 public:
@@ -41,7 +41,7 @@ public:
 	 * @throws IndexOutOfBoundsException if the index is out of range
 	 *         (index < 0 || index > size())
 	 */
-	virtual void add(int index, SPtr<E> const& e) {
+	virtual void add(int index SLIB_UNUSED, SPtr<E> const& e SLIB_UNUSED) {
 		throw UnsupportedOperationException(_HERE_);
 	}
 
@@ -57,7 +57,7 @@ public:
 		return add(index, newS<E>(value));
 	}
 	
-	virtual int indexOf(const E& o) = 0;
+	virtual ssize_t indexOf(const E& o) = 0;
 
 	virtual SPtr<E> get(size_t index) const = 0;
 public:

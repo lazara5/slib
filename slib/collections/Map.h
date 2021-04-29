@@ -28,9 +28,9 @@ public:
  * An object that maps keys to values. A map cannot contain duplicate keys;
  * each key can map to at most one value.
  *
- * <p>Note: Mutable objects <b> should NOT</b> be used as map keys. The behavior 
+ * <p>Note: Mutable objects <b> should NOT </b> be used as map keys. The behavior
  * of a map is not specified if the value of an object is changed in a manner that 
- * affects <tt>equals</tt> comparisons while the object is a key in the map.
+ * affects \c equals comparisons while the object is a key in the map.
  *
  * @see HashMap
  * @see LinkedHashMap

@@ -29,13 +29,13 @@ public:
 
 	template <class AVT, typename... A>
 	bool emplace(A&&... args) {
-		return add(std::make_shared<AVT>(std::forward<A>(args)...));
+		return add(newS<AVT>(std::forward<A>(args)...));
 	}
 
 	template <class AVT>
 	bool emplace(AVT const& e) {
 		static_assert(std::is_same<AVT, E>::value, "Only use with the exact value type");
-		return add(std::make_shared<E>(e));
+		return add(newS<E>(e));
 	}
 
 	virtual bool remove(const E& o) = 0;

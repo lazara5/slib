@@ -144,7 +144,7 @@ UPtr<std::string> getStringIfExists(const char *where, P path, const rapidjson::
 	if (value == nullptr)
 		return UPtr<std::string>();
 	if (value->IsString())
-		return std::make_unique<std::string>(String::trim(value->GetString()));
+		return newU<std::string>(String::trim(value->GetString()));
 	throw InvalidValueException(where, pathToString(path).c_str(), "String expected");
 }
 

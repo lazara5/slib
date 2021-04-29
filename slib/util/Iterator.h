@@ -16,7 +16,7 @@ class ConstIterator {
 public:
 	class ConstIteratorImpl {
 	public:
-		virtual bool hasNext() = 0;
+		virtual bool hasNext() const = 0;
 		virtual const T& next() = 0;
 		
 		virtual ConstIteratorImpl *clone() = 0;
@@ -26,11 +26,11 @@ public:
 
 	class NullConstIteratorImpl : public ConstIteratorImpl {
 	public:
-		virtual bool hasNext() {
+		virtual bool hasNext() const override {
 			return false;
 		}
 
-		virtual const T& next() {
+		virtual const T& next() override {
 			throw NoSuchElementException(_HERE_);
 		}
 
@@ -152,7 +152,7 @@ public:
 	 *
 	 * @return <i>true</i> if the iterator has more elements.
 	 */
-	virtual bool hasNext() {
+	virtual bool hasNext() const {
 		return _instance->hasNext();
 	}
 
@@ -213,7 +213,7 @@ public:
 	 *
 	 * @return <i>true</i> if the iterator has more elements.
 	 */
-	virtual bool hasNext() {
+	virtual bool hasNext() const {
 		return _instance->hasNext();
 	}
 
@@ -244,6 +244,32 @@ public:
 	virtual void remove() {
 		return _instance->remove();
 	}
+};
+
+template <class T>
+class ConstListIterator : public ConstIterator<T> {
+public:
+	class ConstListIteratorImpl : public ConstIterator<T>::ConstIteratorImpl {
+	public:
+		virtual bool hasPrevious() const = 0;
+		virtual const T& previous() = 0;
+		virtual size_t nextIndex() const = 0;
+		virtual ssize_t previousIndex() const = 0;
+	};
+protected:
+	ConstListIteratorImpl *_instance;
+public:
+	ConstListIterator(ConstListIteratorImpl *instance) {
+		_instance = instance;
+	}
+};
+
+template <class T>
+class ListIterator : public ConstListIterator<T> {
+	class ListIteratorImpl : public ConstListIterator<T>::ConstListIteratorImpl {
+	public:
+		virtual void add(T const& e) = 0;
+	};
 };
 
 template <class T>

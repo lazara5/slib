@@ -11,7 +11,7 @@ namespace expr {
 Expression::~Expression() {}
 
 UPtr<Value> Expression::evaluate(SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
-	return ExpressionEvaluator::expressionValue(std::make_shared<ExpressionInputStream>(_text), resolver, evalFlags);
+	return ExpressionEvaluator::expressionValue(newS<ExpressionInputStream>(_text), resolver, evalFlags);
 }
 
 } // namespace expr

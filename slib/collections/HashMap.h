@@ -37,8 +37,8 @@ public:
 		const int32_t _keyHash;
 	public:
 		Entry(int32_t hash, const K& k, const V& v, Entry *n)
-		: _key(std::make_shared<K>(k))
-		, _value(std::make_shared<V>(v))
+		: _key(newS<K>(k))
+		, _value(newS<V>(v))
 		, _keyHash(hash) {
 			_next = n;
 		}
@@ -464,11 +464,11 @@ protected:
 			}
 		}
 
-		virtual bool hasNext() {
+		virtual bool hasNext() const override {
 			return (_next != nullptr);
 		}
 
-		virtual const typename Map<K, V>::Entry& next() {
+		virtual const typename Map<K, V>::Entry& next() override {
 			typename InternalHashMap<K, V, Pred>::Entry *e = _next;
 			if (e == nullptr)
 				throw NoSuchElementException(_HERE_);
@@ -498,11 +498,11 @@ protected:
 			_ncMap = map;
 		}
 
-		virtual bool hasNext() {
+		virtual bool hasNext() const override {
 			return ConstEntryIterator::hasNext();
 		}
 
-		virtual const typename Map<K, V>::Entry& next() {
+		virtual const typename Map<K, V>::Entry& next() override {
 			return ConstEntryIterator::next();
 		}
 
@@ -637,7 +637,7 @@ public:
 	/*template<class K1, class V1>
 	void emplace(K1&& k, V1&& v) {
 		V value(std::forward<V1>(v));
-		emplace(k, std::make_shared<V1>(std::move(value)));
+		emplace(k, newS<V1>(std::move(value)));
 	}
 
 	template<class K1, class V1>

@@ -14,7 +14,7 @@ private:
 public:
 	TestConfig(String const& confFileName, String const& appName)
 	:Config(confFileName, appName)
-	,_systemInfo(std::make_shared<slib::SystemInfo>()) {
+	,_systemInfo(newS<slib::SystemInfo>()) {
 		registerPropertySource("system", _systemInfo);
 		registerPropertySink("sink", [](String const& name, SPtr<Object> const& value) {
 			STRCMP_EQUAL("name", name.c_str());
@@ -34,7 +34,7 @@ static UPtr<TestConfig> config;
 TEST_GROUP(ConfigTests) {
 	void setup() {
 		config = newU<TestConfig>(*FileUtils::buildPath(*FileUtils::getPath(test_argv[0]), "data/test.conf"), "SlibTest");
-		//config = std::make_unique<TestConfig>("test.conf", "SlibTest");
+		//config = newU<TestConfig>("test.conf", "SlibTest");
 	}
 
 	void teardown() {

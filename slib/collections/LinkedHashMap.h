@@ -158,11 +158,11 @@ protected:
 			_lastReturned = nullptr;
 		}
 
-		virtual bool hasNext() {
+		virtual bool hasNext() const override {
 			return _nextEntry != _map->_header;
 		}
 
-		virtual const typename Map<K, V, Pred>::Entry& next() {
+		virtual const typename Map<K, V, Pred>::Entry& next() override {
 			if (_nextEntry == _map->_header)
 				throw NoSuchElementException(_HERE_);
 			Entry *e = _lastReturned = _nextEntry;
@@ -189,11 +189,11 @@ protected:
 			_ncMap = map;
 		}
 
-		virtual bool hasNext() {
+		virtual bool hasNext() const override {
 			return ConstEntryIterator::hasNext();
 		}
 
-		virtual const typename Map<K, V, Pred>::Entry& next() {
+		virtual const typename Map<K, V, Pred>::Entry& next() override {
 			return ConstEntryIterator::next();
 		}
 
@@ -234,11 +234,11 @@ protected:
 public:
 	LinkedHashMap(int32_t initialCapacity = DEFAULT_INITIAL_CAPACITY, float loadFactor = HASH_DEFAULT_LOAD_FACTOR)
 	: HashMap<K,V,Pred>(nullptr)
-	, _internalMap(std::make_shared<InternalLinkedHashMap<K, V, Pred>>(initialCapacity, loadFactor)) {}
+	, _internalMap(newS<InternalLinkedHashMap<K, V, Pred>>(initialCapacity, loadFactor)) {}
 
 	LinkedHashMap(const LinkedHashMap& other)
 	: HashMap<K,V,Pred>(nullptr)
-	, _internalMap(std::make_shared<InternalLinkedHashMap<K, V, Pred>>(*other._internalMap)) {}
+	, _internalMap(newS<InternalLinkedHashMap<K, V, Pred>>(*other._internalMap)) {}
 
 	/**
 	 * Copies all mappings from <i>other</i> to this map. Does <b>not</b> clear

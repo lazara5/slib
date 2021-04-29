@@ -121,9 +121,9 @@ constexpr Array<TypeData, _typeDescSize<C>()> _typeDesc() {
 
 class Class {
 protected:
-	const StringView _name;
-	const size_t _hDepth;
-	const TypeData *_typeStack;
+	const StringView _name;		///< Class name
+	const size_t _hDepth;		///< Class hierarchy depth
+	const TypeData *_typeStack;	///< Class hierarchy
 public:
 	constexpr Class(StringView const& name, size_t hDepth, const TypeData* typeStack)
 	: _name(name)

@@ -43,6 +43,12 @@ public:
 		_modCount = 0;
 	}
 
+	virtual size_t size() const override = 0;
+
+	virtual bool isEmpty() const override {
+		return size() == 0;
+	}
+
 	virtual ~AbstractList() {}
 };
 

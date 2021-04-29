@@ -7,9 +7,9 @@
 namespace slib {
 namespace expr {
 
-UPtr<ParseContext> defaultNewParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName,
-										  SPtr<Resolver> const& resolver, SPtr<String> const& tag) {
-	return newU<ParseContext>(function, symbolName, resolver, tag);
+UPtr<FunctionParseContext> defaultNewParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName,
+										  SPtr<Resolver> const& resolver, const UPtr<ExpressionContext> &ctx SLIB_UNUSED) {
+	return newU<FunctionParseContext>(function, symbolName, resolver);
 }
 
 Function::~Function() {}

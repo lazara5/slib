@@ -16,7 +16,7 @@ void dump(const char *label, const Value &v) {
 	}
 }
 
-const Value *getValue(const char *where, const Pointer& pointer, const Value &v) {
+const Value *getValue(const char *where SLIB_UNUSED, const Pointer& pointer, const Value &v) {
 	return pointer.Get(v);
 }
 

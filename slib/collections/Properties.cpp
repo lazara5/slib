@@ -221,7 +221,6 @@ void Properties::setVariableProperty(SPtr<String> const& name, SPtr<String> cons
 		if (lineProcessor)
 			finalVal = lineProcessor->processLine(name, value);
 		else
-			//finalVal = std::make_shared<String>(value);
 			finalVal = value;
 
 		if (finalVal)

@@ -14,7 +14,7 @@ namespace expr {
 
 typedef uint32_t EvalFlags;
 
-EvalFlags const EXPR_ALLOW_UNDEFINED = 1 << 0;
+EvalFlags const EXPR_IGNORE_UNDEFINED = 1 << 0;
 
 class Value;
 class Resolver;

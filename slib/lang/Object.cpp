@@ -10,7 +10,7 @@
 namespace slib {
 
 UPtr<String> Object::toString() const {
-	return std::make_unique<String>(fmt::format("{}@{:x}", getClass().getName(), hashCode()));
+	return newU<String>(fmt::format("{}@{:x}", getClass().getName(), hashCode()));
 }
 
 } // namespace slib

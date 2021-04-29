@@ -119,7 +119,7 @@ public:
 		return false;
 	}
 
-	int indexOf(const E& o) {
+	virtual ssize_t indexOf(const E& o) override {
 		for (size_t index = 0; index < size(); index++) {
 			if (_elements[index] && (o == (*_elements[index])))
 				return index;
@@ -162,14 +162,14 @@ private:
 				throw ConcurrentModificationException(where);
 		}
 	public:
-		ConstArrayListIterator(const ArrayList *list, size_t index) {
-			_list = list;
+		ConstArrayListIterator(const ArrayList *list, size_t index)
+		: _list(list) {
 			_cursor = index;
 			_lastRet = -1;
 			_expectedModCount = _list->_modCount;
 		}
 
-		virtual bool hasNext() {
+		virtual bool hasNext() const override {
 			return _cursor != _list->size();
 		}
 
@@ -201,11 +201,11 @@ private:
 			_ncList = list;
 		}
 
-		virtual bool hasNext() {
+		virtual bool hasNext() const override {
 			return ConstArrayListIterator::hasNext();
 		}
 
-		virtual const SPtr<E>& next() {
+		virtual const SPtr<E>& next() override {
 			return ConstArrayListIterator::next();
 		}
 

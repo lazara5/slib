@@ -23,12 +23,12 @@ friend class ResultHolder;
 private:
 	SPtr<Object> _value;
 	SPtr<String> _name;
-	SPtr<String> _tag;
+	bool _global;
 public:
-	Value(SPtr<Object> const& value, SPtr<String> const& name = nullptr, SPtr<String> const& tag = nullptr)
+	Value(SPtr<Object> const& value, SPtr<String> const& name = nullptr, bool global = false)
 	: _value(value)
 	, _name(name)
-	, _tag(tag) {}
+	, _global(global) {}
 
 	static UPtr<Value> of(SPtr<Object> const& value) {
 		return newU<Value>(value);
@@ -68,8 +68,8 @@ public:
 		return newU<Value>(value, varName);
 	}
 
-	static UPtr<Value> taggedOf(SPtr<Object> const& value, SPtr<String> const& tag) {
-		return newU<Value>(value, nullptr, tag);
+	static UPtr<Value> scopedOf(SPtr<Object> const& value, bool global) {
+		return newU<Value>(value, nullptr, global);
 	}
 
 	static UPtr<Value> Nil() {
@@ -88,8 +88,8 @@ public:
 		return _name;
 	}
 
-	SPtr<String> getTag() const {
-		return _tag;
+	bool isGlobal() const {
+		return _global;
 	}
 
 	UPtr<Value> clone() {
@@ -412,7 +412,6 @@ public:
 			}
 
 			return Value::Nil();
-		// TODO: Array
 		} else if (instanceof<List<Object>>(_value)) {
 			List<Object> *list = Class::castPtr<List<Object>>(_value);
 			int64_t i = getIndex(arg);
@@ -452,10 +451,12 @@ public:
 	TYPE_INFO(KeyValueTuple, CLASS(KeyValueTuple<K>), INHERITS(Object));
 public:
 	const SPtr<K> key;
+	const bool global;
 	const SPtr<Object> value;
 
-	KeyValueTuple(SPtr<K> const& key, SPtr<Object> const& value)
+	KeyValueTuple(SPtr<K> const& key, bool global, SPtr<Object> const& value)
 	: key(key)
+	, global(global)
 	, value(value) {}
 };
 

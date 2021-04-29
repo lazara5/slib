@@ -68,12 +68,12 @@ public:
 	}
 
 	UPtr<CharBuffer> subSequence(ptrdiff_t start, ptrdiff_t end) {
-		return std::make_unique<CharBuffer>(_text, start, end);
+		return newU<CharBuffer>(_text, start, end);
 	}
 
 	UPtr<String> toString() const {
 		const char *text = _text->c_str();
-		return std::make_unique<String>(text + _pos, getEndIndex() - _pos);
+		return newU<String>(text + _pos, getEndIndex() - _pos);
 	}
 };
 
@@ -89,7 +89,7 @@ private:
 public:
 	DuplicateFormatFlagsException(const char *where, UPtr<String> f)
 	:IllegalFormatException(where, "DuplicateFormatFlagsException", fmt::format("Flags = '{}'", *f).c_str())
-	,_flags(std::make_shared<String>(*f)) {}
+	,_flags(newS<String>(*f)) {}
 };
 
 class UnknownFormatConversionException : public IllegalFormatException {
@@ -98,7 +98,7 @@ private:
 public:
 	UnknownFormatConversionException(const char *where, UPtr<String> s)
 	:IllegalFormatException(where, "UnknownFormatConversionException", fmt::format("Conversion = '{}'", *s).c_str())
-	,_s(std::make_shared<String>(*s)) {}
+	,_s(newS<String>(*s)) {}
 };
 
 class MissingFormatArgumentException : public IllegalFormatException {
@@ -107,11 +107,11 @@ private:
 public:
 	MissingFormatArgumentException(const char *where, const char *s)
 	:IllegalFormatException(where, "MissingFormatArgumentException", fmt::format("Format specifier = '{}'", *s).c_str())
-	,_s(std::make_shared<String>(s)) {}
+	,_s(newS<String>(s)) {}
 
 	MissingFormatArgumentException(const char *where, String const& s)
 	:IllegalFormatException(where, "MissingFormatArgumentException", fmt::format("Format specifier = '{}'", s).c_str())
-	,_s(std::make_shared<String>(s)) {}
+	,_s(newS<String>(s)) {}
 };
 
 class MissingFormatWidthException : public IllegalFormatException {
@@ -120,7 +120,7 @@ private:
 public:
 	MissingFormatWidthException(const char *where, const char *s)
 	:IllegalFormatException(where, "MissingFormatWidthException", s)
-	,_s(std::make_shared<String>(s)) {}
+	,_s(newS<String>(s)) {}
 };
 
 class FormatFlagsConversionMismatchException : public IllegalFormatException {

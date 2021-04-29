@@ -148,11 +148,11 @@ private:
 			_expectedModCount = _pq->_modCount;
 		}
 
-		virtual bool hasNext() {
+		virtual bool hasNext() const override {
 			return _crtIndex < _pq->size() - 1;
 		}
 
-		virtual SPtr<E> const& next() {
+		virtual SPtr<E> const& next() override {
 			checkForComodification(_HERE_);
 			if (!hasNext())
 				throw NoSuchElementException(_HERE_);

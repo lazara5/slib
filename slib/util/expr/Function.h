@@ -82,21 +82,22 @@ public:
 	Class const& peek(SPtr<Function> const& function);
 };
 
-class ParseContext;
+class FunctionParseContext;
 
 /** @throws EvaluationException */
-typedef std::function<UPtr<Value>(SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args)> Evaluate;
-typedef std::function<UPtr<ParseContext>(SPtr<Function> const& function, SPtr<String> const& symbolName,
-										 SPtr<Resolver> const& resolver, SPtr<String> const& tag)> NewParseContext;
+typedef std::function<UPtr<Value>(SPtr<Resolver> const& resolver, EvalFlags evalFlags, UPtr<ExpressionContext> const& ctx,
+								  ArgList const& args)> Evaluate;
+typedef std::function<UPtr<FunctionParseContext>(SPtr<Function> const& function, SPtr<String> const& symbolName,
+												 SPtr<Resolver> const& resolver, UPtr<ExpressionContext> const& ctx)> NewParseContext;
 
-UPtr<ParseContext> defaultNewParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName,
-										  SPtr<Resolver> const& resolver, SPtr<String> const& tag);
+UPtr<FunctionParseContext> defaultNewParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName,
+												  SPtr<Resolver> const& resolver, UPtr<ExpressionContext> const& ctx);
 
 class Function : virtual public Object {
 public:
 	TYPE_INFO(Function, CLASS(Function), INHERITS(Object));
 public:
-	friend class ParseContext;
+	friend class FunctionParseContext;
 private:
 	/** Number of fixed params */
 	size_t _fixedParams;
@@ -141,28 +142,30 @@ public:
 	}
 
 	/** @throws EvaluationException; */
-	UPtr<Value> evaluate(SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args) {
-		return _evaluate(resolver, evalFlags, args);
+	UPtr<Value> evaluate(SPtr<Resolver> const& resolver, EvalFlags evalFlags,  UPtr<ExpressionContext> const& ctx, ArgList const& args) {
+		return _evaluate(resolver, evalFlags, ctx, args);
 	}
 };
 
-class ParseContext {
+class FunctionParseContext {
 protected:
 	SPtr<Function> _function;
+	SPtr<Resolver> _resolver;
 	UPtr<FunctionArgs> _argList;
 public:
-	ParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName,
-				 SPtr<Resolver> const& resolver SLIB_UNUSED, SPtr<String> const& tag SLIB_UNUSED)
+	FunctionParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName,
+				 SPtr<Resolver> const& resolver)
 	: _function(function)
+	, _resolver(resolver)
 	, _argList(newU<FunctionArgs>(symbolName)) {}
 
-	static UPtr<ParseContext> forFunction(SPtr<Function> const& function, SPtr<String> const& symbolName,
-										  SPtr<Resolver> const& resolver, SPtr<String> const& tag) {
-		return function->_newParseContext(function, symbolName, resolver, tag);
+	static UPtr<FunctionParseContext> forFunction(SPtr<Function> const& function, SPtr<String> const& symbolName,
+												  SPtr<Resolver> const& resolver, UPtr<ExpressionContext> const& ctx) {
+		return function->_newParseContext(function, symbolName, resolver, ctx);
 	}
 
 	/** @throws CastException */
-	virtual void addArg(SPtr<Object> const& obj) {
+	virtual void addArg(SPtr<Object> const& obj, UPtr<ExpressionContext> const& ctx) {
 		_argList->add(obj, _function);
 	}
 
@@ -170,8 +173,8 @@ public:
 		return _argList->peek(_function);
 	}
 
-	virtual UPtr<Value> evaluate(SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
-		return _function->evaluate(resolver, evalFlags, *_argList);
+	virtual UPtr<Value> evaluate(SPtr<Resolver> const& resolver, EvalFlags evalFlags, UPtr<ExpressionContext> const& ctx) {
+		return _function->evaluate(resolver, evalFlags, ctx, *_argList);
 	}
 };
 

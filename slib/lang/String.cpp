@@ -86,16 +86,16 @@ UPtr<ArrayList<std::string>> String::simpleSplit(const char *buffer, size_t len,
 	const char *ptr = buffer;
 	do {
 		if (--limit == 0) {
-			results->add(std::make_shared<std::string>(ptr, len));
+			results->add(newS<std::string>(ptr, len));
 			return results;
 		}
 		nextDelim = (const char *)memchr(ptr, delim, len);
 		if (nextDelim)
 			len -= (size_t)(nextDelim - ptr + 1);
 		if (nextDelim == nullptr) {
-			results->add(std::make_shared<std::string>(ptr, len));
+			results->add(newS<std::string>(ptr, len));
 		} else {
-			results->add(std::make_shared<std::string>(ptr, (size_t)(nextDelim - ptr)));
+			results->add(newS<std::string>(ptr, (size_t)(nextDelim - ptr)));
 		}
 		ptr = nextDelim + 1;
 	} while (nextDelim != nullptr);
@@ -125,15 +125,15 @@ UPtr<ArrayList<String> > String::split(const char *buffer, size_t len, const cha
 		sliceLen = slice.length();
 		remaining = len - (ptr - buffer);
 		if (--limit == 0) {
-			results->add(std::make_shared<String>(ptr, remaining));
+			results->add(newS<String>(ptr, remaining));
 			return results;
 		}
 
-		results->add(std::make_shared<String>(ptr, sliceLen));
+		results->add(newS<String>(ptr, sliceLen));
 	}
 
 	if ((allowTrailing) && ((ptr - buffer + sliceLen) != len))
-		results->add(std::make_shared<String>(""));
+		results->add(newS<String>(""));
 
 	return results;
 }

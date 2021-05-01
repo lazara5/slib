@@ -24,8 +24,8 @@ public:
 		 *         time due to capacity restrictions
 		 * @throws ClassCastException if the class of the specified element
 		 *         prevents it from being added to this deque
-		 * @throws NullPointerException if the specified element is null and this
-		 *         deque does not permit null elements
+		 * @throws NullPointerException if the specified element is \c nullptr and this
+		 *         deque does not permit \c nullptr elements
 		 * @throws IllegalArgumentException if some property of the specified
 		 *         element prevents it from being added to this deque
 		 */
@@ -44,8 +44,8 @@ public:
 		 *         time due to capacity restrictions
 		 * @throws ClassCastException if the class of the specified element
 		 *         prevents it from being added to this deque
-		 * @throws NullPointerException if the specified element is null and this
-		 *         deque does not permit null elements
+		 * @throws NullPointerException if the specified element is \c nullptr and this
+		 *         deque does not permit \c nullptr elements
 		 * @throws IllegalArgumentException if some property of the specified
 		 *         element prevents it from being added to this deque
 		 */
@@ -62,8 +62,8 @@ public:
 		 *         <tt>false</tt>
 		 * @throws ClassCastException if the class of the specified element
 		 *         prevents it from being added to this deque
-		 * @throws NullPointerException if the specified element is null and this
-		 *         deque does not permit null elements
+		 * @throws NullPointerException if the specified element is \c nullptr and this
+		 *         deque does not permit \c nullptr elements
 		 * @throws IllegalArgumentException if some property of the specified
 		 *         element prevents it from being added to this deque
 		 */
@@ -76,8 +76,7 @@ public:
 		 * which can fail to insert an element only by throwing an exception.
 		 *
 		 * @param e the element to add
-		 * @return <tt>true</tt> if the element was added to this deque, else
-		 *         <tt>false</tt>
+		 * @return \c true if the element was added to this deque, \c false otherwise
 		 * @throws ClassCastException if the class of the specified element
 		 *         prevents it from being added to this deque
 		 * @throws NullPointerException if the specified element is null and this
@@ -109,17 +108,17 @@ public:
 
 		/**
 		 * Retrieves and removes the first element of this deque,
-		 * or returns <tt>null</tt> if this deque is empty.
+		 * or returns \c nullptr if this deque is empty.
 		 *
-		 * @return the head of this deque, or <tt>nullptr</tt> if this deque is empty
+		 * @return the head of this deque, or \c nullptr if this deque is empty
 		 */
 		virtual SPtr<E> pollFirst() = 0;
 
 		/**
 		 * Retrieves and removes the last element of this deque,
-		 * or returns <tt>null</tt> if this deque is empty.
+		 * or returns \c nullptr if this deque is empty.
 		 *
-		 * @return the tail of this deque, or <tt>nullptr</tt> if this deque is empty
+		 * @return the tail of this deque, or \c nullptr if this deque is empty
 		 */
 		virtual SPtr<E> pollLast() = 0;
 
@@ -146,9 +145,9 @@ public:
 
 		/**
 		 * Retrieves, but does not remove, the first element of this deque,
-		 * or returns <tt>nullptr</tt> if this deque is empty.
+		 * or returns \c nullptr if this deque is empty.
 		 *
-		 * @return the head of this deque, or <tt>null</tt> if this deque is empty
+		 * @return the head of this deque, or \c nullptr if this deque is empty
 		 */
 		virtual SPtr<E> peekFirst() = 0;
 

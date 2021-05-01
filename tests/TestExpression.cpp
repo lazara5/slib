@@ -30,7 +30,7 @@ TEST_GROUP(ExprTests) {
 		map->emplace<Double, String>(4.0, "yyy");
 
 		auto map1 = newS<HashMap<Object, Object>>();
-		auto *map2 = dynamic_cast<Map<Object, Object>*>(map1.get());
+		auto *map2 SLIB_UNUSED = dynamic_cast<Map<Object, Object>*>(map1.get());
 
 		resolver = newS<MapResolver>(vars);
 	}

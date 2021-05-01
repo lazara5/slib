@@ -32,77 +32,79 @@ private:
 	};
 
 	size_t _size;
-	Node *_first;
-	Node *_last;
+	Node *_head;
+	Node *_tail;
 public:
 	LinkedList()
 	: _size(0)
-	, _first(nullptr)
-	, _last(nullptr) {}
+	, _head(nullptr)
+	, _tail(nullptr) {}
 private:
-	void linkFirst(SPtr<E> const& e) {
-		Node *f = _first;
-		Node *newNode = new Node(nullptr, e, f);
-		_first = newNode;
-		if (!f)
-			_last = newNode;
+	void linkHead(SPtr<E> const& elem) {
+		Node *h = _head;
+		Node *newNode = new Node(nullptr, elem, h);
+		_head = newNode;
+		if (!h)
+			_tail = newNode;
 		else
-			f->_prev = newNode;
+			h->_prev = newNode;
 		_size++;
 		_modCount++;
 	}
 
-	void linkLast(SPtr<E> const& e) {
-		Node *l = _last;
-		Node *newNode = new Node(l, e, nullptr);
-		_last = newNode;
-		if (!l)
-			_first = newNode;
+	void linkTail(SPtr<E> const& elem) {
+		Node *t = _tail;
+		Node *newNode = new Node(t, elem, nullptr);
+		_tail = newNode;
+		if (!t)
+			_head = newNode;
 		else
-			l->_next = newNode;
+			t->_next = newNode;
 		_size++;
 		_modCount++;
 	}
 
-	void linkBefore(SPtr<E> const& e, Node *succ) {
+	void linkBefore(SPtr<E> const& elem, Node *succ) {
 		Node *pred = succ->_prev;
-		Node *newNode = new Node(pred, e, succ);
+		Node *newNode = new Node(pred, elem, succ);
 		succ->_prev = newNode;
 		if (!pred)
-			_first = newNode;
+			_head = newNode;
 		else
 			pred->_next = newNode;
 		_size++;
 		_modCount++;
 	}
 
-	SPtr<E> unlinkFirst(Node *f) {
-		SPtr<E> elem = std::move(f->_item);
-		Node *next = f->_next;
-		_first = next;
+	SPtr<E> unlinkHead() {
+		Node *head = _head;
+		SPtr<E> elem = std::move(head->_item);
+		Node *next = head->_next;
+		_head = next;
 
 		if (!next)
-			_last = nullptr;
+			_tail = nullptr;
 		else
 			next->_prev = nullptr;
 
-		delete f;
+		delete head;
 		_size--;
 		_modCount++;
 		return elem;
 	}
 
-	SPtr<E> unlinkLast(Node *l) {
-		SPtr<E> elem = std::move(l->_item);
-		Node *prev = l->_prev;
-		_last = prev;
+	SPtr<E> unlinkTail() {
+		Node *tail = _tail;
+		SPtr<E> elem = std::move(tail->_item);
+		Node *prev = tail->_prev;
+		_tail = prev;
 
 		if (!prev)
-			_first = nullptr;
+			_head = nullptr;
 		else
 			prev->_next = nullptr;
 
-		delete l;
+		delete tail;
 		_size--;
 		_modCount++;
 		return elem;
@@ -114,12 +116,12 @@ private:
 		Node *prev = x->_prev;
 
 		if (!prev)
-			_first = next;
+			_head = next;
 		else
 			prev->_next = next;
 
 		if (!next)
-			_last = prev;
+			_tail = prev;
 		else
 			next->_prev = prev;
 
@@ -129,20 +131,18 @@ private:
 		return elem;
 	}
 
-	/**
-	 * Returns the (non-null) Node at the specified element index.
-	 */
+	/** Returns the (non-null) Node at the specified element index. */
 	Node *nodeAt(size_t index) const {
 		if (index < (_size >> 1)) {
-			Node *x = _first;
+			Node *node = _head;
 			for (size_t i = 0; i < index; i++)
-				x = x->_next;
-			return x;
+				node = node->_next;
+			return node;
 		} else {
-			Node *x = _last;
+			Node *node = _tail;
 			for (size_t i = _size - 1; i > index; i--)
-				x = x->_prev;
-			return x;
+				node = node->_prev;
+			return node;
 		}
 	}
 
@@ -173,7 +173,7 @@ public:
 	virtual ssize_t indexOf(const E& o) {
 		ssize_t index = 0;
 
-		for (Node *x = _first; x != nullptr; x = x->_next) {
+		for (Node *x = _head; x != nullptr; x = x->_next) {
 			if (o == (*x->_item))
 				return index;
 			index++;
@@ -189,10 +189,9 @@ public:
 	 * @throws NoSuchElementException if this list is empty
 	 */
 	SPtr<E> getFirst() {
-		Node *f = _first;
-		if (!f)
+		if (!_head)
 			throw NoSuchElementException(_HERE_);
-		return f->_item;
+		return _head->_item;
 	}
 
 	/**
@@ -202,10 +201,9 @@ public:
 	 * @throws NoSuchElementException if this list is empty
 	 */
 	SPtr<E> getLast() {
-		Node *l = _last;
-		if (!l)
+		if (!_tail)
 			throw NoSuchElementException(_HERE_);
-		return l->_item;
+		return _tail->_item;
 	}
 
 	/**
@@ -215,10 +213,9 @@ public:
 	 * @throws NoSuchElementException if this list is empty
 	 */
 	SPtr<E> removeFirst() {
-		Node *f = _first;
-		if (!f)
+		if (!_head)
 			throw NoSuchElementException(_HERE_);
-		return unlinkFirst(f);
+		return unlinkHead();
 	}
 
 	/**
@@ -228,10 +225,9 @@ public:
 	 * @throws NoSuchElementException if this list is empty
 	 */
 	SPtr<E> removeLast() {
-		Node *l = _last;
-		if (!l)
+		if (!_tail)
 			throw NoSuchElementException(_HERE_);
-		return unlinkLast(l);
+		return unlinkTail();
 	}
 
 	/**
@@ -240,7 +236,7 @@ public:
 	 * @param e the element to add
 	 */
 	void addFirst(SPtr<E> const& e) {
-		linkFirst(e);
+		linkHead(e);
 	}
 
 	/**
@@ -251,7 +247,7 @@ public:
 	 * @param e the element to add
 	 */
 	void addLast(SPtr<E> const& e) {
-		linkLast(e);
+		linkTail(e);
 	}
 
 	/**
@@ -269,30 +265,27 @@ public:
 	 * <p>This method is equivalent to {@link #addLast}.
 	 *
 	 * @param e element to be appended to this list
-	 * @return {@code true} (as specified by {@link Collection#add})
+	 * @return \c true (as specified by {@link Collection#add})
 	 */
 	bool add(SPtr<E> const& e) override {
-		linkLast(e);
+		linkTail(e);
 		return true;
 	}
 
 	/**
 	 * Removes the first occurrence of the specified element from this list,
-	 * if it is present.  If this list does not contain the element, it is
-	 * unchanged.  More formally, removes the element with the lowest index
-	 * {@code i} such that
-	 * <tt>(o==null&nbsp;?&nbsp;get(i)==null&nbsp;:&nbsp;o.equals(get(i)))</tt>
-	 * (if such an element exists).  Returns {@code true} if this list
+	 * if it is present. If this list does not contain the element, it is
+	 * unchanged. Returns \c true if this list
 	 * contained the specified element (or equivalently, if this list
 	 * changed as a result of the call).
 	 *
 	 * @param o element to be removed from this list, if present
-	 * @return {@code true} if this list contained the specified element
+	 * @return \c true if this list contained the specified element
 	 */
 	bool remove(const E& o) override {
-		for (Node *x = _first; x != nullptr; x = x->_next) {
-			if (o == (*x->_item)) {
-				unlink(x);
+		for (Node *node = _head; node != nullptr; node = node->_next) {
+			if (o == (*node->_item)) {
+				unlink(node);
 				return true;
 			}
 		}
@@ -304,12 +297,12 @@ public:
 	 * The list will be empty after this call returns.
 	 */
 	void clear() override {
-		for (Node *x = _first; x != nullptr; ) {
-			Node *next = x->_next;
-			delete x;
-			x = next;
+		for (Node *xnode = _head; xnode != nullptr; ) {
+			Node *next = xnode->_next;
+			delete xnode;
+			xnode = next;
 		}
-		_first = _last = nullptr;
+		_head = _tail = nullptr;
 		_size = 0;
 		_modCount++;
 	}
@@ -319,7 +312,7 @@ public:
 	 *
 	 * @param index index of the element to return
 	 * @return the element at the specified position in this list
-	 * @throws IndexOutOfBoundsException {@inheritDoc}
+	 * @throws IndexOutOfBoundsException
 	 */
 	virtual SPtr<E> get(size_t index) const override {
 		checkElementIndex(index);
@@ -339,7 +332,7 @@ public:
 		checkPositionIndex(index);
 
 		if (index == _size)
-			linkLast(element);
+			linkTail(element);
 		else
 			linkBefore(element, nodeAt(index));
 	}
@@ -361,11 +354,10 @@ public:
 	/**
 	 * Retrieves, but does not remove, the head (first element) of this list.
 	 *
-	 * @return the head of this list, or {@code nullptr} if this list is empty
+	 * @return the head of this list, or \c nullptr if this list is empty
 	 */
 	virtual SPtr<E> peek() override {
-		Node *f = _first;
-		return f ? f->_item : nullptr;
+		return _head ? _head->_item : nullptr;
 	}
 
 	/**
@@ -381,11 +373,10 @@ public:
 	/**
 	 * Retrieves and removes the head (first element) of this list.
 	 *
-	 * @return the head of this list, or {@code nullptr} if this list is empty
+	 * @return the head of this list, or \c nullptr if this list is empty
 	 */
 	virtual SPtr<E> poll() override {
-		Node *f = _first;
-		return f ? unlinkFirst(f) : nullptr;
+		return _head ? unlinkHead() : nullptr;
 	}
 
 	/**
@@ -432,13 +423,13 @@ public:
 
 	/**
 	 * Retrieves, but does not remove, the first element of this list,
-	 * or returns {@code nullptr} if this list is empty.
+	 * or returns \c nullptr if this list is empty.
 	 *
 	 * @return the first element of this list, or {@code nullptr}
 	 *         if this list is empty
 	 */
 	virtual SPtr<E> peekFirst() override {
-		Node *f = _first;
+		Node *f = _head;
 		return f ? f->_item : nullptr;
 	}
 
@@ -446,41 +437,38 @@ public:
 	 * Retrieves, but does not remove, the last element of this list,
 	 * or returns {@code nullptr} if this list is empty.
 	 *
-	 * @return the last element of this list, or {@code nullptr}
+	 * @return the last element of this list, or \c nullptr
 	 *         if this list is empty
 	 */
 	virtual SPtr<E> peekLast() override {
-		Node *l = _last;
-		return l ? l->_item : nullptr;
+		return _tail ? _tail->_item : nullptr;
 	}
 
 	/**
 	 * Retrieves and removes the first element of this list,
-	 * or returns {@code nullptr} if this list is empty.
+	 * or returns \c nullptr if this list is empty.
 	 *
-	 * @return the first element of this list, or {@code nullptr} if
+	 * @return the first element of this list, or \c nullptr if
 	 *         this list is empty
 	 */
 	virtual SPtr<E> pollFirst() override {
-		Node *f = _first;
-		return f ? unlinkFirst(f) : nullptr;
+		return _head ? unlinkHead() : nullptr;
 	}
 
 	/**
 	 * Retrieves and removes the last element of this list,
-	 * or returns {@code nullptr} if this list is empty.
+	 * or returns \c nullptr if this list is empty.
 	 *
-	 * @return the last element of this list, or {@code nullptr} if
+	 * @return the last element of this list, or \c nullptr if
 	 *     this list is empty
 	 */
 	virtual SPtr<E> pollLast() {
-		Node *l = _last;
-		return l ? unlinkLast(l) : nullptr;
+		return _tail ? unlinkTail() : nullptr;
 	}
 
 	/**
-	 * Pushes an element onto the stack represented by this list.  In other
-	 * words, inserts the element at the front of this list.
+	 * Pushes an element onto the stack represented by this list, i. e.
+	 * inserts the element at the front of this list.
 	 *
 	 * <p>This method is equivalent to {@link #addFirst}.
 	 *
@@ -491,8 +479,8 @@ public:
 	}
 
 	/**
-	 * Pops an element from the stack represented by this list.  In other
-	 * words, removes and returns the first element of this list.
+	 * Pops an element from the stack represented by this list, i. e.
+	 * removes and returns the first element of this list.
 	 *
 	 * <p>This method is equivalent to {@link #removeFirst()}.
 	 *
@@ -558,7 +546,7 @@ private:
 			if (!hasPrevious())
 				throw NoSuchElementException(_HERE_);
 
-			_lastReturned = _next = _next ? _next->_prev : _list->_last;
+			_lastReturned = _next = _next ? _next->_prev : _list->_tail;
 			_nextIndex--;
 			return _lastReturned->_item;
 		}
@@ -609,7 +597,7 @@ private:
 			this->checkForComodification(_HERE_);
 			this->_lastReturned = nullptr;
 			if (!this->_next)
-				_ncList->linkLast(e);
+				_ncList->linkTail(e);
 			else
 				_ncList->linkBefore(e, this->_next);
 			this->_nextIndex++;
@@ -659,6 +647,10 @@ public:
 
 	virtual UPtr<ListIterator<SPtr<E>>> listIterator() {
 		return newU<ListIteratorWrapper<SPtr<E>>>(new LinkedListIterator(this, 0));
+	}
+
+	virtual UPtr<ConstListIterator<SPtr<E>>> constListIterator() const {
+		return newU<ConstListIteratorWrapper<SPtr<E>>>(new ConstLinkedListIterator(this, 0));
 	}
 };
 

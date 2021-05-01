@@ -7,6 +7,7 @@
 
 #include "slib/collections/Collection.h"
 #include "slib/util/Iterator.h"
+#include "slib/util/ListIterator.h"
 #include "slib/exception/UnsupportedOperationException.h"
 
 #include <memory>
@@ -62,6 +63,7 @@ public:
 	virtual SPtr<E> get(size_t index) const = 0;
 public:
 	virtual UPtr<ConstIterator<SPtr<E>>> constIterator() const override = 0;
+	virtual UPtr<ConstListIterator<SPtr<E>>> constListIterator() const = 0;
 };
 
 } // namespace

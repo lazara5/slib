@@ -142,12 +142,12 @@ public:
 
 private:
 	// iterator
-	class ConstArrayListIterator : public ConstIteratorImpl<SPtr<E>> {
+	class ConstArrayListIterator : public ConstListIteratorImpl<SPtr<E>> {
 	private:
 		const ArrayList *_list;
 	protected:
 		size_t _cursor;
-		int _lastRet;
+		ptrdiff_t _lastRet;
 		int _expectedModCount;
 	protected:
 		ConstArrayListIterator(ConstArrayListIterator *other) {
@@ -173,21 +173,46 @@ private:
 			return _cursor != _list->size();
 		}
 
-		virtual SPtr<E> const& next() {
+		virtual SPtr<E> const& next() override {
 			checkForComodification(_HERE_);
 			size_t i = _cursor;
 			if (i >= _list->size())
 				throw NoSuchElementException(_HERE_);
 			_cursor = i + 1;
-			return _list->_elements[_lastRet = i];
+			_lastRet = i;
+			return _list->_elements[i];
 		}
 
-		virtual ConstIteratorImpl<SPtr<E>> *clone() override {
+		virtual bool hasPrevious() const override {
+			return _cursor != 0;
+		}
+
+		virtual SPtr<E> const& previous() override {
+			checkForComodification(_HERE_);
+			ptrdiff_t i = _cursor - 1;
+			if (i < 0)
+				throw NoSuchElementException(_HERE_);
+			if ((size_t)i >= _list->size())
+				throw NoSuchElementException(_HERE_);
+			_cursor = i;
+			_lastRet = i;
+			return _list->_elements[i];
+		}
+
+		size_t nextIndex() const override {
+			return _cursor;
+		}
+
+		ssize_t previousIndex() const override {
+			return _cursor - 1;
+		}
+
+		virtual ConstListIteratorImpl<SPtr<E>> *clone() override {
 			return new ConstArrayListIterator(this);
 		}
 	};
 
-	class ArrayListIterator : public IteratorImpl<SPtr<E>>, public ConstArrayListIterator {
+	class ArrayListIterator : public ListIteratorImpl<SPtr<E>>, public ConstArrayListIterator {
 	private:
 		ArrayList *_ncList;
 	protected:
@@ -209,6 +234,20 @@ private:
 			return ConstArrayListIterator::next();
 		}
 
+		virtual void add(SPtr<E> const& e) override {
+			this->checkForComodification(_HERE_);
+
+			try {
+				size_t i = this->_cursor;
+				_ncList->add(i, e);
+				this->_cursor = i + 1;
+				this->_lastRet = -1;
+				this->_expectedModCount = _ncList->_modCount;
+			} catch (IndexOutOfBoundsException const&) {
+				throw ConcurrentModificationException(_HERE_);
+			}
+		}
+
 		virtual void remove() {
 			if (this->_lastRet < 0)
 				throw IllegalStateException(_HERE_);
@@ -224,7 +263,7 @@ private:
 			}
 		}
 
-		virtual IteratorImpl<SPtr<E>> *clone() override {
+		virtual ListIteratorImpl<SPtr<E>> *clone() override {
 			return new ArrayListIterator(this);
 		}
 	};
@@ -243,6 +282,10 @@ public:
 
 	virtual UPtr<Iterator<SPtr<E>>> iterator() {
 		return newU<IteratorWrapper<SPtr<E>>>(new ArrayListIterator(this, 0));
+	}
+
+	virtual UPtr<ConstListIterator<SPtr<E>>> constListIterator() const {
+		return newU<ConstListIteratorWrapper<SPtr<E>>>(new ConstArrayListIterator(this, 0));
 	}
 };
 

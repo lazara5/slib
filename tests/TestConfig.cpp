@@ -33,6 +33,8 @@ static UPtr<TestConfig> config;
 
 TEST_GROUP(ConfigTests) {
 	void setup() {
+		UPtr<String> path = FileUtils::buildPath(*FileUtils::getPath(test_argv[0]), "data/test.conf");
+		printf("path: %s\n", path->c_str());
 		config = newU<TestConfig>(*FileUtils::buildPath(*FileUtils::getPath(test_argv[0]), "data/test.conf"), "SlibTest");
 		//config = newU<TestConfig>("test.conf", "SlibTest");
 	}

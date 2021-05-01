@@ -142,7 +142,7 @@ public:
 
 private:
 	// iterator
-	class ConstArrayListIterator : public ConstIterator<SPtr<E>>::ConstIteratorImpl {
+	class ConstArrayListIterator : public ConstIteratorImpl<SPtr<E>> {
 	private:
 		const ArrayList *_list;
 	protected:
@@ -182,12 +182,12 @@ private:
 			return _list->_elements[_lastRet = i];
 		}
 
-		virtual typename ConstIterator<SPtr<E>>::ConstIteratorImpl *clone() {
+		virtual ConstIteratorImpl<SPtr<E>> *clone() override {
 			return new ConstArrayListIterator(this);
 		}
 	};
 
-	class ArrayListIterator : public Iterator<SPtr<E>>::IteratorImpl, public ConstArrayListIterator {
+	class ArrayListIterator : public IteratorImpl<SPtr<E>>, public ConstArrayListIterator {
 	private:
 		ArrayList *_ncList;
 	protected:
@@ -224,7 +224,7 @@ private:
 			}
 		}
 
-		virtual typename Iterator<SPtr<E>>::IteratorImpl *clone() {
+		virtual IteratorImpl<SPtr<E>> *clone() override {
 			return new ArrayListIterator(this);
 		}
 	};
@@ -237,12 +237,12 @@ public:
 	 *
 	 * @return an iterator over the elements in this list in proper sequence
 	 */
-	virtual ConstIterator<SPtr<E>> constIterator() const {
-		return ConstIterator<SPtr<E>>(new ConstArrayListIterator(this, 0));
+	virtual UPtr<ConstIterator<SPtr<E>>> constIterator() const {
+		return newU<ConstIteratorWrapper<SPtr<E>>>(new ConstArrayListIterator(this, 0));
 	}
 
-	virtual Iterator<SPtr<E>> iterator() {
-		return Iterator<SPtr<E>>(new ArrayListIterator(this, 0));
+	virtual UPtr<Iterator<SPtr<E>>> iterator() {
+		return newU<IteratorWrapper<SPtr<E>>>(new ArrayListIterator(this, 0));
 	}
 };
 

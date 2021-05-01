@@ -121,9 +121,9 @@ Config::Config(String const& confFileName, String const& appName)
 ,_simpleCfgProc(*this) {}
 
 SPtr<String> searchConfigFile(List<String> const& configDirs, String const& configFile) {
-	ConstIterator<SPtr<String>> i = configDirs.constIterator();
-	while (i.hasNext()) {
-		SPtr<String> const& dir = i.next();
+	UPtr<ConstIterator<SPtr<String>>> i = configDirs.constIterator();
+	while (i->hasNext()) {
+		SPtr<String> const& dir = i->next();
 		UPtr<String> fileName = FileUtils::buildPath(*dir, configFile);
 		if (!access(fileName->c_str(), 0))
 			return dir;
@@ -132,7 +132,7 @@ SPtr<String> searchConfigFile(List<String> const& configDirs, String const& conf
 	return nullptr;
 }
 
-bool dmp(void *data, const std::string& k, const std::string& v) {
+bool dmp(void *data SLIB_UNUSED, const std::string& k, const std::string& v) {
 	printf("%s = %s\n", k.c_str(), v.c_str());
 	return true;
 }

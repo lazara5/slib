@@ -14,6 +14,10 @@
 
 namespace slib {
 
+/**
+ * The root interface in the <i>collection hierarchy</i>.  A collection
+ * represents a group of objects, known as its <i>elements</i>.
+ */
 template <class E>
 class Collection : public ConstIterable<E> {
 public:
@@ -23,7 +27,7 @@ public:
 
 	virtual bool isEmpty() const = 0;
 
-	virtual ConstIterator<SPtr<E>> constIterator() const = 0;
+	virtual UPtr<ConstIterator<SPtr<E>>> constIterator() const = 0;
 
 	virtual bool add(SPtr<E> const& e) = 0;
 
@@ -43,14 +47,14 @@ public:
 	virtual void clear() = 0;
 
 	virtual UPtr<String> toString() const override {
-		ConstIterator<SPtr<E>> i = constIterator();
-		if (!i.hasNext())
+		UPtr<ConstIterator<SPtr<E>>> i = constIterator();
+		if (!i->hasNext())
 			return "[]"_UPTR;
 
 		StringBuilder sb;
 		sb.add('[');
 		do {
-			SPtr<E> const& e = i.next();
+			SPtr<E> const& e = i->next();
 
 			E const* obj = e.get();
 			if (instanceof<Collection<E>>(obj) && Class::constCast<Collection<E>>(obj) == this)
@@ -58,7 +62,7 @@ public:
 			else
 				sb.add(slib::toString(obj));
 
-			if (!i.hasNext())
+			if (!i->hasNext())
 				return sb.add(']').toString();
 			sb.add(", ");
 		} while (true);

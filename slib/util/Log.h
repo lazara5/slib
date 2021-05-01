@@ -47,9 +47,9 @@ protected:
 	static String _staticFormat;
 	static Level _staticLevel;
 protected:
-	static SPtr<spdlog::logger> initConsole(const Config& cfg, String const& name, ConstIterator<SPtr<String>> &params);
-	static SPtr<spdlog::logger> initRotating(const Config& cfg, String const& name, ConstIterator<SPtr<String>> &params);
-	static SPtr<spdlog::logger> initSyslog(const Config& cfg, String const& name, ConstIterator<SPtr<String>> &params);
+	static SPtr<spdlog::logger> initConsole(const Config& cfg, String const& name, UPtr<ConstIterator<SPtr<String>>> const& params);
+	static SPtr<spdlog::logger> initRotating(const Config& cfg, String const& name, UPtr<ConstIterator<SPtr<String>>> const& params);
+	static SPtr<spdlog::logger> initSyslog(const Config& cfg, String const& name, UPtr<ConstIterator<SPtr<String>>> const& params);
 
 	static char *fmtb(char *staticBuffer, size_t bufferLen, const char *format, va_list ap);
 protected:
@@ -88,7 +88,7 @@ public:
 		startup(level, fmt::format(format, args...).c_str());
 	}
 
-	static void staticInit(const Config& cfg, ConstIterator<SPtr<String>> params);
+	static void staticInit(const Config& cfg, UPtr<ConstIterator<SPtr<String>>> const& params);
 	static void staticInit(const Config& cfg, String const& name, String const& defaultValue = "");
 
 	static bool enabled(Level level) {

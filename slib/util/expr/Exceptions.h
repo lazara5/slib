@@ -53,7 +53,7 @@ private:
 public:
 	MissingSymbolException(const char *where, SPtr<String> const& name)
 	:EvaluationException(where, "MissingSymbolException",
-						 fmt::format("Symbol '{}' could not be located", name->c_str()).c_str())
+						 fmt::format("Undefined symbol: '{}'", name->c_str()).c_str())
 	,_name(name) {}
 
 	SPtr<String> getSymbolName() const {

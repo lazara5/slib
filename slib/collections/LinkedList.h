@@ -5,8 +5,9 @@
 #ifndef H_SLIB_COLLECTIONS_LINKEDLIST_H
 #define H_SLIB_COLLECTIONS_LINKEDLIST_H
 
-#include "slib/collections/AbstractSequentialList.h"
+#include "slib/collections/AbstractList.h"
 #include "slib/collections/Deque.h"
+#include "slib/exception/IllegalStateException.h"
 
 #include "fmt/format.h"
 
@@ -66,7 +67,7 @@ private:
 	void linkBefore(SPtr<E> const& e, Node *succ) {
 		Node *pred = succ->_prev;
 		Node *newNode = new Node(pred, e, succ);
-		succ->prev = newNode;
+		succ->_prev = newNode;
 		if (!pred)
 			_first = newNode;
 		else
@@ -504,7 +505,7 @@ public:
 	}
 
 private:
-	class ConstListItr : public ConstListIterator<SPtr<E>>::ConstListIteratorImpl {
+	class ConstLinkedListIterator : public ConstListIteratorImpl<SPtr<E>> {
 	private:
 		const LinkedList *_list;
 	protected:
@@ -513,7 +514,7 @@ private:
 		size_t _nextIndex;
 		int _expectedModCount;
 	public:
-		ConstListItr(const LinkedList *list, size_t index)
+		ConstLinkedListIterator(const LinkedList *list, size_t index)
 		: _list(list)
 		, _lastReturned(nullptr) {
 			_next = (index == _list->_size) ? nullptr : _list->nodeAt(index);
@@ -521,7 +522,7 @@ private:
 			_expectedModCount = list->_modCount;
 		}
 	protected:
-		ConstListItr(ConstListItr *other) {
+		ConstLinkedListIterator(ConstLinkedListIterator *other) {
 			_lastReturned = other->_lastReturned;
 			_next = other->_next;
 			_nextIndex = other->_nextIndex;
@@ -537,7 +538,7 @@ private:
 			return _nextIndex < _list->_size;
 		}
 
-		virtual SPtr<E> const& next() {
+		virtual SPtr<E> const& next() override {
 			checkForComodification(_HERE_);
 			if (!hasNext())
 				throw NoSuchElementException(_HERE_);
@@ -570,35 +571,77 @@ private:
 			return _nextIndex - 1;
 		}
 
-		/*void remove() {
-			checkForComodification(_HERE_);
-			if (lastReturned == null)
-				throw IllegalStateException(_HERE_);
+		virtual ConstListIteratorImpl<SPtr<E>> *clone() {
+			return new ConstLinkedListIterator(this);
+		}
+	};
 
-			Node<E> lastNext = lastReturned.next;
-			unlink(lastReturned);
-			if (next == lastReturned)
-				next = lastNext;
-			else
-				nextIndex--;
-			lastReturned = null;
-			expectedModCount++;
+	class LinkedListIterator : public ListIteratorImpl<SPtr<E>>, public ConstLinkedListIterator {
+	private:
+		LinkedList *_ncList;
+	protected:
+		LinkedListIterator(LinkedListIterator *other)
+		: ConstLinkedListIterator(other) {
+			_ncList = other->_ncList;
+		}
+	public:
+		LinkedListIterator(LinkedList *list, size_t index)
+		: ConstLinkedListIterator(list, index) {
+			_ncList = list;
 		}
 
+		virtual void remove() override {
+			this->checkForComodification(_HERE_);
+			if (!this->_lastReturned)
+				throw IllegalStateException(_HERE_);
 
-		public void add(E e) {
-			checkForComodification(_HERE_);
-			_lastReturned = nullptr;
-			if (!next)
-				linkLast(e);
+			Node *lastNext = this->_lastReturned->_next;
+			_ncList->unlink(this->_lastReturned);
+			if (this->_next == this->_lastReturned)
+				this->_next = lastNext;
 			else
-				linkBefore(e, next);
-			_nextIndex++;
-			_expectedModCount++;
-		}*/
+				this->_nextIndex--;
+			this->_lastReturned = nullptr;
+			this->_expectedModCount++;
+		}
 
-		virtual typename ConstListIterator<SPtr<E>>::ConstListIteratorImpl *clone() {
-			return new ConstListItr(this);
+		virtual void add(SPtr<E> const& e) override {
+			this->checkForComodification(_HERE_);
+			this->_lastReturned = nullptr;
+			if (!this->_next)
+				_ncList->linkLast(e);
+			else
+				_ncList->linkBefore(e, this->_next);
+			this->_nextIndex++;
+			this->_expectedModCount++;
+		}
+
+		virtual bool hasNext() const override {
+			return ConstLinkedListIterator::hasNext();
+		}
+
+		virtual SPtr<E> const& next() override {
+			return ConstLinkedListIterator::next();
+		}
+
+		virtual bool hasPrevious() const override {
+			return ConstLinkedListIterator::hasPrevious();
+		}
+
+		virtual SPtr<E> const& previous() override {
+			return ConstLinkedListIterator::previous();
+		}
+
+		size_t nextIndex() const override {
+			return ConstLinkedListIterator::nextIndex();
+		}
+
+		ssize_t previousIndex() const override {
+			return ConstLinkedListIterator::previousIndex();
+		}
+
+		virtual ListIteratorImpl<SPtr<E>> *clone() {
+			return new LinkedListIterator(this);
 		}
 	};
 
@@ -610,8 +653,12 @@ public:
 	 *
 	 * @return an iterator over the elements in this list in proper sequence
 	 */
-	virtual ConstIterator<SPtr<E>> constIterator() const {
-		return ConstIterator<SPtr<E>>(new ConstListItr(this, 0));
+	virtual UPtr<ConstIterator<SPtr<E>>> constIterator() const override {
+		return newU<ConstIteratorWrapper<SPtr<E>>>(new ConstLinkedListIterator(this, 0));
+	}
+
+	virtual UPtr<ListIterator<SPtr<E>>> listIterator() {
+		return newU<ListIteratorWrapper<SPtr<E>>>(new LinkedListIterator(this, 0));
 	}
 };
 

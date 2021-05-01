@@ -55,6 +55,15 @@ UPtr<String> toString(T const* obj) {
 	return toStringImpl<T>(obj, std::is_base_of<Object, T>{});
 }
 
+template <class T>
+UPtr<String> toString(SPtr<T> const& obj) {
+	return toString(obj.get());
+}
+
+template <class T>
+UPtr<String> toString(UPtr<T> const& obj) {
+	return toString(obj.get());
+}
 
 template <class T, class O>
 bool instanceof(O const* obj SLIB_UNUSED) {

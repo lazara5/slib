@@ -102,14 +102,14 @@ public:
 	virtual void clear() = 0;
 
 	virtual UPtr<String> toString() const override {
-		ConstIterator<Entry> i = constIterator();
-		if (!i.hasNext())
+		UPtr<ConstIterator<Entry>> i = constIterator();
+		if (!i->hasNext())
 			return "{}"_UPTR;
 
 		StringBuilder sb;
 		sb.add('{');
 		do {
-			Entry const& e = i.next();
+			Entry const& e = i->next();
 
 			K const* key = e.getKeyPtr();
 			if (instanceof<Map>(key) && Class::constCast<Map>(key) == this)
@@ -125,14 +125,14 @@ public:
 			else
 				sb.add(slib::toString(value));
 
-			if (!i.hasNext())
+			if (!i->hasNext())
 				return sb.add('}').toString();
 			sb.add(", ");
 		} while (true);
 	}
 
 public:
-	virtual ConstIterator<Entry> constIterator() const = 0;
+	virtual UPtr<ConstIterator<Entry>> constIterator() const = 0;
 };
 
 } // namespace

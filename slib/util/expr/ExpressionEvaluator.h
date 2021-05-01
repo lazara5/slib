@@ -22,33 +22,6 @@ typedef enum {
 	ARRAY_CONSTRUCTOR
 } PrimaryType;
 
-class Namespace : public Object{
-public:
-	SPtr<Object> _obj;
-	SPtr<String> _name;
-
-	Namespace(SPtr<Object> const& obj)
-	: _obj(obj) {}
-};
-
-class ExpressionContext {
-private:
-	LinkedList<Namespace> _namespaceStack;
-public:
-	ExpressionContext(SPtr<Object> rootNamespace) {
-		_namespaceStack.push(newS<Namespace>(rootNamespace));
-	}
-
-	void pushNamespace(SPtr<Object> const& obj);
-
-	void popNamespace();
-
-	void setName(SPtr<String> const& name);
-
-	void clearName();
-
-	void setNamedObject(SPtr<Object> const& obj);
-};
 
 class ExpressionEvaluator {
 friend class Expression;
@@ -115,8 +88,7 @@ public:
 	static SPtr<Object> expressionValue(SPtr<BasicString> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
-	static UPtr<Value> expressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags,
-									   UPtr<ExpressionContext> const& ctx = nullptr);
+	static UPtr<Value> expressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
 	static UPtr<String> interpolate(String const& pattern, SPtr<Resolver> const& resolver, bool ignoreMissing);
@@ -128,20 +100,16 @@ protected:
 	static UPtr<String> strExpressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
-	static UPtr<Value> prefixTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
-									   EvalFlags evalFlags, UPtr<ExpressionContext> const& ctx);
+	static UPtr<Value> prefixTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
-	static UPtr<Value> termValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
-								 EvalFlags evalFlags, UPtr<ExpressionContext> const& ctx);
+	static UPtr<Value> termValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
-	static UPtr<Value> factorValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
-								   EvalFlags evalFlags, UPtr<ExpressionContext> const& ctx);
+	static UPtr<Value> factorValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
-	static UPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, PrimaryType &type,
-									EvalFlags evalFlags, UPtr<ExpressionContext> const& ctx);
+	static UPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, PrimaryType &type, EvalFlags evalFlags);
 
 	/** @throws EvaluationException */
 	static UPtr<Value> evaluateSymbol(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, PrimaryType &type, bool global);

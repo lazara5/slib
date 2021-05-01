@@ -102,11 +102,9 @@ TEST(ExprTests, ExtraTests) {
 	res2 = res1->toString();
 	fmt::print("Expr: {}\n", *res2);
 
-	vars = newS<HashMap<String, Object>>();
+	/*vars = newS<HashMap<String, Object>>();
 	SPtr<Resolver> resolver2 = newS<MapResolver>(vars, false);
 	res1 = ExpressionEvaluator::expressionValue("config = {a=1, b = config.a, c = {d = 'x', :a = 2, g = config.c, h = config.c.g.d, e = config.c.d, f = a}}"_SPTR, resolver2, 0);
 	res2 = res1->toString();
-	fmt::print("Expr: {}\n", *res2);
-	SPtr<Object> config = vars->get("config");
-	fmt::print("Config: {}\n", *(config->toString()));
+	fmt::print("Expr: {}\n", *res2);*/
 }

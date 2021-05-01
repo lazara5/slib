@@ -61,7 +61,7 @@ public:
 
 	virtual SPtr<E> get(size_t index) const = 0;
 public:
-	virtual ConstIterator<SPtr<E> > constIterator() const override = 0;
+	virtual UPtr<ConstIterator<SPtr<E>>> constIterator() const override = 0;
 };
 
 } // namespace

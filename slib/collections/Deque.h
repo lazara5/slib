@@ -325,7 +325,7 @@ public:
 		 *
 		 * @return an iterator over the elements in this deque in proper sequence
 		 */
-		virtual ConstIterator<SPtr<E>> constIterator() const = 0;
+		virtual UPtr<ConstIterator<SPtr<E>>> constIterator() const = 0;
 };
 
 } // namespace

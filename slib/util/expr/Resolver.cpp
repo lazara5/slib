@@ -17,7 +17,8 @@ SPtr<Object> ChainedResolver::getVar(const String &key) const {
 	SPtr<Resolver> res = _namedResolvers->get(key);
 	if (res)
 		return res;
-	for (auto resolver : _resolvers->constIterator()) {
+	auto i = _resolvers->constIterator();
+	for (auto resolver : *i) {
 		SPtr<Object> res = resolver->getVar(key);
 		if (res)
 			return res;

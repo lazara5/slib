@@ -139,7 +139,7 @@ public:
 		}
 	}
 protected:
-	class ConstEntryIterator : public ConstIterator<typename Map<K, V, Pred>::Entry>::ConstIteratorImpl {
+	class ConstEntryIterator : public ConstIteratorImpl<typename Map<K, V, Pred>::Entry> {
 	private:
 		SPtr<InternalLinkedHashMap<K, V, Pred>> _map;
 	protected:
@@ -170,12 +170,12 @@ protected:
 			return *e;
 		}
 
-		virtual typename ConstIterator<typename Map<K, V, Pred>::Entry>::ConstIteratorImpl *clone() {
+		virtual ConstIteratorImpl<typename Map<K, V, Pred>::Entry> *clone() override {
 			return new ConstEntryIterator(this);
 		}
 	};
 
-	class EntryIterator : public Iterator<typename Map<K, V, Pred>::Entry>::IteratorImpl, public ConstEntryIterator {
+	class EntryIterator : public IteratorImpl<typename Map<K, V, Pred>::Entry>, public ConstEntryIterator {
 	private:
 		SPtr<InternalLinkedHashMap<K, V, Pred>> _ncMap;
 	protected:
@@ -204,7 +204,7 @@ protected:
 			this->_lastReturned = nullptr;
 		}
 
-		virtual typename Iterator<typename Map<K, V, Pred>::Entry>::IteratorImpl *clone() {
+		virtual IteratorImpl<typename Map<K, V, Pred>::Entry> *clone() override {
 			return new EntryIterator(this);
 		}
 	};
@@ -257,12 +257,12 @@ public:
 	}
 
 public:
-	ConstIterator<typename Map<K, V, Pred>::Entry> constIterator() const {
-		return ConstIterator<typename Map<K, V, Pred>::Entry>(new typename InternalLinkedHashMap<K, V, Pred>::ConstEntryIterator(_internalMap));
+	UPtr<ConstIterator<typename Map<K, V, Pred>::Entry>> constIterator() const {
+		return newU<ConstIteratorWrapper<typename Map<K, V, Pred>::Entry>>(new typename InternalLinkedHashMap<K, V, Pred>::ConstEntryIterator(_internalMap));
 	}
 
-	Iterator<typename Map<K, V, Pred>::Entry> iterator() {
-		return Iterator<typename Map<K, V, Pred>::Entry>(new typename InternalLinkedHashMap<K, V, Pred>::EntryIterator(_internalMap));
+	UPtr<Iterator<typename Map<K, V, Pred>::Entry>> iterator() {
+		return newU<IteratorWrapper<typename Map<K, V, Pred>::Entry>>(new typename InternalLinkedHashMap<K, V, Pred>::EntryIterator(_internalMap));
 	}
 };
 

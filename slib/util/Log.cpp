@@ -117,22 +117,22 @@ char *Log::fmtb(char *staticBuffer, size_t bufferLen, const char *format, va_lis
 	return buffer;
 }
 
-static UPtr<String> getNextParam(ConstIterator<SPtr<String>> &params) {
-	if (params.hasNext())
-		return params.next()->trim();
+static UPtr<String> getNextParam(UPtr<ConstIterator<SPtr<String>>> const& params) {
+	if (params->hasNext())
+		return params->next()->trim();
 	throw InitException(_HERE_, "Missing log parameter");
 }
 
-static UPtr<String> getNextParam(ConstIterator<SPtr<String>> &params, String const& defaultValue) {
-	if (params.hasNext())
-		return params.next()->trim();
+static UPtr<String> getNextParam(UPtr<ConstIterator<SPtr<String>>> const& params, String const& defaultValue) {
+	if (params->hasNext())
+		return params->next()->trim();
 	else
 		return newU<String>(defaultValue);
 }
 
-static int getNextIntParam(ConstIterator<SPtr<String>> &params, int defaultValue) {
-	if (params.hasNext()) {
-		UPtr<String> strValue = params.next()->trim();
+static int getNextIntParam(UPtr<ConstIterator<SPtr<String>>> const& params, int defaultValue) {
+	if (params->hasNext()) {
+		UPtr<String> strValue = params->next()->trim();
 		try {
 			return Integer::parseInt(CPtr(strValue));
 		} catch (NumberFormatException const&) {
@@ -168,7 +168,7 @@ Log::Level static getLogLevel(String const& str) {
 	return Log::Level::None;
 }
 
-void Log::staticInit(const Config& cfg, ConstIterator<SPtr<String>> params) {
+void Log::staticInit(const Config& cfg, UPtr<ConstIterator<SPtr<String>>> const& params) {
 	UPtr<String> levelName = getNextParam(params);
 	Level level = getLogLevel(*levelName);
 	
@@ -249,7 +249,7 @@ static ConsoleDest getConsoleDest(String const& str) {
 	return CDEST_NONE;
 }
 
-SPtr<spdlog::logger> Log::initConsole(const Config& cfg, String const& name, ConstIterator<SPtr<String>> &params) {
+SPtr<spdlog::logger> Log::initConsole(const Config& cfg SLIB_UNUSED, String const& name, UPtr<ConstIterator<SPtr<String>>> const& params) {
 	UPtr<String> destName = getNextParam(params, "STDOUT");
 	ConsoleDest consoleDest = getConsoleDest(*destName);
 
@@ -268,7 +268,7 @@ SPtr<spdlog::logger> Log::initConsole(const Config& cfg, String const& name, Con
 	}
 }
 
-SPtr<spdlog::logger> Log::initRotating(const Config& cfg, String const& name, ConstIterator<SPtr<String>> &params) {
+SPtr<spdlog::logger> Log::initRotating(const Config& cfg, String const& name, UPtr<ConstIterator<SPtr<String>>> const& params) {
 	UPtr<String> fileName = getNextParam(params);
 	int maxFileSize = getNextIntParam(params, 1024 * 1024);
 	int maxFiles = getNextIntParam(params, 10);
@@ -281,7 +281,7 @@ SPtr<spdlog::logger> Log::initRotating(const Config& cfg, String const& name, Co
 	}
 }
 
-SPtr<spdlog::logger> Log::initSyslog(const Config& cfg, String const& name, ConstIterator<SPtr<String>> &params) {
+SPtr<spdlog::logger> Log::initSyslog(const Config& cfg SLIB_UNUSED, String const& name, UPtr<ConstIterator<SPtr<String>>> const& params) {
 	int facility = getNextIntParam(params, LOG_USER);
 
 	return spdlog::create<syslogSink<std::mutex> >(name.c_str(), 0, facility);

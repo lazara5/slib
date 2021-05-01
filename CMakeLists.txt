@@ -58,7 +58,9 @@ if(WITH_JSON)
 	list(APPEND SLIB_SOURCES slib/util/JsonUtils.cpp)
 endif(WITH_JSON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fPIC")
+SET(CMAKE_CXX_FLAGS_DEBUG "-O0")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -std=c++11 -fPIC")
 
 if(WITH_TESTS)
 	MESSAGE("Tests enabled")
@@ -68,11 +70,11 @@ endif(WITH_TESTS)
 if(WITH_COVERAGE)
 	include(CodeCoverage)
 	append_coverage_compiler_flags()
-	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
 	setup_target_for_coverage_lcov(
 		NAME coverage
 		EXECUTABLE slib_tests
 		EXCLUDE "/usr/include/*"
+		EXCLUDE "tests/*"
 	)
 endif(WITH_COVERAGE)
 

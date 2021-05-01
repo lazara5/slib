@@ -85,13 +85,12 @@ public:
 class FunctionParseContext;
 
 /** @throws EvaluationException */
-typedef std::function<UPtr<Value>(SPtr<Resolver> const& resolver, EvalFlags evalFlags, UPtr<ExpressionContext> const& ctx,
-								  ArgList const& args)> Evaluate;
+typedef std::function<UPtr<Value>(SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args)> Evaluate;
 typedef std::function<UPtr<FunctionParseContext>(SPtr<Function> const& function, SPtr<String> const& symbolName,
-												 SPtr<Resolver> const& resolver, UPtr<ExpressionContext> const& ctx)> NewParseContext;
+												 SPtr<Resolver> const& resolver)> NewParseContext;
 
 UPtr<FunctionParseContext> defaultNewParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName,
-												  SPtr<Resolver> const& resolver, UPtr<ExpressionContext> const& ctx);
+												  SPtr<Resolver> const& resolver);
 
 class Function : virtual public Object {
 public:
@@ -142,8 +141,8 @@ public:
 	}
 
 	/** @throws EvaluationException; */
-	UPtr<Value> evaluate(SPtr<Resolver> const& resolver, EvalFlags evalFlags,  UPtr<ExpressionContext> const& ctx, ArgList const& args) {
-		return _evaluate(resolver, evalFlags, ctx, args);
+	UPtr<Value> evaluate(SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args) {
+		return _evaluate(resolver, evalFlags, args);
 	}
 };
 
@@ -160,12 +159,12 @@ public:
 	, _argList(newU<FunctionArgs>(symbolName)) {}
 
 	static UPtr<FunctionParseContext> forFunction(SPtr<Function> const& function, SPtr<String> const& symbolName,
-												  SPtr<Resolver> const& resolver, UPtr<ExpressionContext> const& ctx) {
-		return function->_newParseContext(function, symbolName, resolver, ctx);
+												  SPtr<Resolver> const& resolver) {
+		return function->_newParseContext(function, symbolName, resolver);
 	}
 
 	/** @throws CastException */
-	virtual void addArg(SPtr<Object> const& obj, UPtr<ExpressionContext> const& ctx) {
+	virtual void addArg(SPtr<Object> const& obj) {
 		_argList->add(obj, _function);
 	}
 
@@ -173,8 +172,8 @@ public:
 		return _argList->peek(_function);
 	}
 
-	virtual UPtr<Value> evaluate(SPtr<Resolver> const& resolver, EvalFlags evalFlags, UPtr<ExpressionContext> const& ctx) {
-		return _function->evaluate(resolver, evalFlags, ctx, *_argList);
+	virtual UPtr<Value> evaluate(SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
+		return _function->evaluate(resolver, evalFlags, *_argList);
 	}
 };
 

@@ -13,11 +13,17 @@ endif()
 
 add_compile_options(-DCPPUTEST_MEM_LEAK_DETECTION_DISABLED)
 
+if(WITH_COVERAGE)
+	include(CodeCoverage)
+	append_coverage_compiler_flags()
+endif(WITH_COVERAGE)
+
 set(TESTS_SOURCES
 	Global.h
 	AllTests.cpp
 	TestConfig.cpp
 	TestExpression.cpp
+	TestLinkedList.cpp
 	TestTypeSystem.cpp
 	TestNumeric.cpp
 )

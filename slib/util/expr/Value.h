@@ -446,18 +446,26 @@ public:
 	}
 };
 template <class K>
-class KeyValueTuple : virtual public Object {
+class KeyValue : virtual public Object {
 public:
-	TYPE_INFO(KeyValueTuple, CLASS(KeyValueTuple<K>), INHERITS(Object));
+	TYPE_INFO(KeyValue, CLASS(KeyValue<K>), INHERITS(Object));
 public:
-	const SPtr<K> key;
-	const bool global;
-	const SPtr<Object> value;
+	const SPtr<K> _key;
+	const bool _global;
+	const SPtr<Object> _value;
 
-	KeyValueTuple(SPtr<K> const& key, bool global, SPtr<Object> const& value)
-	: key(key)
-	, global(global)
-	, value(value) {}
+	KeyValue(SPtr<K> const& key, bool global, SPtr<Object> const& value)
+	: _key(key)
+	, _global(global)
+	, _value(value) {}
+
+	virtual UPtr<String> toString() const override {
+		StringBuilder sb("<");
+		if (_global)
+			sb.add(':');
+		sb.add(slib::toString(_key)).add('=').add(slib::toString(_value));
+		return sb.add('>').toString();
+	}
 };
 
 } // namespace expr

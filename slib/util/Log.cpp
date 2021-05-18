@@ -7,6 +7,7 @@
 #include "slib/collections/ArrayList.h"
 #include "slib/util/Config.h"
 #include "slib/util/FileUtils.h"
+#include "slib/util/FilenameUtils.h"
 #include "slib/lang/String.h"
 
 #include "fmt/format.h"
@@ -144,7 +145,7 @@ static int getNextIntParam(UPtr<ConstIterator<SPtr<String>>> const& params, int 
 
 bool getNextBoolParam(ConstIterator<std::string> &params, bool defaultValue) {
 	if (params.hasNext()) {
-		const std::string& strValue = String::trim(CPtr(params.next()));
+		UPtr<String> strValue = String::trim(CPtr(params.next()));
 		return Boolean::parseBoolean(CPtr(strValue));
 	} else
 		return defaultValue;
@@ -168,7 +169,7 @@ Log::Level static getLogLevel(String const& str) {
 	return Log::Level::None;
 }
 
-void Log::staticInit(const Config& cfg, UPtr<ConstIterator<SPtr<String>>> const& params) {
+void Log::staticInit(SPtr<Config> const& cfg, UPtr<ConstIterator<SPtr<String>>> const& params) {
 	UPtr<String> levelName = getNextParam(params);
 	Level level = getLogLevel(*levelName);
 	
@@ -209,8 +210,20 @@ void Log::staticInit(const Config& cfg, UPtr<ConstIterator<SPtr<String>>> const&
 	_staticLogger->set_level(spdlog::level::trace);
 }
 
-void Log::staticInit(const Config& cfg, String const& name, String const& defaultValue /*= ""*/) {
-	SPtr<String> logCfg = cfg.getString(name, defaultValue);
+SPtr<String> Log::getLogDir(SPtr<Config> const& cfg) {
+	SPtr<String> logDir = cfg->getString("logdir");
+	if (logDir)
+		return logDir;
+	SPtr<String> appDir = cfg->getAppDir();
+	if (!appDir)
+		throw InitException(_HERE_, "Could not determine logdir");
+	return FilenameUtils::concat(CPtr(appDir), "log");
+}
+
+SPtr<String> Log::_defaultLogConfig = ""_SPTR;
+
+void Log::staticInit(SPtr<Config> const& cfg, String const& name, SPtr<String> const& defaultValue) {
+	SPtr<String> logCfg = cfg->getString(CPtr(name), defaultValue);
 	if (!logCfg)
 		throw InitException(_HERE_, fmt::format("Log config not found ({})", name).c_str());
 
@@ -219,15 +232,15 @@ void Log::staticInit(const Config& cfg, String const& name, String const& defaul
 	staticInit(cfg, logParams->constIterator());
 }
 
-static UPtr<String> createLogPath(const Config& cfg, String const& fileName) {
+static UPtr<String> createLogPath(SPtr<Config> const& cfg, String const& fileName) {
 	UPtr<String> logFileName;
-	if (FileUtils::isPathAbsolute(fileName))
+	if (FilenameUtils::isPathAbsolute(CPtr(fileName)))
 		logFileName = newU<String>(fileName);
 	else
-		logFileName = FileUtils::buildPath(*cfg.getLogDir(), fileName);
+		logFileName = FilenameUtils::concat(CPtr(Log::getLogDir(cfg)), CPtr(fileName));
 
-	UPtr<String> logPath = FileUtils::getPath(*logFileName);
-	int res = FileUtils::mkdirs(*logPath, "rwxrwxr-x");
+	UPtr<String> logPath = FilenameUtils::getPath(CPtr(logFileName));
+	int res = FileUtils::mkdirs(CPtr(logPath), "rwxrwxr-x");
 	if (res < 0)
 		throw InitException(_HERE_, fmt::format("Error creating log path '{}', errno={:d}", *logPath, errno).c_str());
 
@@ -249,7 +262,7 @@ static ConsoleDest getConsoleDest(String const& str) {
 	return CDEST_NONE;
 }
 
-SPtr<spdlog::logger> Log::initConsole(const Config& cfg SLIB_UNUSED, String const& name, UPtr<ConstIterator<SPtr<String>>> const& params) {
+SPtr<spdlog::logger> Log::initConsole(SPtr<Config> const& cfg SLIB_UNUSED, String const& name, UPtr<ConstIterator<SPtr<String>>> const& params) {
 	UPtr<String> destName = getNextParam(params, "STDOUT");
 	ConsoleDest consoleDest = getConsoleDest(*destName);
 
@@ -268,7 +281,7 @@ SPtr<spdlog::logger> Log::initConsole(const Config& cfg SLIB_UNUSED, String cons
 	}
 }
 
-SPtr<spdlog::logger> Log::initRotating(const Config& cfg, String const& name, UPtr<ConstIterator<SPtr<String>>> const& params) {
+SPtr<spdlog::logger> Log::initRotating(SPtr<Config> const& cfg, String const& name, UPtr<ConstIterator<SPtr<String>>> const& params) {
 	UPtr<String> fileName = getNextParam(params);
 	int maxFileSize = getNextIntParam(params, 1024 * 1024);
 	int maxFiles = getNextIntParam(params, 10);
@@ -281,7 +294,7 @@ SPtr<spdlog::logger> Log::initRotating(const Config& cfg, String const& name, UP
 	}
 }
 
-SPtr<spdlog::logger> Log::initSyslog(const Config& cfg SLIB_UNUSED, String const& name, UPtr<ConstIterator<SPtr<String>>> const& params) {
+SPtr<spdlog::logger> Log::initSyslog(SPtr<Config> const& cfg SLIB_UNUSED, String const& name, UPtr<ConstIterator<SPtr<String>>> const& params) {
 	int facility = getNextIntParam(params, LOG_USER);
 
 	return spdlog::create<syslogSink<std::mutex> >(name.c_str(), 0, facility);

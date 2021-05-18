@@ -4,6 +4,8 @@
 
 #include "slib/util/PidFile.h"
 #include "slib/util/FileUtils.h"
+#include "slib/util/FilenameUtils.h"
+#include "slib/util/Log.h"
 
 #include "fmt/format.h"
 
@@ -13,11 +15,11 @@ PidFile::PidFile() {
 	_pfh = nullptr;
 }
 
-pid_t PidFile::open(const Config& cfg, const std::string& modeSpec /*= "rw-r--r--"*/) {
+pid_t PidFile::open(SPtr<Config> const& cfg, const std::string& modeSpec /*= "rw-r--r--"*/) {
 	return open(&_pfh, cfg, modeSpec);
 }
 
-pid_t PidFile::open(struct pidfh **pfh, const Config& cfg, const std::string& modeSpec /*= "rw-r--r--"*/) {
+pid_t PidFile::open(struct pidfh **pfh, SPtr<Config> const& cfg, const std::string& modeSpec /*= "rw-r--r--"*/) {
 	pid_t otherPid = 0;
 
 	if (*pfh != nullptr) {
@@ -25,13 +27,13 @@ pid_t PidFile::open(struct pidfh **pfh, const Config& cfg, const std::string& mo
 		throw PidFileException(_HERE_, "Pid file already open");
 	}
 
-	SPtr<String> pidFile = cfg.getString("pidfile", cfg.getAppName() + ".pid");
-	if (!FileUtils::isPathAbsolute(*pidFile))
-		pidFile = FileUtils::buildPath(*cfg.getLogDir(), *pidFile);
+	SPtr<String> pidFile = cfg->getString("pidfile", newS<String>(*cfg->getAppName() + ".pid"));
+	if (!FilenameUtils::isPathAbsolute(CPtr(pidFile)))
+		pidFile = FilenameUtils::concat(CPtr(Log::getLogDir(cfg)), CPtr(pidFile));
 
 	mode_t mode = 0;
 	try {
-		mode = parseModeSpec(modeSpec);
+		mode = FileUtils::parseModeSpec(CPtr(modeSpec));
 	} catch (int err) {
 		throw PidFileException(_HERE_, fmt::format("Error parsing file mode spec, errno='{}'", StringUtils::formatErrno(err)).c_str());
 	}
@@ -80,7 +82,7 @@ void PidFile::remove(struct pidfh **pfh) {
 		throw PidFileException(_HERE_, fmt::format("Error writing to pid file, errno='{}'", StringUtils::formatErrno()).c_str());
 }
 
-pid_t PidFile::getInstance(const Config& cfg) {
+pid_t PidFile::getInstance(SPtr<Config> const& cfg) {
 	struct pidfh *pfh = nullptr;
 	pid_t other = open(&pfh, cfg);
 	if (other == 0)

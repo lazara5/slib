@@ -23,7 +23,7 @@ class StringBuilder : public BasicString {
 public:
 	TYPE_INFO(StringBuilder, CLASS(StringBuilder), INHERITS(BasicString));
 private:
-	void build(const char *format, ...);
+	//void build(const char *format, ...);
 protected:
 	unsigned char *_buffer;
 	size_t _len, _size;
@@ -35,7 +35,7 @@ public:
 	/** for std container compatibility */
 	typedef char value_type;
 
-	StringBuilder();
+	StringBuilder(size_t capacity = 15);
 	StringBuilder(const char *str, std::ptrdiff_t len = -1);
 
 	StringBuilder(std::tuple<const char *, std::ptrdiff_t> t)
@@ -56,11 +56,11 @@ public:
 	virtual ~StringBuilder() override;
 
 	// conversion constructors
-	StringBuilder(int32_t val);
+	/*StringBuilder(int32_t val);
 	StringBuilder(uint32_t val);
 	StringBuilder(int64_t val);
 	StringBuilder(uint64_t val);
-	StringBuilder(double val);
+	StringBuilder(double val);*/
 
 	void alloc(size_t newLen);
 	void setLength(size_t newLen);
@@ -128,6 +128,11 @@ public:
 
 	StringBuilder& add(SPtr<Object> const& obj) {
 		return add(obj.get());
+	}
+
+	template <class S>
+	StringBuilder& addStr(S const* str) {
+		return add(String::strRaw(str), String::strLen(str));
 	}
 
 	/** for std container compatibility */

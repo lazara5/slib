@@ -18,14 +18,14 @@ protected:
 	EvaluationException(const char *where, const char *className, const char *msg)
 	:Exception(where, className, msg) {}
 
-	EvaluationException(const char *where, const char *className, const char *msg, Exception const& error)
-	:Exception(where, className, msg, error) {}
+	EvaluationException(const char *where, const char *className, const char *msg, Exception const& cause)
+	:Exception(where, className, msg, cause) {}
 public:
 	EvaluationException(const char *where, const char *msg)
 	:EvaluationException(where, "EvaluationException", msg) {}
 
-	EvaluationException(const char *where, const char *msg, Exception const& error)
-	:EvaluationException(where, "EvaluationException", msg, error) {}
+	EvaluationException(const char *where, const char *msg, Exception const& cause)
+	:EvaluationException(where, "EvaluationException", msg, cause) {}
 
 	EvaluationException(const char *where, const char *oper, Class const& op1)
 	:EvaluationException(where, "EvaluationException", fmt::format("Operator '{}' not applicable for '{}'", oper, op1.getName()).c_str()) {}

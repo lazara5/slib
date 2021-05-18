@@ -464,7 +464,7 @@ protected:
 			}
 		}
 
-		virtual bool hasNext() const override {
+		virtual bool hasNext() override {
 			return (_next != nullptr);
 		}
 
@@ -498,7 +498,7 @@ protected:
 			_ncMap = map;
 		}
 
-		virtual bool hasNext() const override {
+		virtual bool hasNext() override {
 			return ConstEntryIterator::hasNext();
 		}
 

@@ -522,7 +522,7 @@ private:
 				throw ConcurrentModificationException(where);
 		}
 	public:
-		virtual bool hasNext() const override {
+		virtual bool hasNext() override {
 			return _nextIndex < _list->_size;
 		}
 
@@ -537,7 +537,7 @@ private:
 			return _lastReturned->_item;
 		}
 
-		virtual bool hasPrevious() const override {
+		virtual bool hasPrevious() override {
 			return _nextIndex > 0;
 		}
 
@@ -604,7 +604,7 @@ private:
 			this->_expectedModCount++;
 		}
 
-		virtual bool hasNext() const override {
+		virtual bool hasNext() override {
 			return ConstLinkedListIterator::hasNext();
 		}
 
@@ -612,7 +612,7 @@ private:
 			return ConstLinkedListIterator::next();
 		}
 
-		virtual bool hasPrevious() const override {
+		virtual bool hasPrevious() override {
 			return ConstLinkedListIterator::hasPrevious();
 		}
 

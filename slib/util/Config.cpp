@@ -6,6 +6,7 @@
 #include "slib/util/Config.h"
 #include "slib/util/Log.h"
 #include "slib/util/FileUtils.h"
+#include "slib/util/FilenameUtils.h"
 #include "slib/collections/ArrayList.h"
 #include "slib/io/FileInputStream.h"
 #include "slib/util/expr/ExpressionEvaluator.h"
@@ -20,22 +21,141 @@ namespace slib {
 
 using namespace expr;
 
-UPtr<String> ConfigProcessor::processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) {
+const SPtr<Config::ConfigValue> Config::_nullValue = newS<Config::ConfigValue>();
+
+ConfigLoader::ConfigResolver::ConfigResolver() {
+	char pathBuf[PATH_MAX] = "";
+	struct stat s;
+
+	if (stat(PROCSELFEXE, &s) < 0)
+		perror("stat " PROCSELFEXE);
+	else if (readlink(PROCSELFEXE, pathBuf, sizeof(pathBuf)) < 0) {
+		perror("readlink " PROCSELFEXE);
+		pathBuf[0] = '\0';
+	}
+}
+
+SPtr<Object> ConfigLoader::ConfigResolver::getVar(String const& key) const {
+	if (BasicString::equals(CPtr(key), CPtr("_EXEDIR"_SV))) {
+		return _exeDir;
+	} else if (BasicString::equals(CPtr(key), CPtr("_CWD"_SV))) {
+		return _cwd;
+	}
+
+	return nullptr;
+}
+
+ConfigLoader::ConfigLoader(SPtr<String> const& confFileName, SPtr<String> const& appName)
+: _confFileName(confFileName)
+, _appName(appName)
+, _vars(newS<HashMap<String, Object>>())
+, _quickResolver(expr::ChainedResolver::newInstance())
+, _resolver(expr::ChainedResolver::newInstance()) {
+	(*_quickResolver).add(newS<ConfigResolver>())
+	.add("env"_SPTR, newS<EnvResolver>());
+
+	(*_resolver).add(_quickResolver)
+	.add(_vars, false);
+
+	_searchPaths.add(newS<StringPair>("/etc"_SPTR, nullptr));
+	_searchPaths.add(newS<StringPair>("${_EXEDIR}/conf"_SPTR, "${_EXEDIR}"_SPTR));
+	_searchPaths.add(newS<StringPair>("${_CWD}/conf"_SPTR, "${_CWD}"_SPTR));
+}
+
+ConfigLoader& ConfigLoader::clearPaths() {
+	_searchPaths.clear();
+	return *this;
+}
+
+ConfigLoader& ConfigLoader::search(SPtr<String> const& path, SPtr<String> const& rootDir /* = nullptr */) {
+	_searchPaths.add(newS<StringPair>(path, rootDir));
+	return *this;
+}
+
+ConfigLoader& ConfigLoader::withResolver(SPtr<expr::Resolver> const& resolver) {
+	_resolver->add(resolver);
+	return *this;
+}
+
+ConfigLoader& ConfigLoader::withResolver(SPtr<String> const& name, SPtr<expr::Resolver> const& resolver) {
+	_resolver->add(name, resolver);
+	return *this;
+}
+
+/** @throws EvaluationException */
+SPtr<ConfigLoader::StringPair> ConfigLoader::searchConfigDir() {
+	UPtr<ConstIterator<SPtr<StringPair>>> i = _searchPaths.constIterator();
+	while (i->hasNext()) {
+		SPtr<StringPair> const& cfgEntry = i->next();
+		UPtr<String> dir = ExpressionEvaluator::interpolate(*cfgEntry->_first, _quickResolver, true);
+		if (dir) {
+			UPtr<String> fileName = FilenameUtils::concat(CPtr(dir), CPtr(_confFileName));
+			if (access(fileName->c_str(), 0) == 0) {
+				UPtr<String> rootDir = (cfgEntry->_second)
+					? ExpressionEvaluator::interpolate(*cfgEntry->_first, _quickResolver, true)
+					: nullptr;
+				return newS<StringPair>(std::move(dir), std::move(rootDir));
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+SPtr<Config> ConfigLoader::load(bool quick) {
+	try {
+		SPtr<StringPair> conf = searchConfigDir();
+		if (!conf)
+			throw InitException(_HERE_, fmt::format("Could not locate config file '{}'", *_confFileName).c_str());
+
+		SPtr<String> confDir(std::move(conf->_first));
+		SPtr<String> appDir(std::move(conf->_second));
+
+		UPtr<String> fileName = FilenameUtils::concat(CPtr(confDir), CPtr(_confFileName));
+
+		UPtr<ByteBuffer> contents = FileUtils::readAllBytes(CPtr(fileName));
+		StringBuilder configContents("{");
+		configContents.add((const char *)contents->getBuffer(), contents->getLength())
+		.add('}');
+		SPtr<String> configText = configContents.toString();
+
+		_vars->clear();
+		SPtr<Object> parsedConfig = ExpressionEvaluator::expressionValue(configText,
+			quick ? _quickResolver : _resolver,
+			quick ? EXPR_IGNORE_UNDEFINED : 0);
+		if (!parsedConfig)
+			throw InitException(_HERE_, "Error parsing config");
+		if (!instanceof<Map<BasicString, Object>>(*parsedConfig))
+			throw InitException(_HERE_, fmt::format("Invalid config: expected Map<String, Object>, got {}", parsedConfig->getClass().getName().c_str()).c_str());
+		SPtr<Map<BasicString, Object>> configRoot = Class::cast<Map<BasicString, Object>>(parsedConfig);
+
+		UPtr<String> s = configRoot->toString();
+		fmt::print("Config: {}\n", *s);
+
+		return newS<Config>(configRoot, _appName, confDir, appDir);
+	} catch (EvaluationException const& e) {
+		throw InitException(_HERE_, e);
+	} catch (IOException const& e) {
+		throw InitException(_HERE_, e);
+	}
+}
+
+/*UPtr<String> ConfigProcessor::processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) {
 	//SPtr<String> value = StringUtils::interpolate(rawProperty, *this, false);
 	SPtr<Object> value = ExpressionEvaluator::smartInterpolate(*rawProperty, _resolver, false);
 
 	if (String::startsWith(CPtr(name), '@')) {
 		if (!_vars)
 			_vars = newU<HashMap<String, Object>>();
-		_vars->put(newS<String>(String::substring(CPtr(name), 1)), value);
+		_vars->put(newS<String>(CPtr(String::substring(CPtr(name), 1))), value);
 		return nullptr;
 	} else if (String::endsWith(CPtr(name), ']')) {
 		ptrdiff_t openBracket = String::lastIndexOf(CPtr(name), '[');
 		if (openBracket > 0) {
-			std::string mapName = String::trim(CPtr(String::substring(CPtr(name), 0, (size_t)openBracket)));
-			std::string mapEntry = String::trim(CPtr(String::substring(CPtr(name), (size_t)openBracket + 1, name->length() - 1)));
-			if ((!mapName.empty()) && (!mapEntry.empty())) {
-				bool sunk = sink(mapName, mapEntry, value);
+			UPtr<String> mapName = String::trim(CPtr(String::substring(CPtr(name), 0, (size_t)openBracket)));
+			UPtr<String> mapEntry = String::trim(CPtr(String::substring(CPtr(name), (size_t)openBracket + 1, name->length() - 1)));
+			if ((!StringUtils::isEmpty(CPtr(mapName))) && (!StringUtils::isEmpty(CPtr(mapEntry)))) {
+				bool sunk = sink(*mapName, *mapEntry, value);
 				if (sunk)
 					return nullptr;
 			}
@@ -59,33 +179,15 @@ SPtr<Object> ConfigProcessor::getVar(String const& name) const {
 	if ((!value) && _sources) {
 		std::ptrdiff_t dotPos;
 		if ((dotPos = String::lastIndexOf(CPtr(name), '.')) > 0) {
-			std::string providerName = String::substring(CPtr(name), 0, (size_t)dotPos);
-			std::string propertyName = String::substring(CPtr(name), (size_t)dotPos + 1);
-			SourceMapConstIter provider = _sources->find(providerName);
+			UPtr<String> providerName = String::substring(CPtr(name), 0, (size_t)dotPos);
+			UPtr<String> propertyName = String::substring(CPtr(name), (size_t)dotPos + 1);
+			SourceMapConstIter provider = _sources->find(*providerName);
 			if (provider != _sources->end())
-				return provider->second->getVar(propertyName);
+				return provider->second->getVar(*propertyName);
 		}
 	}
 	return value;
 }
-
-/*bool ConfigProcessor::containsKey(std::string const& name) const {
-	if (_props.containsKey(name))
-		return true;
-	if (_vars && _vars->containsKey(name))
-		return true;
-	if (_sources) {
-		std::ptrdiff_t dotPos;
-		if ((dotPos = String::lastIndexOf(CPtr(name), '.')) > 0) {
-			std::string providerName = String::substring(CPtr(name), 0, (size_t)dotPos);
-			std::string propertyName = String::substring(CPtr(name), (size_t)dotPos + 1);
-			SourceMapConstIter provider = _sources->find(providerName);
-			if ((provider != _sources->end()) && (provider->second->containsKey(propertyName)))
-				return true;
-		}
-	}
-	return false;
-}*/
 
 UPtr<String> SimpleConfigProcessor::processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) {
 	//SPtr<String> value = StringUtils::interpolate(rawProperty, *this, true);
@@ -93,7 +195,7 @@ UPtr<String> SimpleConfigProcessor::processLine(SPtr<String> const& name, SPtr<S
 	if (String::startsWith(CPtr(name), '@')) {
 		if (!_vars)
 			_vars = newU<HashMap<String, Object>>();
-		_vars->put(std::make_shared<String>(String::substring(CPtr(name), 1)), value);
+		_vars->put(newS<String>(CPtr(String::substring(CPtr(name), 1))), value);
 		return nullptr;
 	}
 	return Value::asString(value);
@@ -106,25 +208,17 @@ SPtr<Object> SimpleConfigProcessor::getVar(String const& name) const {
 	return value;
 }
 
-/*bool SimpleConfigProcessor::containsKey(std::string const& name) const {
-	if (_props.containsKey(name))
-		return true;
-	if (_vars && _vars->containsKey(name))
-		return true;
-	return false;
-}*/
-
 Config::Config(String const& confFileName, String const& appName)
 :_confFileName(confFileName)
 ,_appName(appName)
 ,_cfgProc(*this)
-,_simpleCfgProc(*this) {}
+,_simpleCfgProc(*this) {}*/
 
 SPtr<String> searchConfigFile(List<String> const& configDirs, String const& configFile) {
 	UPtr<ConstIterator<SPtr<String>>> i = configDirs.constIterator();
 	while (i->hasNext()) {
 		SPtr<String> const& dir = i->next();
-		UPtr<String> fileName = FileUtils::buildPath(*dir, configFile);
+		UPtr<String> fileName = FilenameUtils::concat(CPtr(dir), CPtr(configFile));
 		if (!access(fileName->c_str(), 0))
 			return dir;
 	}
@@ -137,17 +231,17 @@ bool dmp(void *data SLIB_UNUSED, const std::string& k, const std::string& v) {
 	return true;
 }
 
-SPtr<String> Config::locateConfigFile(String const& fileName) const {
+/*SPtr<String> Config::locateConfigFile(String const& fileName) const {
 	ArrayList<String> confList;
 	confList.emplace<String>("/etc");
-	confList.add(FileUtils::buildPath(_rootDir, "conf"));
+	confList.add(FileUtils::buildPath(CPtr(_rootDir), "conf"));
 	onBeforeSearch(confList);
 
 	return searchConfigFile(confList, fileName);
-}
+}*/
 
 /** @throws InitException */
-void Config::internalInit(bool minimal) {
+/*void Config::internalInit(bool minimal) {
 	char pathBuf[1024] = "";
 	struct stat s;
 
@@ -192,13 +286,13 @@ void Config::readConfig() {
 	// read logdir
 	_logDir = getString("logdir", "");
 	if (!_logDir)
-		_logDir = FileUtils::buildPath(*_homeDir, "log");
+		_logDir = FileUtils::buildPath(CPtr(_homeDir), "log");
 }
 
 void Config::openConfigFile(bool minimal) {
-	UPtr<String> configFile = FileUtils::buildPath(*_confDir, _confFileName);
+	UPtr<String> configFile = FileUtils::buildPath(CPtr(_confDir), CPtr(_confFileName));
 	try {
-		FileInputStream propsFile(*configFile);
+		FileInputStream propsFile(CPtr(configFile));
 		if (minimal)
 			load(propsFile, &_simpleCfgProc);
 		else
@@ -218,6 +312,6 @@ void Config::registerPropertySource(String const& name, SPtr<PropertySource> con
 
 void Config::registerPropertySink(String const& name, ConfigProcessor::PropertySink const& sink) {
 	_cfgProc.registerSink(name, sink);
-}
+}*/
 
 } // namespace

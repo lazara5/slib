@@ -8,6 +8,8 @@
 #include "slib/lang/Object.h"
 #include "slib/exception/NumericExceptions.h"
 #include "slib/lang/String.h"
+#include "slib/lang/Character.h"
+#include "slib/third-party/fast_float/fast_float.h"
 
 #include "fmt/format.h"
 
@@ -36,6 +38,287 @@ public:
 	static UPtr<Number> createLongOrDouble(UPtr<String> const& str);
 
 	static bool isMathematicalInteger(double val);
+};
+
+/** 64-bit signed integer */
+class Long : public Number {
+public:
+	TYPE_INFO(Long, CLASS(Long), INHERITS(Number));
+private:
+	int64_t _value;
+public:
+	static constexpr int64_t MIN_VALUE = INT64_MIN;
+	static constexpr int64_t MAX_VALUE = INT64_MAX;
+
+	Long()
+	:_value(0) {}
+
+	Long(int64_t value)
+	:_value(value) {}
+
+	/**
+	 * Returns a hash code for this <code>Long</code>. The result is
+	 * the exclusive OR of the two halves of the primitive
+	 * <code>int64_t</code> value held by this <code>Long</code>
+	 * object. That is, the hashcode is the value of the expression:
+	 * <blockquote><pre>
+	 * (int)(_value()^((unsigned)_value()&gt;&gt;32))
+	 * </pre></blockquote>
+	 *
+	 * @return  a hash code value for this object.
+	 */
+	virtual int32_t hashCode() const override {
+		return (int32_t)((uint64_t)_value ^ (((uint64_t)_value) >> 32));
+	} 
+
+	Long& operator =(const Long& other) {
+		_value = other._value;
+		return *this;	// This will allow assignments to be chained
+	}
+
+	using Object::equals;
+
+	bool equals(Long const& other) const {
+		return (_value == other._value);
+	}
+
+	virtual bool equals(Object const& other) const override {
+		if (instanceof<Long>(other))
+			return _value == Class::constCast<Long>(&other)->_value;
+		return false;
+	}
+
+	bool equals(SPtr<Long> const& other) const {
+		if (!other)
+			return false;
+		return (_value == other->_value);
+	}
+
+	bool operator==(const Long& other) const {
+		return equals(other);
+	}
+
+	virtual int64_t longValue() const override;
+	virtual double doubleValue() const override;
+
+	template <class S>
+	static int64_t parseLong(S const* s, int radix = 10) {
+		const char *str = String::strRaw(s);
+		if (!str)
+			throw NumberFormatException(_HERE_, "null");
+
+		long result = 0;
+		bool negative = false;
+		size_t i = 0;
+		size_t len = String::strLen(s);
+
+		int64_t limit = -MAX_VALUE;
+		int64_t cutoff;
+		int digit;
+
+		if (len > 0) {
+			char firstChar = str[0];
+			if (firstChar < '0') { // Look for leading sign
+				if (firstChar == '-') {
+					negative = true;
+					limit = MIN_VALUE;
+				} else if (firstChar != '+')
+					throw NumberFormatException(_HERE_, "Not a decimal number");
+
+				if (len == 1) // No digit remaining
+					throw NumberFormatException(_HERE_, "Not a decimal number");
+				i++;
+			}
+			cutoff = limit / radix;
+			while (i < len) {
+				digit = Character::digit(str[i++], radix);
+				if (digit < 0)
+					throw NumberFormatException(_HERE_, "Not a decimal number");
+				if (result < cutoff)
+					throw NumberFormatException(_HERE_, "Not a decimal number");
+				result *= radix;
+				if (result < limit + digit)
+					throw NumberFormatException(_HERE_, "Not a decimal number");
+				result -= digit;
+			}
+		} else
+			throw NumberFormatException(_HERE_, "Not a decimal number");
+		return negative ? result : (-result);
+	}
+
+	/** @throws NumberFormatException */
+	template <class S>
+	static int64_t decode(S const* str) {
+		const char *buffer = str ? str->c_str() : nullptr;
+		size_t len = str ? str->length() : 0;
+
+		int radix = 10;
+		size_t index = 0;
+		bool negative = false;
+
+		if (len == 0)
+			throw NumberFormatException(_HERE_, "Empty string");
+
+		char firstChar = buffer[0];
+		if (firstChar == '-') {
+			negative = true;
+			index++;
+		} else if (firstChar == '+')
+			index++;
+
+		if (String::startsWith(str, "0x", index) || String::startsWith(str, "0X", index)) {
+			radix = 16;
+			index += 2;
+		} else if (String::startsWith(str, "#", index)) {
+			radix = 16;
+			index++;
+		} else if (String::startsWith(str, "0", index) && (len > 1 + index)) {
+			radix = 8;
+			index ++;
+		}
+
+		if (String::startsWith(str, "-", index) || String::startsWith(str, "+", index))
+			throw NumberFormatException("Misplaced sign character");
+
+		int64_t result = 0;
+
+		try {
+			result = parseLong(buffer + index, radix);
+			if (negative)
+				result = -result;
+		} catch (NumberFormatException const&) {
+			result = negative ? parseLong(CPtr(std::string("-") + (buffer + index)), radix) :
+								parseLong(buffer + index, radix);
+		}
+
+		return result;
+	}
+
+	static UPtr<String> toString(int64_t i) {
+		std::stringstream stream;
+		stream << i;
+		return newU<String>(stream.str());
+	}
+
+	virtual UPtr<String> toString() const override {
+		return toString(_value);
+	}
+};
+
+/** 64-bit unsigned integer */
+class ULong : public Number {
+public:
+	TYPE_INFO(ULong, CLASS(ULong), INHERITS(Number));
+private:
+	uint64_t _value;
+public:
+	static constexpr uint64_t MAX_VALUE = UINT64_MAX;
+
+	ULong(uint64_t value)
+	:_value(value) {}
+
+	/**
+	 * Returns a hash code for this <code>Long</code>. The result is
+	 * the exclusive OR of the two halves of the primitive
+	 * <code>uint64_t</code> value held by this <code>Long</code>
+	 * object. That is, the hashcode is the value of the expression:
+	 * <blockquote><pre>
+	 * (int)(_value()^((unsigned)_value()&gt;&gt;32))
+	 * </pre></blockquote>
+	 *
+	 * @return  a hash code value for this object.
+	 */
+	int32_t hashCode() const override {
+		return (int)(_value ^ (_value >> 32));
+	}
+
+	ULong& operator =(const ULong& other) {
+		_value = other._value;
+		return *this;	// This will allow assignments to be chained
+	}
+
+	using Object::equals;
+
+	bool equals(const ULong& other) const {
+		return (_value == other._value);
+	}
+
+	bool equals(SPtr<ULong> const& other) const {
+		if (!other)
+			return false;
+		return (_value == other->_value);
+	}
+
+	bool operator ==(const ULong& other) const {
+		return equals(other);
+	}
+
+	bool operator <(const ULong& other) const {
+		return _value < other._value;
+	}
+
+	bool operator >(const ULong& other) const {
+		return _value > other._value;
+	}
+
+	uint64_t ulongValue() const {
+		return _value;
+	}
+
+	virtual double doubleValue() const override;
+
+	/** @throws NumberFormatException */
+	template <class S>
+	static int64_t parseULong(S const* s, int radix = 10) {
+		const char *str = String::strRaw(s);
+		if (!str)
+			throw NumberFormatException(_HERE_, "null");
+
+		size_t len = String::strLen(s);
+		if (len > 0) {
+			char firstChar = str[0];
+
+			if (firstChar == '-') {
+				throw NumberFormatException(_HERE_,
+					"Illegal leading minus sign on unsigned string");
+			} else {
+				if ((len <= 12) || (radix == 10 && len < 18))
+					return Long::parseLong(s, radix);
+
+				int64_t prefix = Long::parseLong(CPtr(StringView(str, len - 1)), radix);
+				int suffix = Character::digit(str[len - 1], radix);
+				if (suffix < 0)
+					throw NumberFormatException(_HERE_, "Not a decimal number");
+				int64_t result = prefix * radix + suffix;
+				if ((uint64_t)result < (uint64_t)prefix)
+					throw NumericOverflowException(_HERE_, "Out of range");
+				return (uint64_t)result;
+			}
+		} else
+			throw NumberFormatException(_HERE_, "Not a decimal number");
+	}
+
+	struct hash {
+		/** hash based on mix from Murmur3 */
+		size_t operator()(const uint64_t& key) const {
+			uint64_t k = key ^ (key >> 33);
+			k *= 0xff51afd7ed558ccd;
+			k ^= k >> 33;
+			k *= 0xc4ceb9fe1a85ec53;
+			k ^= k >> 33;
+			return (size_t) k;
+		}
+	};
+
+	static UPtr<String> toString(uint64_t i) {
+		std::stringstream stream;
+		stream << i;
+		return newU<String>(stream.str());
+	}
+
+	virtual UPtr<String> toString() const override {
+		return toString(_value);
+	}
 };
 
 /** 32-bit signed integer */
@@ -98,44 +381,19 @@ public:
 	virtual double doubleValue() const override;
 
 	/** @throws NumberFormatException */
-	static int32_t parseInt(const char *str, int radix) {
-		if (str == nullptr)
-			throw NumberFormatException(_HERE_, "null");
-
-		char *end;
-		errno = 0;
-		const long res = strtol(str, &end, radix);
-
-		if (end == str)
-			throw NumberFormatException(_HERE_, "Not a decimal number");
-		else if (0 != *end)
-			throw NumberFormatException(_HERE_, "Extra characters at end of input");
-		else if ((LONG_MIN == res || LONG_MAX == res) && ERANGE == errno) 
-			throw NumericOverflowException(_HERE_, "Out of range");
-		else if (res > INT_MAX) 
-			throw NumericOverflowException(_HERE_, "Out of range");
-		else if (res < INT_MIN)
-			throw NumericOverflowException(_HERE_, "Out of range");
-
-		return (int32_t)res;
-	}
-
-	static int32_t parseInt(const char *str) {
-		return parseInt(str, 10);
-	}
-
-	/** @throws NumberFormatException */
 	template <class S>
 	static int32_t parseInt(S const* str, int radix = 10) {
-		const char *buffer = str ? str->c_str() : nullptr;
-		return parseInt(buffer, radix);
+		int64_t val = Long::parseLong(str, radix);
+		if ((val > MAX_VALUE) || (val < MIN_VALUE))
+			throw NumericOverflowException(_HERE_, "Out of range");
+		return (int32_t)val;
 	}
 
 	/** @throws NumberFormatException */
 	template <class S>
 	static int32_t decode(S const* str) {
-		const char *buffer = str ? str->c_str() : nullptr;
-		size_t len = str ? str->length() : 0;
+		const char *buffer = String::strRaw(str);
+		size_t len = String::strLen(str);
 
 		int radix = 10;
 		size_t index = 0;
@@ -267,39 +525,12 @@ public:
 	virtual int64_t longValue() const override;
 	virtual double doubleValue() const override;
 
-	static uint32_t parseUInt(const char *str, int radix) {
-		if (str == nullptr)
-			throw NumberFormatException(_HERE_, "null");
-
-		// strtoul silently accepts negative numbers...
-		if (strchr(str, '-') != nullptr)
-			throw NumericOverflowException(_HERE_, "Out of range");
-
-		char *end;
-		errno = 0;
-		const unsigned long res = strtoul(str, &end, radix);
-
-		if (end == str)
-			throw NumberFormatException(_HERE_, "Not a decimal number");
-		else if (0 != *end)
-			throw NumberFormatException(_HERE_, "Extra characters at end of input");
-		else if (ULONG_MAX == res && ERANGE == errno)
-			throw NumericOverflowException(_HERE_, "Out of range");
-
-		return (uint32_t)res;
-	}
-
-	static uint32_t parseUInt(const char *str) {
-		return parseUInt(str, 10);
-	}
-
 	template <class S>
-	static uint32_t parseUInt(S const& s) {
-		return parseUInt(s.c_str(), 10);
-	}
-
-	static uint32_t parseUInt(const std::string& s, int radix) {
-		return parseUInt(s.c_str(), radix);
+	static uint32_t parseUInt(S const* s, int radix = 10) {
+		int64_t val = Long::parseLong(s, radix);
+		if ((val < 0) || (val > MAX_VALUE))
+			throw NumericOverflowException(_HERE_, "Out of range");
+		return (uint32_t)val;
 	}
 
 	static UPtr<String> toString(uint32_t i) {
@@ -374,274 +605,6 @@ public:
 
 	static UPtr<String> toString(short s) {
 		return Integer::toString(s);
-	}
-
-	virtual UPtr<String> toString() const override {
-		return toString(_value);
-	}
-};
-
-/** 64-bit signed integer */
-class Long : public Number {
-public:
-	TYPE_INFO(Long, CLASS(Long), INHERITS(Number));
-private:
-	int64_t _value;
-public:
-	static constexpr int64_t MIN_VALUE = INT64_MIN;
-	static constexpr int64_t MAX_VALUE = INT64_MAX;
-
-	Long()
-	:_value(0) {}
-
-	Long(int64_t value)
-	:_value(value) {}
-
-	/**
-	 * Returns a hash code for this <code>Long</code>. The result is
-	 * the exclusive OR of the two halves of the primitive
-	 * <code>int64_t</code> value held by this <code>Long</code>
-	 * object. That is, the hashcode is the value of the expression:
-	 * <blockquote><pre>
-	 * (int)(_value()^((unsigned)_value()&gt;&gt;32))
-	 * </pre></blockquote>
-	 *
-	 * @return  a hash code value for this object.
-	 */
-	virtual int32_t hashCode() const override {
-		return (int32_t)((uint64_t)_value ^ (((uint64_t)_value) >> 32));
-	} 
-
-	Long& operator =(const Long& other) {
-		_value = other._value;
-		return *this;	// This will allow assignments to be chained
-	}
-
-	using Object::equals;
-
-	bool equals(Long const& other) const {
-		return (_value == other._value);
-	}
-
-	virtual bool equals(Object const& other) const override {
-		if (instanceof<Long>(other))
-			return _value == Class::constCast<Long>(&other)->_value;
-		return false;
-	}
-
-	bool equals(SPtr<Long> const& other) const {
-		if (!other)
-			return false;
-		return (_value == other->_value);
-	}
-
-	bool operator==(const Long& other) const {
-		return equals(other);
-	}
-
-	virtual int64_t longValue() const override;
-	virtual double doubleValue() const override;
-
-	/** Parses the string argument as a signed decimal long */
-	static int64_t parseLong(const char *str, int radix) {
-		if (str == nullptr)
-			throw NumberFormatException("null");
-
-		char *end;
-		errno = 0;
-		const int64_t res = strtoll(str, &end, radix);
-
-		if (end == str)
-			throw NumberFormatException(_HERE_, "Not a decimal number");
-		else if (0 != *end)
-			throw NumberFormatException(_HERE_, "Extra characters at end of input");
-		else if ((LLONG_MIN == res || LLONG_MAX == res) && ERANGE == errno) 
-			throw NumericOverflowException(_HERE_, "Out of range");
-
-		return res;
-	}
-
-	template <class S>
-	static int64_t parseLong(S const* str, int radix = 10) {
-		const char *buffer = str ? str->c_str() : nullptr;
-		return parseLong(buffer, radix);
-	}
-
-	/** @throws NumberFormatException */
-	template <class S>
-	static int64_t decode(S const* str) {
-		const char *buffer = str ? str->c_str() : nullptr;
-		size_t len = str ? str->length() : 0;
-
-		int radix = 10;
-		size_t index = 0;
-		bool negative = false;
-
-		if (len == 0)
-			throw NumberFormatException(_HERE_, "Empty string");
-
-		char firstChar = buffer[0];
-		if (firstChar == '-') {
-			negative = true;
-			index++;
-		} else if (firstChar == '+')
-			index++;
-
-		if (String::startsWith(str, "0x", index) || String::startsWith(str, "0X", index)) {
-			radix = 16;
-			index += 2;
-		} else if (String::startsWith(str, "#", index)) {
-			radix = 16;
-			index++;
-		} else if (String::startsWith(str, "0", index) && (len > 1 + index)) {
-			radix = 8;
-			index ++;
-		}
-
-		if (String::startsWith(str, "-", index) || String::startsWith(str, "+", index))
-			throw NumberFormatException("Misplaced sign character");
-
-		int64_t result = 0;
-
-		try {
-			result = parseLong(buffer + index, radix);
-			if (negative)
-				result = -result;
-		} catch (NumberFormatException const&) {
-			result = negative ? parseLong(CPtr(std::string("-") + (buffer + index)), radix) :
-								parseLong(buffer + index, radix);
-		}
-
-		return result;
-	}
-
-	static UPtr<String> toString(int64_t i) {
-		std::stringstream stream;
-		stream << i;
-		return newU<String>(stream.str());
-	}
-
-	virtual UPtr<String> toString() const override {
-		return toString(_value);
-	}
-};
-
-/** 64-bit unsigned integer */
-class ULong : public Number {
-public:
-	TYPE_INFO(ULong, CLASS(ULong), INHERITS(Number));
-private:
-	uint64_t _value;
-public:
-	static constexpr uint64_t MAX_VALUE = UINT64_MAX;
-
-	ULong(uint64_t value)
-	:_value(value) {}
-
-	/**
-	 * Returns a hash code for this <code>Long</code>. The result is
-	 * the exclusive OR of the two halves of the primitive
-	 * <code>uint64_t</code> value held by this <code>Long</code>
-	 * object. That is, the hashcode is the value of the expression:
-	 * <blockquote><pre>
-	 * (int)(_value()^((unsigned)_value()&gt;&gt;32))
-	 * </pre></blockquote>
-	 *
-	 * @return  a hash code value for this object.
-	 */
-	int32_t hashCode() const override {
-		return (int)(_value ^ (_value >> 32));
-	}
-
-	ULong& operator =(const ULong& other) {
-		_value = other._value;
-		return *this;	// This will allow assignments to be chained
-	}
-
-	using Object::equals;
-
-	bool equals(const ULong& other) const {
-		return (_value == other._value);
-	}
-
-	bool equals(SPtr<ULong> const& other) const {
-		if (!other)
-			return false;
-		return (_value == other->_value);
-	}
-
-	bool operator ==(const ULong& other) const {
-		return equals(other);
-	}
-
-	bool operator <(const ULong& other) const {
-		return _value < other._value;
-	}
-
-	bool operator >(const ULong& other) const {
-		return _value > other._value;
-	}
-
-	uint64_t ulongValue() const {
-		return _value;
-	}
-
-	virtual double doubleValue() const override;
-
-	static uint64_t parseULong(const char *str) {
-		if (str == nullptr)
-			throw NumberFormatException(_HERE_, "null");
-
-		// strtoull silently accepts negative numbers...
-		if (strchr(str, '-') != nullptr)
-			throw NumericOverflowException(_HERE_, "Out of range");
-
-		char *end;
-		errno = 0;
-		const uint64_t res = strtoull(str, &end, 10);
-
-		if (end == str)
-			throw NumberFormatException(_HERE_, "Not a decimal number");
-		else if (0 != *end)
-			throw NumberFormatException(_HERE_, "Extra characters at end of input");
-		else if ((ULONG_MAX == res) && ERANGE == errno) 
-			throw NumericOverflowException(_HERE_, "Out of range");
-
-		return res;
-	}
-
-	static uint64_t parseULong(const char *str, uint64_t defaultValue) {
-		try {
-			return parseULong(str);
-		} catch (NumberFormatException const&) {
-			return defaultValue;
-		}
-	}
-
-	static uint64_t parseULong(const std::string& str) {
-		return parseULong(str.c_str());
-	}
-
-	static uint64_t parseULong(const std::string& str, uint64_t defaultValue) {
-		return parseULong(str.c_str(), defaultValue);
-	}
-
-	struct hash {
-		/** hash based on mix from Murmur3 */
-		size_t operator()(const uint64_t& key) const {
-			uint64_t k = key ^ (key >> 33);
-			k *= 0xff51afd7ed558ccd;
-			k ^= k >> 33;
-			k *= 0xc4ceb9fe1a85ec53;
-			k ^= k >> 33;
-			return (size_t) k;
-		}
-	};
-
-	static UPtr<String> toString(uint64_t i) {
-		std::stringstream stream;
-		stream << i;
-		return newU<String>(stream.str());
 	}
 
 	virtual UPtr<String> toString() const override {
@@ -727,33 +690,23 @@ public:
 	int64_t longValue() const override;
 	virtual double doubleValue() const override;
 
-	static double parseDouble(const char *str) {
-		if (str == nullptr)
+	template <class S>
+	static double parseDouble(S const* s) {
+		const char *str = String::strRaw(s);
+		if (!str)
 			throw NumberFormatException(_HERE_, "null");
 
-		char *end;
-		errno = 0;
-		const double res = strtod(str, &end);
+		size_t strLen = String::strLen(s);
+		double val;
+		fast_float::from_chars_result res = fast_float::from_chars(str, str + strLen, val);
 
-		if (end == str)
-			throw NumberFormatException(_HERE_, "Not a decimal number");
-		else if (0 != *end)
-			throw NumberFormatException(_HERE_, "Extra characters at end of input");
-		else if ((HUGE_VAL == res || -HUGE_VAL == res) && ERANGE == errno) 
-			throw NumericOverflowException(_HERE_, "Out of range");
-
-		return res;
-	}
-
-	template <class S>
-	static double parseDouble(S const* str) {
-		const char *buffer = str ? str->c_str() : nullptr;
-		return parseDouble(buffer);
+		if (res.ec != std::errc())
+			throw NumberFormatException(_HERE_, "Double parse error");
+		return  val;
 	}
 
 	static UPtr<String> toString(double d) {
 		return newU<String>(fmt::format("{}", d));
-
 	}
 
 	virtual UPtr<String> toString() const override {
@@ -802,16 +755,9 @@ public:
 		return _value;
 	}
 
-	static bool parseBoolean(const char *str) {
-		if (str == nullptr)
-			return false;
-		return (!strcasecmp(str, "true"));
-	}
-
 	template <class S>
 	static bool parseBoolean(S const* str) {
-		const char *buffer = str ? str->c_str() : nullptr;
-		return parseBoolean(buffer);
+		return String::equalsIgnoreCase(str, CPtr("true"_SV));
 	}
 
 	virtual UPtr<String> toString() const override {

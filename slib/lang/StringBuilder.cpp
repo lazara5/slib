@@ -24,13 +24,13 @@ static const int _STR_EXTRA_ALLOC = 0;
 //static const float _STR_GROWTH_FACTOR = 2;
 static const float _STR_GROWTH_FACTOR = 1.5;
 
-StringBuilder::StringBuilder() {
+StringBuilder::StringBuilder(size_t capacity /* = 15 */) {
 	_hash = 0;
-	_buffer = (unsigned char*)malloc(16);
+	_buffer = (unsigned char *)malloc(capacity + 1);
 	if (!_buffer)
 		throw OutOfMemoryError(_HERE_);
 	_buffer[0] = 0;
-	_size = 16;
+	_size = capacity + 1;
 	_len = 0;
 }
 
@@ -113,7 +113,7 @@ StringBuilder::~StringBuilder() {
 	_buffer = nullptr;
 }
 
-void StringBuilder::build(const char *format, ...) {
+/*void StringBuilder::build(const char *format, ...) {
 	_hash = 0;
 	va_list ap;
 	va_start(ap, format);
@@ -155,14 +155,14 @@ StringBuilder::StringBuilder(uint64_t val) {
 
 StringBuilder::StringBuilder(double val) {
 	build("%g", val);
-}
+}*/
 
 bool StringBuilder::operator ==(StringBuilder const& other) const {
 	return equals(other);
 }
 
 bool StringBuilder::equals(StringBuilder const& other) const {
-	return String::equals(this, CPtr(other));
+	return BasicString::equals(this, CPtr(other));
 }
 
 bool StringBuilder::equalsIgnoreCase(StringBuilder const& other) const {

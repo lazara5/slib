@@ -169,7 +169,7 @@ private:
 			_expectedModCount = _list->_modCount;
 		}
 
-		virtual bool hasNext() const override {
+		virtual bool hasNext() override {
 			return _cursor != _list->size();
 		}
 
@@ -183,7 +183,7 @@ private:
 			return _list->_elements[i];
 		}
 
-		virtual bool hasPrevious() const override {
+		virtual bool hasPrevious() override {
 			return _cursor != 0;
 		}
 
@@ -226,7 +226,7 @@ private:
 			_ncList = list;
 		}
 
-		virtual bool hasNext() const override {
+		virtual bool hasNext() override {
 			return ConstArrayListIterator::hasNext();
 		}
 

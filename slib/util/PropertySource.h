@@ -14,33 +14,21 @@
 
 namespace slib {
 
-class PropertySource : public expr::Resolver {
+class PropertySource : public expr::LazyResolver {
 protected:
 	typedef SPtr<Object> (PropertySource::*GetProperty)() const;
 private:
 	typedef std::unordered_map<String, GetProperty> PropertyMap;
 	typedef PropertyMap::const_iterator PropMapConstIter;
 	PropertyMap _properties;
-	bool _initialized;
 protected:
 	void provideProperty(std::string const& name, GetProperty prop) {
 		_properties[name] = prop;
 	}
 public:
-	PropertySource()
-	:_initialized(false) {
-	}
-
 	virtual ~PropertySource() override;
 
-	virtual void initialize() = 0;
-
-	void init() {
-		initialize();
-		_initialized = true;
-	}
-
-	virtual SPtr<Object> getVar(String const& name) const override;
+	virtual SPtr<Object> provideVar(String const& name) const override;
 };
 
 } // namespace

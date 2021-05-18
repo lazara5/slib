@@ -9,15 +9,31 @@
 //#include "slib/util/Log.h"
 #include "slib/util/StringUtils.h"
 #include "slib/lang/Numeric.h"
-#include "slib/collections/List.h"
+#include "slib/collections/LinkedList.h"
 #include "slib/collections/Properties.h"
 #include "slib/util/expr/Resolver.h"
+#include "slib/util/SystemInfo.h"
 
 #include "fmt/format.h"
 
 #include <string>
 
 namespace slib {
+
+class ConfigException : public Exception {
+protected:
+	ConfigException(const char *where, const char *className, const char *msg)
+	:Exception(where, className, msg) {}
+
+	ConfigException(const char *where, const char *className, const char *msg, Exception const& cause)
+	:Exception(where, className, msg, cause) {}
+public:
+	ConfigException(const char *where, const char *msg)
+	:ConfigException(where, "ConfigException", msg) {}
+
+	ConfigException(const char *where, const char *msg, Exception const& cause)
+	:ConfigException(where, "EvaluationException", msg, cause) {}
+};
 
 class ResolverProxy : public expr::Resolver {
 private:
@@ -31,88 +47,113 @@ public:
 	}
 };
 
-class ConfigProcessor : public Properties::LineProcessor, /*public ValueProvider<std::string, std::string>,*/ public expr::Resolver {
-public:
-	typedef std::function<void(String const&, SPtr<Object> const&)> PropertySink;
-private:
-	typedef Map<String, Object> VarMap;
-
-	typedef std::unordered_map<String, SPtr<PropertySource>> SourceMap;
-	typedef SourceMap::const_iterator SourceMapConstIter;
-
-	typedef std::unordered_map<String, PropertySink> SinkMap;
-	typedef SinkMap::const_iterator SinkMapConstIter;
-private:
-	Properties const& _props;
-	UPtr<VarMap> _vars;
-	UPtr<SourceMap> _sources;
-	SinkMap _sinks;
-	SPtr<Resolver> _resolver;
-public:
-	ConfigProcessor(Properties const& props)
-	: _props(props)
-	, _resolver(newS<ResolverProxy>(this)) {}
-
-	virtual ~ConfigProcessor() override {}
-
-	virtual UPtr<String> processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) override;
-
-	void registerSource(String const& name, SPtr<PropertySource> const& src) {
-		if (!_sources)
-			_sources = newU<SourceMap>();
-		(*_sources)[name] = src;
-	}
-
-	void registerSink(String const& name, PropertySink const& s) {
-		_sinks[name] = s;
-	}
-
-	bool sink(String const& sinkName, String const& name, SPtr<Object> const& value);
-
-	// ValueProvider interface
-	// Resolver interface
-public:
-	//virtual SPtr<std::string> get(std::string const& name) const override;
-	//virtual bool containsKey(std::string const& name) const override;
-	virtual SPtr<Object> getVar(String const& key) const override;
-};
-
-class SimpleConfigProcessor : public Properties::LineProcessor, /*public ValueProvider<std::string, std::string>*/ public expr::Resolver {
-private:
-	typedef Map<String, Object> VarMap;
-private:
-	Properties const& _props;
-	UPtr<VarMap> _vars;
-	SPtr<Resolver> _resolver;
-public:
-	SimpleConfigProcessor(Properties const& props)
-	: _props(props)
-	, _resolver(newS<ResolverProxy>(this)) {}
-
-	virtual UPtr<String> processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) override;
-
-	// ValueProvider interface
-	// Resolver interface
-public:
-	//virtual SPtr<String> get(String  const& name) const override;
-	//virtual bool containsKey(std::string const& name) const override;
-	virtual SPtr<Object> getVar(String const& key) const override;
-};
-
-class Config : public Properties {
+class Config {
 protected:
-	std::string _rootDir;
-	SPtr<String> _homeDir;
-	String _confFileName;
-	String _appName;
+	enum struct ValueType {
+		INT,
+		DOUBLE,
+		BOOL,
+		STRING,
+		EXCEPTION,
+		NUL
+	};
+	struct ConfigValue {
+		union {
+			int64_t _int;
+			double _double;
+			bool _bool;
+		};
+		SPtr<String> _where;
+		SPtr<String> _str;
+		ValueType _type;
+
+		ConfigValue(): _int(0), _str(nullptr), _type(ValueType::NUL) {}
+		ConfigValue(const char *where, const char *msg)
+		: _where(newS<String>(where))
+		, _str(newS<String>(msg))
+		, _type(ValueType::EXCEPTION) {}
+		ConfigValue(int64_t val) : _int(val), _str(nullptr), _type(ValueType::INT) {}
+		ConfigValue(SPtr<String> const& str) : _int(0), _str(str), _type(ValueType::STRING) {}
+	};
+protected:
+	static const SPtr<ConfigValue> _nullValue;
+
+	SPtr<Map<BasicString, Object>> _configRoot;
+
+	//std::string _rootDir;
+	SPtr<String> _appDir;
+	SPtr<String> _appName;
 	SPtr<String> _confDir;
-	SPtr<String> _logDir;
+	//SPtr<String> _logDir;
 
-	ConfigProcessor _cfgProc;
-	SimpleConfigProcessor _simpleCfgProc;
+	UPtr<Map<BasicString, ConfigValue>> _propCache;
 protected:
-	/** @throws InitException */
-	void openConfigFile(bool minimal);
+	template <class S>
+	SPtr<ConfigValue> internalGetProperty(S const* name) const {
+		BasicStringView nameRef(String::strRaw(name), String::strLen(name));
+		SPtr<ConfigValue> val = _propCache->get(nameRef);
+		if (val) {
+			switch (val->_type) {
+				case ValueType::NUL:
+					return nullptr;
+				case ValueType::EXCEPTION:
+					throw ConfigException(val->_where->c_str(), val->_str->c_str());
+				default:
+					return val;
+			}
+
+			return val;
+		}
+
+		size_t pathLen = 0;
+		bool first = true;
+		SPtr<Object> obj = _configRoot;
+		StringSplitIterator si(name, '.');
+		while (si.hasNext()) {
+			BasicStringView elem = si.next();
+			if (instanceof<Map<BasicString, Object>>(obj)) {
+				obj = (Class::cast<Map<BasicString, Object>>(obj))->get(elem);
+			} else if (instanceof<List<Object>>(obj)) {
+				try {
+					obj = (Class::cast<List<Object>>(obj))->get(ULong::parseULong(CPtr(elem)));
+				} catch (Exception const& e) {
+					_propCache->put(newS<String>(String::strRaw(name), String::strLen(name)),
+									newS<ConfigValue>(_HERE_, fmt::format("Caused by {} [{} ({})]",
+																		  e.getName(), e.getMessage(), e.where()).c_str()));
+					// this time we will throw from the cache
+					return internalGetProperty(name);
+				}
+			} else {
+				_propCache->put(newS<String>(String::strRaw(name), String::strLen(name)),
+								newS<ConfigValue>(_HERE_, fmt::format("{} is not an object or array",
+																	  StringView(String::strRaw(name), pathLen)).c_str()));
+				// this time we will throw from the cache
+				return internalGetProperty(name);
+			}
+			if (!obj) {
+				_propCache->put(newS<String>(String::strRaw(name), String::strLen(name)), _nullValue);
+				return _nullValue;
+			}
+			pathLen += elem.length();
+			if (!first)
+				pathLen++;
+			first = false;
+			if (!si.hasNext()) {
+				// leaf: cache and return
+				SPtr<ConfigValue> val;
+
+				if (instanceof<String>(obj))
+					val = newS<ConfigValue>(Class::cast<String>(obj));
+				else if (instanceof<Long>(obj))
+					val = newS<ConfigValue>(Class::cast<Long>(obj)->longValue());
+
+				_propCache->put(newS<String>(String::strRaw(name), String::strLen(name)), val);
+				return val;
+			}
+		}
+
+		return nullptr;
+	}
 
 	/** @throws NumberFormatException */
 	template<class T, T MIN, T MAX>
@@ -122,46 +163,123 @@ protected:
 		return value;
 	}
 
-private:
-	virtual void readConfig();
-
-	/**
-	 * @param minimal  perform a minimal load (no sources, no sinks)
-	 * @throws InitException
-	 */
-	void internalInit(bool minimal);
 public:
+	Config(SPtr<Map<BasicString, Object>> const& configRoot,
+		   SPtr<String> const& appName,
+		   SPtr<String> const& confDir, SPtr<String> const& appDir)
+	: _configRoot(configRoot)
+	, _appDir(appDir)
+	, _appName(appName)
+	, _confDir(confDir)
+	, _propCache(newU<HashMap<BasicString, ConfigValue>>()) {}
+
 	Config(String const& confFileName, String const& appName);
+
 	virtual ~Config() {}
 
-	/** @throws InitException */
-	virtual void init() {
-		internalInit(false);
-	}
-
-	/**
-	 * Just enough initialization to locate the pid file.
-	 * Does not run sources or sinks.
-	 * Does not throw errors on undefined variables!
-	 * @throws InitException
-	 */
-	virtual void initMinimal() {
-		internalInit(true);
-	}
-
-	virtual SPtr<String> locateConfigFile(String const& fileName) const;
-
-	virtual void onBeforeSearch(List<String> &/*pathList*/) const {}
-
-	static void shutdown();
-public:
-	void registerPropertySource(String const& name, SPtr<PropertySource> const& src);
-	void registerPropertySink(String const& name, ConfigProcessor::PropertySink const& sink);
-public:
-	String const& getAppName() const { return _appName; }
-	SPtr<String> getHomeDir() const { return _homeDir; }
-	SPtr<String> getLogDir() const { return _logDir; }
+	SPtr<String> getAppName() const { return _appName; }
+	SPtr<String> getAppDir() const { return _appDir; }
 	SPtr<String> getConfDir() const { return _confDir; }
+
+	template <class S>
+	SPtr<String> getString(S const* name) const {
+		SPtr<ConfigValue> val = internalGetProperty(name);
+		if (!val)
+			throw MissingValueException(_HERE_, name);
+		else if (val->_type == ValueType::STRING)
+			return val->_str;
+		else
+			throw ConfigException(_HERE_, "Type mismatch");
+	}
+
+	template <class S>
+	SPtr<String> getString(S const* name, SPtr<String> const& defaultValue) const {
+		try {
+			return getString(name);
+		}  catch (MissingValueException const&) {
+			return defaultValue;
+		}
+	}
+
+	template <class S>
+	double getDouble(S const* name) {
+		SPtr<ConfigValue> val = internalGetProperty(name);
+		if (!val)
+			throw MissingValueException(_HERE_, name);
+		switch (val->_type) {
+			case ValueType::DOUBLE:
+				return val->_double;
+			case ValueType::INT:
+				return (double)val->_int;
+			default:
+				throw ConfigException(_HERE_, "Type mismatch");
+		}
+	}
+};
+
+class ConfigLoader {
+protected:
+	class ConfigResolver : public expr::Resolver {
+	private:
+		SPtr<String> _exeDir;
+		SPtr<String> _cwd;
+	public:
+		ConfigResolver();
+
+		virtual SPtr<Object> getVar(String const& key) const;
+	};
+
+	struct StringPair {
+		SPtr<String> _first;
+		SPtr<String> _second;
+
+		StringPair(SPtr<String> first, SPtr<String> second)
+		: _first(first)
+		, _second(second) {}
+
+		bool operator==(StringPair const& other) const {
+			if (this == &other)
+				return true;
+
+			if (!_first) {
+				if (other._first)
+					return false;
+			} else if (!(*_first == *other._first))
+				return false;
+
+			if (!_second) {
+				if (other._second)
+					return false;
+			} else if (!(*_second == *other._second))
+				return false;
+
+			return true;
+		}
+
+	};
+
+	SPtr<String> _confFileName;
+	SPtr<String> _appName;
+
+	SPtr<Map<String, Object>> _vars;
+	SPtr<expr::ChainedResolver> _quickResolver;
+	SPtr<expr::ChainedResolver> _resolver;
+	LinkedList<StringPair> _searchPaths;
+protected:
+	SPtr<StringPair> searchConfigDir();
+public:
+	ConfigLoader(SPtr<String> const& confFileName, SPtr<String> const& appName);
+
+	ConfigLoader& clearPaths();
+
+	ConfigLoader& search(SPtr<String> const& path, SPtr<String> const& rootDir = nullptr);
+
+	ConfigLoader& withResolver(SPtr<expr::Resolver> const& resolver);
+
+	ConfigLoader& withResolver(SPtr<String> const& name, SPtr<expr::Resolver> const& resolver);
+
+	/** @throws EvaluationException */
+	SPtr<Config> load(bool quick = false);
 };
 
 } // namespace slib

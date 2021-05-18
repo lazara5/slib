@@ -28,6 +28,5 @@ void FileOutputStream::close() {
 	_f = nullptr;
 }
 
-
 } // namespace slib
 

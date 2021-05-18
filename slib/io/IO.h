@@ -43,7 +43,8 @@ public:
 	}
 
 	void setLength(size_t l) {
-		//assert(l < _size);
+		if (l > _size)
+			throw IndexOutOfBoundsException(_HERE_);
 		_length = l;
 	}
 

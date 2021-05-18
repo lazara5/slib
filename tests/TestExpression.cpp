@@ -15,17 +15,17 @@ TEST_GROUP(ExprTests) {
 	void setup() {
 		vars = newS<HashMap<String, Object>>();
 
-		vars->emplace<String>("var1", "val1");
-		vars->emplace<Integer>("var2", 2);
-		vars->emplace<String>("var3", "val3");
+		vars->emplace<String, String>("var1", "val1");
+		vars->emplace<String, Integer>("var2", 2);
+		vars->emplace<String, String>("var3", "val3");
 		SPtr<ArrayList<Object>> list = newS<ArrayList<Object>>();
-		vars->put("varr", std::dynamic_pointer_cast<Object>(list));
+		vars->put("varr"_SPTR, std::dynamic_pointer_cast<Object>(list));
 		list->emplace<Integer>(1);
 		list->emplace<Integer>(2);
 		list->emplace<Integer>(3);
 
 		auto map = newS<HashMap<Object, Object>>();
-		vars->put("oo", map);
+		vars->put("oo"_SPTR, map);
 		map->emplace<Long, String>(3, "xxx");
 		map->emplace<Double, String>(4.0, "yyy");
 
@@ -76,7 +76,7 @@ TEST(ExprTests, ExtraTests) {
 
 	SPtr<Object> res1 = ExpressionEvaluator::expressionValue(newS<String>("{a = 3, b = 2 * (2 + 1), c = {d = '123', e = 1 + 2}}"), resolver, 0);
 	UPtr<String> res2 = res1->toString();
-	CHECK((instanceof<Map<String, Object>>(res1)));
+	CHECK((instanceof<Map<BasicString, Object>>(res1)));
 	STRCMP_EQUAL("{a=3, b=6, c={d=123, e=3}}", res2->c_str());
 
 	res2 = ExpressionEvaluator::expressionValue(newS<String>("{a = 3\r\n b = 2 * (2 + 1)\n c = {\nd = '123',\r\n e = 1 + 2}\n}"), resolver, 0)->toString();
@@ -96,8 +96,9 @@ TEST(ExprTests, ExtraTests) {
 
 	SPtr<SystemInfo> systemInfo = newS<SystemInfo>();
 	SPtr<Map<String, Object>> vars = newS<HashMap<String, Object>>();
-	SPtr<ChainedResolver> resolver1 = ChainedResolver::over("system"_SPTR, systemInfo);
-	(*resolver1).with(vars, false);
+	SPtr<ChainedResolver> resolver1 = ChainedResolver::newInstance();
+	(*resolver1).add("system"_SPTR, systemInfo)
+	.add(vars, false);
 	res1 = ExpressionEvaluator::expressionValue("{hostname = system.hostname, ip=system.ip, :a = 1, b = a + 1}"_SPTR, resolver1, 0);
 	res2 = res1->toString();
 	fmt::print("Expr: {}\n", *res2);

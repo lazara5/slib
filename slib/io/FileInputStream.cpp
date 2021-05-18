@@ -1,13 +1,6 @@
 #include "slib/io/FileInputStream.h"
-#include "slib/util/StringUtils.h"
 
 namespace slib {
-
-FileInputStream::FileInputStream(String const& fileName) {
-	_f = fopen(fileName.c_str(), "r");
-	if (!_f)
-		throw FileNotFoundException(_HERE_, fmt::format("fopen() failed, errno='{}'", StringUtils::formatErrno()).c_str());
-}
 
 FileInputStream::~FileInputStream() {
 	if (_f)

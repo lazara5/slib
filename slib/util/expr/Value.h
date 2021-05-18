@@ -396,9 +396,9 @@ public:
 	UPtr<Value> index(UPtr<Value> const& arg) {
 		checkNil(*this);
 		checkNil(*arg);
-		if (instanceof<Map<String, Object>>(_value)) {
+		if (instanceof<Map<BasicString, Object>>(_value)) {
 			return newU<Value>(
-				(Class::castPtr<Map<String, Object>>(_value))->get(*Class::castPtr<String>(arg->_value))
+				(Class::castPtr<Map<BasicString, Object>>(_value))->get(*Class::castPtr<String>(arg->_value))
 			);
 		} else if (instanceof<Map<Object, Object>>(_value)) {
 			SPtr<Object> val = (Class::castPtr<Map<Object, Object>>(_value))->get(*(arg->_value));
@@ -438,8 +438,8 @@ public:
 		} else {
 			if (instanceof<Resolver>(_value))
 				return newU<Value>((Class::cast<Resolver>(_value))->getVar(*memberName), memberName);
-			else if (instanceof<Map<String, Object>>(_value)) {
-				return newU<Value>((Class::cast<Map<String, Object>>(_value))->get(*memberName), memberName);
+			else if (instanceof<Map<BasicString, Object>>(_value)) {
+				return newU<Value>((Class::cast<Map<BasicString, Object>>(_value))->get(*memberName), memberName);
 			} else
 				throw EvaluationException(_HERE_, ".", _value->getClass());
 		}

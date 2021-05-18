@@ -44,7 +44,12 @@ static const int OP_NEQ = 503;
 
 UPtr<String> ExpressionEvaluator::strExpressionValue(const SPtr<ExpressionInputStream> &input, SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
 	SPtr<Value> val = expressionValue(input, resolver, evalFlags);
-	Value::checkNil(*val);
+	if (val->isNil()) {
+		if (evalFlags & EXPR_IGNORE_UNDEFINED)
+			return nullptr;
+		else
+			Value::checkNil(*val);
+	}
 	if (instanceof<Number>(val->_value)) {
 		double d = Class::cast<Number>(val->_value)->doubleValue();
 		if (Number::isMathematicalInteger(d))
@@ -131,9 +136,7 @@ UPtr<Value> ExpressionEvaluator::expressionValue(SPtr<ExpressionInputStream> con
 	return Value::normalize(std::move(val));
 }
 
-/**
- * States used by the string interpolator
- */
+/** States used by the string interpolator */
 enum class InterState { APPEND, DOLLAR, READEXPR, STRING };
 
 /** @throws EvaluationException */
@@ -175,6 +178,8 @@ UPtr<String> ExpressionEvaluator::interpolate(String const& pattern, SPtr<Resolv
 					try {
 						UPtr<String> exprValue = strExpressionValue(newS<ExpressionInputStream>(expr), resolver,
 																	ignoreMissing ? EXPR_IGNORE_UNDEFINED : 0);
+						if ((!exprValue) && ignoreMissing)
+							return nullptr;
 						result.add(*exprValue);
 					} catch (MissingSymbolException const& e) {
 						if (ignoreMissing) {

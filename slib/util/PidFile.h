@@ -22,7 +22,7 @@ class PidFile {
 private:
 	struct pidfh *_pfh;
 private:
-	static pid_t open(struct pidfh **pfh, const Config& cfg, const std::string& modeSpec = "rw-r--r--");
+	static pid_t open(struct pidfh **pfh, SPtr<Config> const& cfg, const std::string& modeSpec = "rw-r--r--");
 	static void close(struct pidfh **pfh);
 	static void remove(struct pidfh **pfh);
 public:
@@ -32,7 +32,7 @@ public:
 	 * Opens and locks pid file if possible
 	 * @exception PidFileException 
 	 */
-	pid_t open(const Config& cfg, const std::string& modeSpec = "rw-r--r--");
+	pid_t open(SPtr<Config> const& cfg, const std::string& modeSpec = "rw-r--r--");
 	
 	/** @exception PidFileException */
 	void update();
@@ -44,7 +44,7 @@ public:
 	void remove();
 	
 	/** @exception PidFileException */
-	static pid_t getInstance(const Config& cfg);
+	static pid_t getInstance(SPtr<Config> const& cfg);
 };
 
 } // namespace slib

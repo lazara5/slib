@@ -20,6 +20,10 @@ public:
 	:_str(nullptr)
 	,_len(0) {}
 
+	inline StringView(const char *str) noexcept
+	:_str(str)
+	,_len(strlen(str)) {}
+
 	inline constexpr StringView(const char *str, size_t len) noexcept
 	:_str(str)
 	,_len(len) {}
@@ -51,7 +55,7 @@ struct fmt::formatter<slib::StringView> {
 
 	template <typename FormatContext>
 	format_context::iterator format(const slib::StringView& sv, FormatContext& ctx) {
-		return format_to(ctx.out(), "{}", sv.c_str());
+		return format_to(ctx.out(), "{:.{}}", sv.c_str(), sv.length());
 	}
 };
 

@@ -12,7 +12,7 @@ namespace slib {
 template <class T>
 class ConstListIteratorBase : virtual public ConstIteratorBase<T> {
 public:
-	virtual bool hasPrevious() const = 0;
+	virtual bool hasPrevious() = 0;
 	virtual const T& previous() = 0;
 	virtual size_t nextIndex() const = 0;
 	virtual ssize_t previousIndex() const = 0;
@@ -44,7 +44,7 @@ public:
 		return *this;
 	}
 
-	virtual bool hasNext() const override {
+	virtual bool hasNext() override {
 		return this->_instance->hasNext();
 	}
 
@@ -52,7 +52,7 @@ public:
 		return this->_instance->next();
 	}
 
-	virtual bool hasPrevious() const override {
+	virtual bool hasPrevious() override {
 		return this->_instance->hasPrevious();
 	}
 
@@ -110,7 +110,7 @@ public:
 		return *this;
 	}
 
-	virtual bool hasNext() const override {
+	virtual bool hasNext() override {
 		return this->_instance->hasNext();
 	}
 
@@ -118,7 +118,7 @@ public:
 		return this->_instance->next();
 	}
 
-	virtual bool hasPrevious() const override {
+	virtual bool hasPrevious() override {
 		return this->_instance->hasPrevious();
 	}
 

@@ -19,6 +19,7 @@
 #include <string>
 #include <atomic>
 #include <memory>
+#include <cstddef>
 
 namespace slib {
 
@@ -119,6 +120,15 @@ constexpr Array<TypeData, _typeDescSize<C>()> _typeDesc() {
 	return _typelistIterator<C, get_ancestors_t<C, ch>>::exec();
 }
 
+template<int = sizeof(uintptr_t)>
+int32_t uintptrTHash(uintptr_t h);
+
+template<>
+int32_t uintptrTHash<8>(size_t h);
+
+template<>
+int32_t uintptrTHash<4>(size_t h);
+
 class Class {
 protected:
 	const StringView _name;		///< Class name
@@ -128,8 +138,7 @@ public:
 	constexpr Class(StringView const& name, size_t hDepth, const TypeData* typeStack)
 	: _name(name)
 	, _hDepth(hDepth)
-	, _typeStack(typeStack) {
-	}
+	, _typeStack(typeStack) {}
 
 	constexpr Class(Class const& clazz)
 	: _name(clazz._name)
@@ -139,8 +148,14 @@ public:
 	Class& operator=(Class const&) = delete;
 
 	bool operator ==(Class const& other) const {
+		if (this == &other)
+			return true;
 		// TODO: do we need to compare depth?
 		return (_hDepth == other._hDepth) && _typeStack[_hDepth - 1].typeId == other._typeStack[_hDepth - 1].typeId;
+	}
+
+	int32_t hashCode() const {
+		return uintptrTHash((uintptr_t)getTypeId());
 	}
 
 	constexpr StringView const& getName() const {
@@ -338,5 +353,14 @@ public:
 };
 
 } // namespace slib
+
+namespace std {
+	// for using Class as key in unordered_map
+	template<> struct hash<slib::Class> {
+		std::size_t operator()(const slib::Class& obj) const {
+			return (size_t)obj.hashCode();
+		}
+	};
+}
 
 #endif // H_SLIB_CLASS_H

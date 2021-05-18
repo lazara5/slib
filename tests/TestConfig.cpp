@@ -2,13 +2,13 @@
 
 #include "slib/util/Config.h"
 #include "slib/util/SystemInfo.h"
-#include "slib/util/FileUtils.h"
+#include "slib/util/FilenameUtils.h"
 
 #include "Global.h"
 
 using namespace slib;
 
-class TestConfig : public Config {
+/*class TestConfig : public Config {
 private:
 	SPtr<slib::SystemInfo> _systemInfo;
 public:
@@ -27,15 +27,22 @@ public:
 
 void TestConfig::onBeforeSearch(slib::List<String> &pathList) const {
 	pathList.emplace<String>(0, "data");
-}
+}*/
 
-static UPtr<TestConfig> config;
+//static UPtr<TestConfig> config;
+static SPtr<Config> config;
 
 TEST_GROUP(ConfigTests) {
 	void setup() {
-		UPtr<String> path = FileUtils::buildPath(*FileUtils::getPath(test_argv[0]), "data/test.conf");
+		SPtr<String> path = FilenameUtils::concat(CPtr(FilenameUtils::getPath(test_argv[0])), "data/test.conf");
 		printf("path: %s\n", path->c_str());
-		config = newU<TestConfig>(*FileUtils::buildPath(*FileUtils::getPath(test_argv[0]), "data/test.conf"), "SlibTest");
+		ConfigLoader configLoader(path, "SlibTest"_SPTR);
+		configLoader
+		.clearPaths()
+		.search("data"_SPTR)
+		.withResolver("system"_SPTR, newS<SystemInfo>());
+		config = configLoader.load();
+		//config = newU<TestConfig>(*FileUtils::buildPath(CPtr(FileUtils::getPath(test_argv[0])), "data/test.conf"), "SlibTest");
 		//config = newU<TestConfig>("test.conf", "SlibTest");
 	}
 
@@ -46,7 +53,7 @@ TEST_GROUP(ConfigTests) {
 
 TEST(ConfigTests, BasicTests)
 {
-	config->init();
-	STRCMP_EQUAL("str123", config->getProperty("testName")->c_str());
-	fmt::print("hostname: {}", *config->getProperty("hostname"));
+	//config->init();
+	STRCMP_EQUAL("str123", config->getString("testName")->c_str());
+	fmt::print("hostname: {}", *config->getString("hostname"));
 }

@@ -6,8 +6,8 @@ int test_argc;
 char** test_argv;
 
 int main(int argc, char** argv) {
-	MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
 	test_argc = argc;
 	test_argv = argv;
+	MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
 	return CommandLineTestRunner::RunAllTests(argc, argv);
 }

@@ -18,6 +18,7 @@ set(SLIB_SOURCES
 	slib/lang/Class.cpp
 	slib/lang/Numeric.cpp
 	slib/lang/Object.cpp
+	slib/lang/BasicString.cpp
 	slib/lang/String.cpp
 	slib/lang/StringBuilder.cpp
 	slib/lang/StringView.cpp
@@ -34,7 +35,7 @@ set(SLIB_SOURCES
 	slib/text/StringCharacterIterator.cpp
 	slib/util/CmdLine.cpp
 	slib/util/Config.cpp
-	slib/util/FileUtils.cpp
+	slib/util/FilenameUtils.cpp
 	slib/util/Log.cpp
 	slib/util/PidFile.cpp
 	slib/util/ProcessUtils.cpp
@@ -60,7 +61,7 @@ endif(WITH_JSON)
 
 SET(CMAKE_CXX_FLAGS_DEBUG "-O0")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -std=c++11 -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -std=c++11 -fPIC -ftemplate-backtrace-limit=0")
 
 if(WITH_TESTS)
 	MESSAGE("Tests enabled")
@@ -74,6 +75,7 @@ if(WITH_COVERAGE)
 		NAME coverage
 		EXECUTABLE slib_tests
 		EXCLUDE "/usr/include/*"
+		EXCLUDE "slib/third-party/*"
 		EXCLUDE "tests/*"
 	)
 endif(WITH_COVERAGE)

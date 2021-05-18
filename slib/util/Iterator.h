@@ -25,7 +25,7 @@ public:
 	 *
 	 * @return <i>true</i> if the iterator has more elements.
 	 */
-	virtual bool hasNext() const = 0;
+	virtual bool hasNext() = 0;
 
 	/**
 	 * Returns the next element in the iteration.
@@ -177,7 +177,7 @@ public:
 		return *this;
 	}
 
-	virtual bool hasNext() const override {
+	virtual bool hasNext() override {
 		return this->_instance->hasNext();
 	}
 
@@ -246,7 +246,7 @@ public:
 		return *this;
 	}
 
-	virtual bool hasNext() const override {
+	virtual bool hasNext() override {
 		return this->_instance->hasNext();
 	}
 

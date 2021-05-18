@@ -55,7 +55,7 @@ public:
 
 	virtual SPtr<V> put(SPtr<K> const& key, SPtr<V> const& value) = 0;
 
-	virtual SPtr<V> put(K const& key, SPtr<V> const& value) {
+	/*virtual SPtr<V> put(K const& key, SPtr<V> const& value) {
 		return put(newS<K>(key), value);
 	}
 
@@ -67,12 +67,6 @@ public:
 	template <class AVT, typename... A>
 	SPtr<V> emplaceValue(SPtr<K> const& key, A&&... args) {
 		return put(key, newS<AVT>(std::forward<A>(args)...));
-	}
-
-	/*template <class AVT>
-	SPtr<V> emplace(const K& key, AVT const& value) {
-		static_assert(std::is_same<AVT, V>::value, "Only use with the exact value type");
-		return put(newS<K>(key), newS<V>(value));
 	}*/
 
 	template <class AKT, class AVT, typename KAT, typename VAT>

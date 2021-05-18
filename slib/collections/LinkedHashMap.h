@@ -84,7 +84,7 @@ protected:
 public:
 	InternalLinkedHashMap(int32_t initialCapacity = DEFAULT_INITIAL_CAPACITY, float loadFactor = HASH_DEFAULT_LOAD_FACTOR)
 	:InternalHashMap<K, V, Pred>(initialCapacity, loadFactor) {
-		_header = new Entry(-1, newS<K>(), nullptr, nullptr);
+		_header = new Entry(-1, nullptr, nullptr, nullptr);
 		_header->_before = _header->_after = _header;
 	}
 
@@ -158,7 +158,7 @@ protected:
 			_lastReturned = nullptr;
 		}
 
-		virtual bool hasNext() const override {
+		virtual bool hasNext() override {
 			return _nextEntry != _map->_header;
 		}
 
@@ -189,7 +189,7 @@ protected:
 			_ncMap = map;
 		}
 
-		virtual bool hasNext() const override {
+		virtual bool hasNext() override {
 			return ConstEntryIterator::hasNext();
 		}
 

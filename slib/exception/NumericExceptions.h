@@ -6,6 +6,7 @@
 #define H_SLIB_EXCEPTION_NUMERICEXCEPTIONS_H
 
 #include "slib/exception/Exception.h" 
+#include "slib/util/MacroUtils.h"
 
 namespace slib {
 
@@ -20,7 +21,7 @@ public:
 
 	NumberFormatException(const char *where, const char *msg) : Exception(where, "NumberFormatException", msg) {}
 protected:
-	NumberFormatException(const char *where, const char *name, const char *msg) : Exception(where, "NumberFormatException", msg) {}
+	NumberFormatException(const char *where, const char *name SLIB_UNUSED, const char *msg) : Exception(where, "NumberFormatException", msg) {}
 };
 
 class NumericOverflowException : public NumberFormatException {

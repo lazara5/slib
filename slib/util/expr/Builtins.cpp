@@ -20,7 +20,7 @@ public:
 		emplace<String, Boolean>("false", false);
 		put("nil"_SPTR, nullptr);
 
-		SPtr<Map<String, Object>> math = newS<HashMap<String, Object>>();
+		SPtr<Map<BasicString, Object>> math = newS<HashMap<BasicString, Object>>();
 		emplaceKey<String>("math", math);
 
 		math->emplaceKey<String>("ceil", Function::impl<Number>(
@@ -44,6 +44,38 @@ public:
 				StringBuilder result;
 				ExpressionFormatter::format(result, args, resolver);
 				return Value::of(result.toString());
+			}
+		));
+
+		emplaceKey<String>("double", Function::impl<Object>(
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+				try {
+					SPtr<Object> obj = args.get(0);
+					if (instanceof<String>(obj))
+						return Value::of(Double::parseDouble(CPtr(Class::cast<String>(obj))));
+					else if (instanceof<Number>(obj))
+						return Value::of((Class::cast<Number>(obj))->doubleValue());
+					else
+						throw EvaluationException(_HERE_, fmt::format("double(): unsupported conversion from {}", obj->getClass().getName().c_str()).c_str());
+				} catch (NumberFormatException const& e) {
+					throw EvaluationException(_HERE_, "double()", e);
+				}
+			}
+		));
+
+		emplaceKey<String>("long", Function::impl<Object>(
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+				try {
+					SPtr<Object> obj = args.get(0);
+						if (instanceof<String>(obj))
+							return Value::of(Long::parseLong(CPtr(Class::cast<String>(obj))));
+						else if (instanceof<Number>(obj))
+							return Value::of((Class::cast<Number>(obj))->longValue());
+						else
+							throw  EvaluationException(_HERE_, fmt::format("long(): unsupported conversion from {}", obj->getClass().getName().c_str()).c_str());
+				} catch (NumberFormatException e) {
+					throw EvaluationException(_HERE_, "long()", e);
+				}
 			}
 		));
 
@@ -139,6 +171,15 @@ public:
 			}
 		));
 
+		emplaceKey<String>("@", Function::impl<String>(
+			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args) {
+				SPtr<String> pattern = args.get<String>(0);
+				SPtr<String> value = ExpressionEvaluator::interpolate(*pattern, resolver,
+							   (evalFlags & EXPR_IGNORE_UNDEFINED) ? true : false);
+				return Value::of(value);
+			}
+		));
+
 		emplaceKey<String>("$", Function::impl<String>(
 			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
 				SPtr<String> varName = args.get<String>(0);
@@ -155,14 +196,16 @@ public:
 
 		class ObjParseContext : public FunctionParseContext {
 		private:
-			SPtr<Map<String, Object>> _obj;
+			SPtr<Map<BasicString, Object>> _obj;
 			int _numVal;
 		public:
 			ObjParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName, SPtr<Resolver> const& resolver)
 			: FunctionParseContext(function, symbolName, resolver)
-			, _obj(newS<LinkedHashMap<String, Object>>()) {}
+			, _obj(newS<LinkedHashMap<BasicString, Object>>()) {}
 
 			virtual void addArg(SPtr<Object> const& obj) override {
+				if (!instanceof<KeyValue<String>>(obj))
+					throw EvaluationException(_HERE_, "Object member not a key-value pair");
 				SPtr<KeyValue<String>> tuple = Class::cast<KeyValue<String>>(obj);
 				if (tuple->_global)
 					_resolver->setVar(*tuple->_key, tuple->_value);

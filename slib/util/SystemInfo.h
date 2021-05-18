@@ -44,6 +44,14 @@ public:
 	}
 };
 
+class EnvResolver : public expr::Resolver {
+public:
+	virtual SPtr<Object> getVar(String const& key) const override {
+		char *var = getenv(key.c_str());
+		return var ? newS<String>(var) : nullptr;
+	}
+};
+
 } // namespace slib
 
 #endif // H_SLIB_UTIL_SYSTEM_H

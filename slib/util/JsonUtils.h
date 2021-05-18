@@ -119,12 +119,12 @@ const rapidjson::Value *getValue(const char *where, const char *path, const rapi
 
 /** @throws ValueException */
 template <class P>
-std::string getString(const char *where, P path, const rapidjson::Value& v) {
+UPtr<String> getString(const char *where, P path, const rapidjson::Value& v) {
 	const rapidjson::Value *value = getValue(where, path, v);
 	if (value == nullptr)
 		throw MissingValueException(where, pathToString(path).c_str());
 	if (value->IsString())
-		return String::trim(value->GetString());
+		return String::trim(CPtr(value->GetString()));
 	throw InvalidValueException(where, pathToString(path).c_str(), "String expected");
 }
 

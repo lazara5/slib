@@ -43,6 +43,22 @@ public:
 	static bool isLowerCase(char ch) {
 		return std::islower(ch);
 	}
+
+	static int digit(char ch, int radix) {
+		int result = -1;
+
+		if (ch >= '0' && ch <= '9')
+			result = ch - '0';
+		else if (ch >= 'a' && ch <= 'z')
+			result = ch - 'a' + 10;
+		else if (ch >= 'A' && ch <= 'Z')
+			result = ch - 'A' + 10;
+
+		if (result < radix && result != -1)
+			return result;
+
+		return -1;
+	}
 };
 
 } // namespace slib

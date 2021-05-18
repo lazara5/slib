@@ -17,6 +17,8 @@
 #include <unordered_map>
 #include <functional>
 
+#include <string.h>
+
 namespace slib {
 
 /** Convenience class for building XML-escaped strings */
@@ -61,15 +63,15 @@ public:
 
 	template <class S>
 	static bool isBlank(S const* str) {
-		const char *buffer = str ? str->c_str() : nullptr;
-		size_t len = str ? str->length() : 0;
+		const char *buffer = str ? String::strRaw(str) : nullptr;
+		size_t len = str ? String::strLen(str) : 0;
 		return isBlank(buffer, len);
 	}
 
 	template <class S>
 	static bool isEmpty(S const* str) {
-		const char *buffer = str ? str->c_str() : nullptr;
-		size_t len = str ? str->length() : 0;
+		const char *buffer = str ? String::strRaw(str) : nullptr;
+		size_t len = str ? String::strLen(str) : 0;
 		if ((!buffer) || (len == 0))
 			return true;
 		return false;
@@ -77,6 +79,56 @@ public:
 
 	static SPtr<std::string> interpolate(std::string const& src,
 										 ValueProvider<std::string, std::string> const& vars, bool ignoreUndefined);
+};
+
+class StringSplitIterator {
+private:
+	const char _delim;
+	const char *_ptr;
+	size_t _len;
+	const char *_tokenStart;
+	size_t _tokenLen;
+	bool _init;
+private:
+	void computeNext() {
+		if (!_ptr) {
+			_tokenStart = nullptr;
+			return;
+		}
+		const char *nextDelim = (const char *)memchr(_ptr, _delim, _len);
+		if (nextDelim)
+			_len -= (size_t)(nextDelim - _ptr + 1);
+		_tokenStart = _ptr;
+		if (!nextDelim)
+			_tokenLen = _len;
+		else
+			_tokenLen = (size_t)(nextDelim - _ptr);
+		_ptr = nextDelim ? nextDelim + 1 : nullptr;
+
+		_init = true;
+	}
+public:
+	template <class S>
+	StringSplitIterator(S const* str, char delim)
+	: _delim(delim)
+	, _ptr(String::strRaw(str))
+	, _len(String::strLen(str))
+	, _init(false) {}
+
+	bool hasNext() {
+		if (!_init)
+			computeNext();
+		return _tokenStart != nullptr;
+	}
+
+	BasicStringView next() {
+		if (!hasNext())
+			throw NoSuchElementException(_HERE_);
+		const char *tokenStart = _tokenStart;
+		size_t tokenLen = _tokenLen;
+		computeNext();
+		return BasicStringView(tokenStart, tokenLen);
+	}
 };
 
 } // namespace slib

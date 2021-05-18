@@ -14,44 +14,6 @@ using std::ptrdiff_t;
 
 namespace slib {
 
-int BasicString::compareTo(const BasicString &other) const {
-	const char *buffer = c_str();
-	const char *otherBuffer = other.c_str();
-
-	if ((!buffer) || (!otherBuffer))
-		throw NullPointerException(_HERE_);
-
-	return strcmp(buffer, otherBuffer);
-}
-
-bool BasicString::equals(BasicString const& other) const {
-	return String::equals(this, CPtr(other));
-}
-
-UPtr<String> BasicString::toUpperCase() const {
-	const char *buffer = c_str();
-	if (!buffer)
-		return nullptr;
-	size_t len = length();
-	UPtr<String> res = newU<String>(buffer, length());
-	char *resBuffer = res->str();
-	for (size_t i = 0; i < len; i++)
-		resBuffer[i] = ((char)toupper(resBuffer[i]));
-	return res;
-}
-
-UPtr<String> BasicString::toLowerCase() const {
-	const char *buffer = c_str();
-	if (!buffer)
-		return nullptr;
-	size_t len = length();
-	UPtr<String> res = newU<String>(buffer, length());
-	char *resBuffer = res->str();
-	for (size_t i = 0; i < len; i++)
-		resBuffer[i] = ((char)tolower(resBuffer[i]));
-	return res;
-}
-
 String::String()
 :_hash(0) {}
 

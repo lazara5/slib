@@ -213,7 +213,7 @@ public:
 	template <uint32_t MIN = 0, uint32_t MAX = slib::UInt::MAX_VALUE>
 	uint32_t getUInt(const std::string& name) const {
 		try {
-			return rangeCheck<uint32_t, MIN, MAX>(_HERE_, UInt::parseUInt(getString(name)));
+			return rangeCheck<uint32_t, MIN, MAX>(_HERE_, UInt::parseUInt(CPtr(getString(name))));
 		} catch (NumberFormatException const& e) {
 			throw NumberFormatException(_HERE_, fmt::format("Invalid integer value: {} ({})", name, e.getMessage()).c_str());
 		}

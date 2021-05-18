@@ -76,44 +76,29 @@ private:
 	SPtr<Resolver> _writableResolver;
 public:
 	/** do NOT use directly, only public for make_shared */
-	ChainedResolver(bool /* dontUse */, SPtr<Resolver> const& resolver)
+	ChainedResolver(bool /* dontUse */)
 	: _resolvers(newU<ArrayList<Resolver>>())
-	, _namedResolvers(newU<HashMap<String, Resolver>>()){
-		_resolvers->add(resolver);
-		if (!resolver->isReadOnly())
-			_writableResolver = resolver;
-	}
-
-	/** do NOT use directly, only public for make_shared */
-	ChainedResolver(bool /* dontUse */, SPtr<String> const& name, SPtr<Resolver> const& resolver)
-	: _resolvers(newU<ArrayList<Resolver>>())
-	, _namedResolvers(newU<HashMap<String, Resolver>>()){
-		_namedResolvers->put(name, resolver);
-	}
+	, _namedResolvers(newU<HashMap<String, Resolver>>()) {}
 public:
 	virtual ~ChainedResolver() override;
 
-	static SPtr<ChainedResolver> over(SPtr<Resolver> const& resolver) {
-		return newS<ChainedResolver>(true, resolver);
+	static SPtr<ChainedResolver> newInstance() {
+		return newS<ChainedResolver>(true);
 	}
 
-	static SPtr<ChainedResolver> over(SPtr<String> const& name, SPtr<Resolver> const& resolver) {
-		return newS<ChainedResolver>(true, name, resolver);
-	}
-
-	ChainedResolver const& with(SPtr<Resolver> const& resolver) {
+	ChainedResolver& add(SPtr<Resolver> const& resolver) {
 		_resolvers->add(resolver);
 		if ((!_writableResolver) && (!resolver->isReadOnly()))
 			_writableResolver = resolver;
 		return *this;
 	}
 
-	ChainedResolver const& with(SPtr<String> const& name, SPtr<Resolver> const& resolver) {
+	ChainedResolver& add(SPtr<String> const& name, SPtr<Resolver> const& resolver) {
 		_namedResolvers->put(name, resolver);
 		return *this;
 	}
 
-	ChainedResolver const& with(SPtr<Map<String, Object>> map, bool readOnly = true) {
+	ChainedResolver& add(SPtr<Map<String, Object>> map, bool readOnly = true) {
 		SPtr<Resolver> resolver = newS<MapResolver>(map, readOnly);
 		_resolvers->add(resolver);
 		if ((!_writableResolver) && (!resolver->isReadOnly()))
@@ -121,8 +106,16 @@ public:
 		return *this;
 	}
 
-	ChainedResolver const& with(SPtr<String> const& name, SPtr<Map<String, Object>> map) {
-		_namedResolvers->emplaceValue<MapResolver>(name, map);
+	ChainedResolver& add(SPtr<String> const& name, SPtr<Map<String, Object>> map) {
+		//_namedResolvers->emplaceValue<MapResolver>(name, map);
+		_namedResolvers->put(name, newS<MapResolver>(map));
+		return *this;
+	}
+
+	ChainedResolver& clear() {
+		_resolvers->clear();
+		_namedResolvers->clear();
+		_writableResolver = nullptr;
 		return *this;
 	}
 
@@ -134,6 +127,34 @@ public:
 
 	virtual void setVar(String const& key, SPtr<Object> const& value) override;
 };
+
+class LazyResolver : public Resolver {
+private:
+	bool _initialized;
+public:
+	LazyResolver()
+	: _initialized(false) {}
+
+	virtual ~LazyResolver() {}
+
+	virtual void initialize() = 0;
+
+	void init() {
+		if (!_initialized) {
+			initialize();
+			_initialized = true;
+		}
+	}
+
+	virtual SPtr<Object> provideVar(String const& name) const = 0;
+
+	virtual SPtr<Object> getVar(String const& name) const override final {
+		if (!_initialized)
+			const_cast<LazyResolver *>(this)->init();
+		return provideVar(name);
+	}
+};
+
 
 } // namespace expr
 } // namespace slib

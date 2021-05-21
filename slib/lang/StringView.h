@@ -28,11 +28,11 @@ public:
 	:_str(str)
 	,_len(len) {}
 
-	inline constexpr StringView(StringView const& str) noexcept
-	:_str(str.c_str())
-	,_len(str.length()) {}
+	inline constexpr StringView(StringView const& other) noexcept
+	:_str(other._str)
+	,_len(other._len) {}
 
-	inline constexpr const char *c_str() const noexcept {
+	inline constexpr const char *data() const noexcept {
 		return _str;
 	}
 
@@ -55,7 +55,7 @@ struct fmt::formatter<slib::StringView> {
 
 	template <typename FormatContext>
 	format_context::iterator format(const slib::StringView& sv, FormatContext& ctx) {
-		return format_to(ctx.out(), "{:.{}}", sv.c_str(), sv.length());
+		return format_to(ctx.out(), "{:.{}}", sv.data(), sv.length());
 	}
 };
 

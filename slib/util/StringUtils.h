@@ -63,15 +63,13 @@ public:
 
 	template <class S>
 	static bool isBlank(S const* str) {
-		const char *buffer = str ? String::strRaw(str) : nullptr;
-		size_t len = str ? String::strLen(str) : 0;
-		return isBlank(buffer, len);
+		return isBlank(strData(str), strLen(str));
 	}
 
 	template <class S>
 	static bool isEmpty(S const* str) {
-		const char *buffer = str ? String::strRaw(str) : nullptr;
-		size_t len = str ? String::strLen(str) : 0;
+		const char *buffer = strData(str);
+		size_t len = strLen(str);
 		if ((!buffer) || (len == 0))
 			return true;
 		return false;
@@ -111,8 +109,8 @@ public:
 	template <class S>
 	StringSplitIterator(S const* str, char delim)
 	: _delim(delim)
-	, _ptr(String::strRaw(str))
-	, _len(String::strLen(str))
+	, _ptr(strData(str))
+	, _len(strLen(str))
 	, _init(false) {}
 
 	bool hasNext() {

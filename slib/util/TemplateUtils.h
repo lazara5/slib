@@ -9,7 +9,7 @@
 #include <slib/third-party/cppbits/make_unique.h>
 
 #include <memory>
-
+#include <cstring>
 
 namespace slib {
 
@@ -54,6 +54,29 @@ T const* CPtr(UPtr<T> const& obj) {
 	return obj.get();
 }
 
+// ---- Helpers for generic string API ----
+template <class S>
+const char *cStr(S const* str) {
+	return str ? str->c_str() : nullptr;
+}
+
+const char *cStr(const char *str);
+
+template <class S>
+const char *strData(S const* str) {
+	return str ? str->data() : nullptr;
+}
+
+const char *strData(const char *str);
+
+template <class S>
+size_t strLen(S const* str) {
+	return str? str->length() : 0;
+}
+
+size_t strLen(const char *str);
+
+
 template<int = sizeof(size_t)>
 int32_t sizeTHash(size_t h);
 
@@ -63,7 +86,7 @@ int32_t sizeTHash<8>(size_t h);
 template<>
 int32_t sizeTHash<4>(size_t h);
 
-// for array join
+// ---- For array join ----
 
 template<std::size_t ... Size>
 struct num_tuple {};

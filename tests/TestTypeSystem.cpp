@@ -16,7 +16,7 @@ TEST(TypeSystem, InstanceOf) {
 	CHECK(instanceof<Number>(i1));
 	CHECK(instanceof<Integer>(i1));
 	CHECK_FALSE(instanceof<String>(i1));
-	STRCMP_EQUAL(i1.getClass().getName().c_str(), "Integer");
+	CHECK(BasicString::equals(CPtr(i1.getClass().getName()), "Integer"));
 
 	CHECK(instanceof<BasicString>(s1));
 	CHECK(instanceof<String>(s1));

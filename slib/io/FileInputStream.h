@@ -13,7 +13,7 @@ private:
 public:
 	template <class S>
 	FileInputStream(S const* fileName) {
-		_f = fopen(String::strRaw(fileName), "r");
+		_f = fopen(cStr(fileName), "r");
 		if (!_f)
 			throw FileNotFoundException(_HERE_, fmt::format("fopen() failed, errno='{}'", StringUtils::formatErrno()).c_str());
 	}

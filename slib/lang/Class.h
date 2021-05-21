@@ -25,7 +25,7 @@ namespace slib {
 
 class ClassCastException : public Exception {
 public:
-	ClassCastException(const char *where, const char *c1, const char *c2);
+	ClassCastException(const char *where, StringView const& c1, StringView const& c2);
 };
 
 template<typename ...TS>
@@ -240,7 +240,7 @@ D const* constCastImpl(S const* from, std::true_type) {
 		if (res)
 			return (D const*) res;
 
-		throw ClassCastException(_HERE_, classOf<S>::_class().getName().c_str(), classOf<D>::_class().getName().c_str());
+		throw ClassCastException(_HERE_, classOf<S>::_class().getName(), classOf<D>::_class().getName());
 	}
 
 	return nullptr;
@@ -276,7 +276,7 @@ SPtr<D> Class::cast(SPtr<S> const& from) {
 				return SPtr<D>(from, ret);
 		}
 
-		throw ClassCastException(_HERE_, classOf<S>::_class().getName().c_str(), classOf<D>::_class().getName().c_str());
+		throw ClassCastException(_HERE_, classOf<S>::_class().getName(), classOf<D>::_class().getName());
 	}
 
 	return nullptr;
@@ -296,7 +296,7 @@ T* Class::cast(V *from) {
 				return ret;
 		}
 
-		throw ClassCastException(_HERE_, classOf<V>::_class().getName().c_str(), classOf<T>::_class().getName().c_str());
+		throw ClassCastException(_HERE_, classOf<V>::_class().getName(), classOf<T>::_class().getName());
 	}
 
 	return nullptr;
@@ -309,7 +309,7 @@ D* Class::cast(S *from) {
 		if (res)
 			return (D*) res;
 
-		throw ClassCastException(_HERE_, classOf<S>::_class().getName().c_str(), classOf<D>::_class().getName().c_str());
+		throw ClassCastException(_HERE_, classOf<S>::_class().getName(), classOf<D>::_class().getName());
 	}
 
 	return nullptr;

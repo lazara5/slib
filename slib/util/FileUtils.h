@@ -32,11 +32,11 @@ public:
 
 	template <class S>
 	static mode_t parseModeSpec(S const* modeSpec) {
-		size_t modeLen = String::strLen(modeSpec);
+		size_t modeLen = strLen(modeSpec);
 		if ((modeLen < 9) || (modeLen > 10))
 			throw (int)EINVAL;
 
-		const char *modeStr = String::strRaw(modeSpec);
+		const char *modeStr = strData(modeSpec);
 		mode_t mode = 0;
 		try {
 			if (isMode(modeStr[0], 'r')) mode |= S_IRUSR;
@@ -68,7 +68,7 @@ public:
 			return -1;
 		}
 
-		char *tmpPath = strdup(String::strRaw(path));
+		char *tmpPath = strdup(cStr(path));
 		char *p = tmpPath;
 
 		while (*p != '\0') {
@@ -96,7 +96,7 @@ public:
 	template <class S>
 	static size_t getSize(S const* fileName) {
 		struct stat st;
-		int ret = stat(String::strRaw(fileName), &st);
+		int ret = stat(cStr(fileName), &st);
 		if (ret != 0)
 			throw IOException(_HERE_, fmt::format("File I/O error, errno='{}'", StringUtils::formatErrno()).c_str());
 		return st.st_size;

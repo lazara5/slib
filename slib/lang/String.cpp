@@ -203,7 +203,7 @@ bool ASCIICaseInsensitiveString::equals(const BasicString& other) const {
 }
 
 bool ASCIICaseInsensitiveString::equalsIgnoreCase(const BasicString& other) const {
-	const char *otherBuffer = other.c_str();
+	const char *otherBuffer = other.data();
 	if (_buffer == nullptr)
 		return (otherBuffer == nullptr);
 	if (otherBuffer == nullptr)
@@ -211,7 +211,7 @@ bool ASCIICaseInsensitiveString::equalsIgnoreCase(const BasicString& other) cons
 	if (_buffer == otherBuffer)
 		return true;
 	if (_len == other.length())
-		return !strcasecmp(_buffer, otherBuffer);
+		return !strncasecmp(_buffer, otherBuffer, _len);
 	return false;
 }
 

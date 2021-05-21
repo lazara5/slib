@@ -20,6 +20,11 @@ class Resolver : virtual public Object {
 public:
 	TYPE_INFO(Resolver, CLASS(Resolver), INHERITS(Object));
 public:
+	enum struct Mode : uint8_t {
+		READ_ONLY,
+		WRITABLE
+	};
+public:
 	virtual ~Resolver() override;
 
 	/**
@@ -44,11 +49,11 @@ public:
 	TYPE_INFO(MapResolver, CLASS(MapResolver), INHERITS(Resolver));
 private:
 	SPtr<Map<String, Object>> _map;
-	bool _readOnly;
+	Mode _mode;
 public:
-	MapResolver(SPtr<Map<String, Object>> map, bool readOnly = true)
+	MapResolver(SPtr<Map<String, Object>> map, Mode mode = Mode::READ_ONLY)
 	: _map(map)
-	, _readOnly(readOnly) {}
+	, _mode(mode) {}
 
 	virtual ~MapResolver() override;
 
@@ -57,11 +62,11 @@ public:
 	}
 
 	virtual bool isReadOnly() const override {
-		return _readOnly;
+		return _mode == Mode::READ_ONLY;
 	}
 
 	virtual void setVar(String const& key, SPtr<Object> const& value) override {
-		if (_readOnly)
+		if (isReadOnly())
 			return Resolver::setVar(key, value);
 		_map->emplaceKey<String>(key, value);
 	}
@@ -98,8 +103,8 @@ public:
 		return *this;
 	}
 
-	ChainedResolver& add(SPtr<Map<String, Object>> map, bool readOnly = true) {
-		SPtr<Resolver> resolver = newS<MapResolver>(map, readOnly);
+	ChainedResolver& add(SPtr<Map<String, Object>> map, Mode mode = Mode::READ_ONLY) {
+		SPtr<Resolver> resolver = newS<MapResolver>(map, mode);
 		_resolvers->add(resolver);
 		if ((!_writableResolver) && (!resolver->isReadOnly()))
 			_writableResolver = resolver;
@@ -107,7 +112,6 @@ public:
 	}
 
 	ChainedResolver& add(SPtr<String> const& name, SPtr<Map<String, Object>> map) {
-		//_namedResolvers->emplaceValue<MapResolver>(name, map);
 		_namedResolvers->put(name, newS<MapResolver>(map));
 		return *this;
 	}

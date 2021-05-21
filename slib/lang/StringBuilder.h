@@ -132,7 +132,7 @@ public:
 
 	template <class S>
 	StringBuilder& addStr(S const* str) {
-		return add(String::strRaw(str), String::strLen(str));
+		return add(strData(str), strLen(str));
 	}
 
 	/** for std container compatibility */
@@ -445,7 +445,11 @@ public:
 	 * Get constant C string (null-terminated)
 	 * @return pointer to constant C string
 	 */
-	const char *c_str() const override {
+	const char *c_str() const {
+		return (const char*)_buffer;
+	}
+
+	const char *data() const override {
 		return (const char*)_buffer;
 	}
 

@@ -78,25 +78,7 @@ protected:
 			return start - sourceOffset + 1;
 		}
 	}
-public:
-	// ---- Helpers for generic string API ----
-	template <class S>
-	static const char *strRaw(S const* str) {
-		return str ? str->c_str() : nullptr;
-	}
 
-	static const char *strRaw(const char *str) {
-		return str;
-	}
-
-	template <class S>
-	static size_t strLen(S const* str) {
-		return str? str->length() : 0;
-	}
-
-	static size_t strLen(const char *str) {
-		return str ? strlen(str) : 0;
-	}
 public:
 	String();
 	String(std::string const& str);
@@ -109,11 +91,11 @@ public:
 	String(char c);
 
 	String(StringView const& str)
-	: String(str.c_str(), str.length()) {}
+	: String(str.data(), str.length()) {}
 
 	template <class S>
 	String(S const* str)
-	: String(strRaw(str), strLen(str)) {}
+	: String(strData(str), strLen(str)) {}
 
 	virtual ~String() override;
 
@@ -125,8 +107,12 @@ public:
 		return _str.empty();
 	}
 
-	const char *c_str() const override {
+	const char *c_str() const {
 		return _str.c_str();
+	}
+
+	const char *data() const override {
+		return _str.data();
 	}
 protected:
 	char *str() {
@@ -149,9 +135,8 @@ public:
 
 	template <class S1, class S2>
 	static bool equalsIgnoreCase(S1 const* str, S2 const* other) {
-
-		const char *buffer = str ? strRaw(str) : nullptr;
-		const char *otherBuffer = other? strRaw(other) : nullptr;
+		const char *buffer = strData(str);
+		const char *otherBuffer = strData(other);
 
 		if (buffer == nullptr)
 			return (otherBuffer == nullptr);
@@ -163,7 +148,7 @@ public:
 		size_t len = strLen(str);
 		size_t otherLen = strLen(other);
 		if (len == otherLen)
-			return !strcasecmp(buffer, otherBuffer);
+			return !strncasecmp(buffer, otherBuffer, len);
 		return false;
 	}
 
@@ -182,21 +167,27 @@ public:
 
 	template <class S>
 	static bool startsWith(S const* str, char prefix) {
-		const char *buffer = str ? strRaw(str) : nullptr;
-
+		const char *buffer = strData(str);
 		if (buffer == nullptr)
+			return false;
+		size_t len = strLen(str);
+		if (len == 0)
 			return false;
 		return buffer[0] == prefix;
 	}
 
 	template <class S1, class S2>
 	static bool startsWith(S1 const* str, S2 const* prefix) {
-		const char *buffer = str ? strRaw(str) : nullptr;
-		const char *prefixBuffer = prefix? strRaw(prefix) : nullptr;
+		const char *buffer = strData(str);
+		const char *prefixBuffer = strData(prefix);
 
 		if ((!buffer) || (!prefixBuffer))
 			return false;
-		return (strncmp(buffer, prefixBuffer, strLen(prefix)) == 0);
+		size_t sLen = strLen(str);
+		size_t prefixLen = strLen(prefix);
+		if (prefixLen > sLen)
+			return false;
+		return (strncmp(buffer, prefixBuffer, prefixLen) == 0);
 	}
 
 	/*template <class S1, class S2>
@@ -238,8 +229,8 @@ public:
 			return false;
 		size_t uOffset = (size_t) offset;
 
-		const char *buffer = str ? strRaw(str) : nullptr;
-		const char *prefixBuffer = prefix? strRaw(prefix) : nullptr;
+		const char *buffer = strData(str);
+		const char *prefixBuffer = strData(prefix);
 
 		if ((!buffer) || (!prefixBuffer))
 			return false;
@@ -330,7 +321,7 @@ public:
 	static UPtr<String> trim(S const* str) {
 		if (!str)
 			return nullptr;
-		return trim(strRaw(str), strLen(str));
+		return trim(strData(str), strLen(str));
 	}
 
 	UPtr<String> trim() {
@@ -339,7 +330,7 @@ public:
 
 	template <class S>
 	static ptrdiff_t indexOf(S const* str, char ch) {
-		const char *buffer = strRaw(str);
+		const char *buffer = strData(str);
 		if (!buffer)
 			return -1;
 
@@ -354,7 +345,7 @@ public:
 
 	template <class S>
 	static ptrdiff_t indexOf(S const* str, char ch, size_t fromIndex) {
-		const char *buffer = strRaw(str);
+		const char *buffer = strData(str);
 
 		if (buffer == nullptr)
 			return -1;
@@ -429,7 +420,7 @@ public:
 		if (fromIndex < 0)
 			return -1;
 
-		const char *buffer = str ? strRaw(str) : nullptr;
+		const char *buffer = strData(str);
 
 		if (buffer == nullptr)
 			return -1;
@@ -483,7 +474,7 @@ public:
 	static UPtr<String> substring(S const* str, size_t beginIndex, size_t endIndex) {
 		if (!str)
 			throw NullPointerException(_HERE_);
-		return substring(strRaw(str), strLen(str), beginIndex, endIndex);
+		return substring(strData(str), strLen(str), beginIndex, endIndex);
 	}
 
 	UPtr<String> substring(size_t beginIndex, size_t endIndex) const {
@@ -706,7 +697,11 @@ public:
 	 * Get constant C string (null-terminated)
 	 * @return pointer to constant C string
 	 */
-	const char *c_str() const override {
+	const char *c_str() const {
+		return (const char*)_buffer;
+	}
+
+	const char *data() const override {
 		return (const char*)_buffer;
 	}
 };

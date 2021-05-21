@@ -8,13 +8,20 @@
 namespace slib {
 
 int BasicString::compareTo(const BasicString &other) const {
-	const char *buffer = c_str();
-	const char *otherBuffer = other.c_str();
+	const char *buffer = data();
+	const char *otherBuffer = other.data();
 
 	if ((!buffer) || (!otherBuffer))
 		throw NullPointerException(_HERE_);
 
-	return strcmp(buffer, otherBuffer);
+	size_t len = length();
+	size_t otherLen = other.length();
+
+	int common = std::min(len, otherLen);
+	int res = memcmp(buffer, otherBuffer, common);
+	if (res != 0)
+		return res;
+	return (len == otherLen) ? 0 : len - otherLen;
 }
 
 bool BasicString::equals(BasicString const& other) const {
@@ -22,7 +29,7 @@ bool BasicString::equals(BasicString const& other) const {
 }
 
 UPtr<String> BasicString::toUpperCase() const {
-	const char *buffer = c_str();
+	const char *buffer = data();
 	if (!buffer)
 		return nullptr;
 	size_t len = length();
@@ -34,7 +41,7 @@ UPtr<String> BasicString::toUpperCase() const {
 }
 
 UPtr<String> BasicString::toLowerCase() const {
-	const char *buffer = c_str();
+	const char *buffer = data();
 	if (!buffer)
 		return nullptr;
 	size_t len = length();

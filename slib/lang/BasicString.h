@@ -15,15 +15,14 @@ public:
 	TYPE_INFO(BasicString, CLASS(BasicString), INHERITS(Object));
 public:
 	virtual size_t length() const = 0;
-	virtual const char *c_str() const = 0;
+	virtual const char *data() const = 0;
 
 	virtual int compareTo(BasicString const& other) const;
 
 	template <class S1, class S2>
 	static bool equals(S1 const* str, S2 const* other) {
-		const char *buffer = str ? str->c_str() : nullptr;
-		const char *otherBuffer = other? other->c_str() : nullptr;
-
+		const char *buffer = strData(str);
+		const char *otherBuffer = strData(other);
 
 		if (buffer == nullptr)
 			return (otherBuffer == nullptr);
@@ -32,10 +31,10 @@ public:
 		if (buffer == otherBuffer)
 			return true;
 
-		size_t len = str->length();
-		size_t otherLen = other->length();
+		size_t len = strLen(str);
+		size_t otherLen = strLen(other);
 		if (len == otherLen)
-			return !strcmp(buffer, otherBuffer);
+			return !memcmp(buffer, otherBuffer, len);
 		return false;
 	}
 
@@ -92,7 +91,7 @@ public:
 		return *this;
 	}
 
-	virtual const char *c_str() const override {
+	virtual const char *data() const override {
 		return _str;
 	}
 

@@ -9,7 +9,7 @@ namespace slib {
 
 StringCharacterIterator::StringCharacterIterator(SPtr<BasicString> const& text, ptrdiff_t begin, ptrdiff_t end, ptrdiff_t pos)
 :_text(text)
-,_buffer(text->c_str()) {
+,_buffer(text->data()) {
 	if (!text)
 		throw NullPointerException(_HERE_);
 

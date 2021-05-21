@@ -90,7 +90,7 @@ protected:
 protected:
 	template <class S>
 	SPtr<ConfigValue> internalGetProperty(S const* name) const {
-		BasicStringView nameRef(String::strRaw(name), String::strLen(name));
+		BasicStringView nameRef(strData(name), strLen(name));
 		SPtr<ConfigValue> val = _propCache->get(nameRef);
 		if (val) {
 			switch (val->_type) {
@@ -117,21 +117,21 @@ protected:
 				try {
 					obj = (Class::cast<List<Object>>(obj))->get(ULong::parseULong(CPtr(elem)));
 				} catch (Exception const& e) {
-					_propCache->put(newS<String>(String::strRaw(name), String::strLen(name)),
+					_propCache->put(newS<String>(strData(name), strLen(name)),
 									newS<ConfigValue>(_HERE_, fmt::format("Caused by {} [{} ({})]",
 																		  e.getName(), e.getMessage(), e.where()).c_str()));
 					// this time we will throw from the cache
 					return internalGetProperty(name);
 				}
 			} else {
-				_propCache->put(newS<String>(String::strRaw(name), String::strLen(name)),
+				_propCache->put(newS<String>(strData(name), strLen(name)),
 								newS<ConfigValue>(_HERE_, fmt::format("{} is not an object or array",
-																	  StringView(String::strRaw(name), pathLen)).c_str()));
+																	  StringView(strData(name), pathLen)).c_str()));
 				// this time we will throw from the cache
 				return internalGetProperty(name);
 			}
 			if (!obj) {
-				_propCache->put(newS<String>(String::strRaw(name), String::strLen(name)), _nullValue);
+				_propCache->put(newS<String>(strData(name), strLen(name)), _nullValue);
 				return _nullValue;
 			}
 			pathLen += elem.length();
@@ -147,7 +147,7 @@ protected:
 				else if (instanceof<Long>(obj))
 					val = newS<ConfigValue>(Class::cast<Long>(obj)->longValue());
 
-				_propCache->put(newS<String>(String::strRaw(name), String::strLen(name)), val);
+				_propCache->put(newS<String>(strData(name), strLen(name)), val);
 				return val;
 			}
 		}

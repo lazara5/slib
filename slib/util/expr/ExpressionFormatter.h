@@ -72,7 +72,7 @@ public:
 	}
 
 	UPtr<String> toString() const {
-		const char *text = _text->c_str();
+		const char *text = _text->data();
 		return newU<String>(text + _pos, getEndIndex() - _pos);
 	}
 };

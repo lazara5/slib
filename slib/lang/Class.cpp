@@ -19,7 +19,7 @@ int32_t uintptrTHash<4>(size_t h) {
 	return *(int32_t*)&h;
 }
 
-ClassCastException::ClassCastException(const char *where, const char *c1, const char *c2)
+ClassCastException::ClassCastException(const char *where, const StringView &c1, const StringView &c2)
 :Exception(where, "ClassCastException", fmt::format("Cannot cast from {} to {}", c1, c2).c_str()) {}
 
 } // namespace slib

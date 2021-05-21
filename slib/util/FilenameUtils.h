@@ -81,10 +81,10 @@ public:
 	 */
 	template <class S>
 	static int getPrefixLength(S const* fileName) {
-		size_t len = String::strLen(fileName);
+		size_t len = strLen(fileName);
 		if (len == 0)
 			return 0;
-		const char *fileNameStr = String::strRaw(fileName);
+		const char *fileNameStr = strData(fileName);
 
 		char c0 = fileNameStr[0];
 
@@ -137,10 +137,10 @@ private:
 	 */
 	template <class S>
 	static UPtr<String> doNormalize(S const* fileName, char sep, bool keepSep) {
-		const char *fileNameStr = String::strRaw(fileName);
+		const char *fileNameStr = strData(fileName);
 		if (!fileNameStr)
 			return nullptr;
-		ptrdiff_t fileNameLen = String::strLen(fileName);
+		ptrdiff_t fileNameLen = strLen(fileName);
 		if (fileNameLen == 0)
 			return ""_UPTR;
 
@@ -328,13 +328,13 @@ public:
 		if (!basePath)
 			return nullptr;
 
-		size_t baseLen = String::strLen(basePath);
+		size_t baseLen = strLen(basePath);
 		if (baseLen == 0)
 			return normalize(fullFileNameToAdd);
 
-		size_t fileNameLen = String::strLen(fullFileNameToAdd);
+		size_t fileNameLen = strLen(fullFileNameToAdd);
 
-		const char *basePathStr = String::strRaw(basePath);
+		const char *basePathStr = strData(basePath);
 		char ch = basePathStr[baseLen - 1];
 		if (isSeparator(ch)) {
 			StringBuilder path(baseLen + fileNameLen);

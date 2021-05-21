@@ -172,10 +172,16 @@ enum class ASMODE { SCAN, STRING, ESCAPE };
 
 SPtr<Expression> ExpressionInputStream::readArg() {
 	char delimiter = '\1';
+
 	int argDepth = 0;
+	char argClose = '\1';
+	std::vector<char> argStack;
+	argStack.push_back(argClose);
+
 	StringBuilder str;
 	bool complete = false;
 	ASMODE mode = ASMODE::SCAN;
+
 	do {
 		char ch = peek();
 		switch (mode) {
@@ -191,10 +197,25 @@ SPtr<Expression> ExpressionInputStream::readArg() {
 						if (ch == '"' || ch == '\'') {
 							delimiter = ch;
 							mode = ASMODE::STRING;
-						} else if (ch == '(')
+						} else if (ch == '(') {
+							argStack.push_back(argClose);
+							argClose = ')';
 							argDepth++;
-						else if (ch == ')')
+						} else if (ch == '{') {
+							argStack.push_back(argClose);
+							argClose = '}';
+							argDepth++;
+						} else if (ch == '[') {
+							argStack.push_back(argClose);
+							argClose = ']';
+							argDepth++;
+						} else if (ch == argClose) {
+							if (argStack.empty())
+								throw SyntaxErrorException(_HERE_, fmt::format("Unbalanced closing bracket: '{}'", ch).c_str());
+							argClose = argStack.back();
+							argStack.pop_back();
 							argDepth--;
+						}
 					}
 				}
 				break;

@@ -43,4 +43,7 @@
 /** Unused symbol annotation */
 #define SLIB_UNUSED __attribute__((unused))
 
+/** Forces packed data structures */
+#define SLIB_PACKED __attribute__((__packed__))
+
 #endif // H_SLIB_UTIL_MACROUTILS_H

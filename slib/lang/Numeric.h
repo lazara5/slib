@@ -103,14 +103,14 @@ public:
 
 	template <class S>
 	static int64_t parseLong(S const* s, int radix = 10) {
-		const char *str = String::strRaw(s);
+		const char *str = strData(s);
 		if (!str)
 			throw NumberFormatException(_HERE_, "null");
 
 		long result = 0;
 		bool negative = false;
 		size_t i = 0;
-		size_t len = String::strLen(s);
+		size_t len = strLen(s);
 
 		int64_t limit = -MAX_VALUE;
 		int64_t cutoff;
@@ -270,11 +270,11 @@ public:
 	/** @throws NumberFormatException */
 	template <class S>
 	static int64_t parseULong(S const* s, int radix = 10) {
-		const char *str = String::strRaw(s);
+		const char *str = strData(s);
 		if (!str)
 			throw NumberFormatException(_HERE_, "null");
 
-		size_t len = String::strLen(s);
+		size_t len = strLen(s);
 		if (len > 0) {
 			char firstChar = str[0];
 
@@ -392,8 +392,8 @@ public:
 	/** @throws NumberFormatException */
 	template <class S>
 	static int32_t decode(S const* str) {
-		const char *buffer = String::strRaw(str);
-		size_t len = String::strLen(str);
+		const char *buffer = strData(str);
+		size_t len = strLen(str);
 
 		int radix = 10;
 		size_t index = 0;
@@ -426,7 +426,7 @@ public:
 		int32_t result = 0;
 
 		try {
-			result = parseInt(buffer + index, radix);
+			result = parseInt(CPtr(StringView(buffer + index, len - index)), radix);
 			if (negative)
 				result = -result;
 		} catch (NumberFormatException const&) {
@@ -692,13 +692,13 @@ public:
 
 	template <class S>
 	static double parseDouble(S const* s) {
-		const char *str = String::strRaw(s);
+		const char *str = strData(s);
 		if (!str)
 			throw NumberFormatException(_HERE_, "null");
 
-		size_t strLen = String::strLen(s);
+		size_t sLen = strLen(s);
 		double val;
-		fast_float::from_chars_result res = fast_float::from_chars(str, str + strLen, val);
+		fast_float::from_chars_result res = fast_float::from_chars(str, str + sLen, val);
 
 		if (res.ec != std::errc())
 			throw NumberFormatException(_HERE_, "Double parse error");

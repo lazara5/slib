@@ -102,7 +102,7 @@ StringBuilder::StringBuilder(StringBuilder &&other) {
 }
 
 StringBuilder::StringBuilder(BasicString const& other)
-:StringBuilder(other.c_str(), (ptrdiff_t)other.length()) {}
+:StringBuilder(other.data(), (ptrdiff_t)other.length()) {}
 
 StringBuilder::StringBuilder(std::string const& other)
 :StringBuilder(other.c_str(), (ptrdiff_t)other.length()) {}
@@ -439,7 +439,7 @@ const StringBuilder StringBuilder::operator +(const char* other) const {
 // append StringBuilder
 
 StringBuilder& StringBuilder::add(BasicString const& other) {
-	const char *otherBuffer = other.c_str();
+	const char *otherBuffer = other.data();
 	if (otherBuffer == nullptr)
 		return *this;
 	_hash = 0;

@@ -56,7 +56,7 @@ public:
 					else if (instanceof<Number>(obj))
 						return Value::of((Class::cast<Number>(obj))->doubleValue());
 					else
-						throw EvaluationException(_HERE_, fmt::format("double(): unsupported conversion from {}", obj->getClass().getName().c_str()).c_str());
+						throw EvaluationException(_HERE_, fmt::format("double(): unsupported conversion from {}", obj->getClass().getName()).c_str());
 				} catch (NumberFormatException const& e) {
 					throw EvaluationException(_HERE_, "double()", e);
 				}
@@ -72,7 +72,7 @@ public:
 						else if (instanceof<Number>(obj))
 							return Value::of((Class::cast<Number>(obj))->longValue());
 						else
-							throw  EvaluationException(_HERE_, fmt::format("long(): unsupported conversion from {}", obj->getClass().getName().c_str()).c_str());
+							throw  EvaluationException(_HERE_, fmt::format("long(): unsupported conversion from {}", obj->getClass().getName()).c_str());
 				} catch (NumberFormatException e) {
 					throw EvaluationException(_HERE_, "long()", e);
 				}

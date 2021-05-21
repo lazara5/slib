@@ -6,7 +6,7 @@
 #define H_SLIB_EXCEPTION_VALUEEXCEPTION_H
 
 #include "slib/exception/Exception.h"
-#include "slib/lang/String.h"
+#include "slib/util/TemplateUtils.h"
 
 #include "fmt/format.h"
 
@@ -25,7 +25,7 @@ class MissingValueException : public ValueException {
 public:
 	template <class S>
 	MissingValueException(const char *where, S const* name)
-	: ValueException(where, "MissingValueException", fmt::format("Missing value: {:.{}}", String::strRaw(name), String::strLen(name)).c_str()) {}
+	: ValueException(where, "MissingValueException", fmt::format("Missing value: {:.{}}", strData(name), strLen(name)).c_str()) {}
 };
 
 class InvalidValueException : public ValueException {

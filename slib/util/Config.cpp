@@ -55,7 +55,7 @@ ConfigLoader::ConfigLoader(SPtr<String> const& confFileName, SPtr<String> const&
 	.add("env"_SPTR, newS<EnvResolver>());
 
 	(*_resolver).add(_quickResolver)
-	.add(_vars, false);
+	.add(_vars, Resolver::Mode::WRITABLE);
 
 	_searchPaths.add(newS<StringPair>("/etc"_SPTR, nullptr));
 	_searchPaths.add(newS<StringPair>("${_EXEDIR}/conf"_SPTR, "${_EXEDIR}"_SPTR));
@@ -126,7 +126,7 @@ SPtr<Config> ConfigLoader::load(bool quick) {
 		if (!parsedConfig)
 			throw InitException(_HERE_, "Error parsing config");
 		if (!instanceof<Map<BasicString, Object>>(*parsedConfig))
-			throw InitException(_HERE_, fmt::format("Invalid config: expected Map<String, Object>, got {}", parsedConfig->getClass().getName().c_str()).c_str());
+			throw InitException(_HERE_, fmt::format("Invalid config: expected Map<String, Object>, got {}", parsedConfig->getClass().getName()).c_str());
 		SPtr<Map<BasicString, Object>> configRoot = Class::cast<Map<BasicString, Object>>(parsedConfig);
 
 		UPtr<String> s = configRoot->toString();
@@ -140,39 +140,7 @@ SPtr<Config> ConfigLoader::load(bool quick) {
 	}
 }
 
-/*UPtr<String> ConfigProcessor::processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) {
-	//SPtr<String> value = StringUtils::interpolate(rawProperty, *this, false);
-	SPtr<Object> value = ExpressionEvaluator::smartInterpolate(*rawProperty, _resolver, false);
-
-	if (String::startsWith(CPtr(name), '@')) {
-		if (!_vars)
-			_vars = newU<HashMap<String, Object>>();
-		_vars->put(newS<String>(CPtr(String::substring(CPtr(name), 1))), value);
-		return nullptr;
-	} else if (String::endsWith(CPtr(name), ']')) {
-		ptrdiff_t openBracket = String::lastIndexOf(CPtr(name), '[');
-		if (openBracket > 0) {
-			UPtr<String> mapName = String::trim(CPtr(String::substring(CPtr(name), 0, (size_t)openBracket)));
-			UPtr<String> mapEntry = String::trim(CPtr(String::substring(CPtr(name), (size_t)openBracket + 1, name->length() - 1)));
-			if ((!StringUtils::isEmpty(CPtr(mapName))) && (!StringUtils::isEmpty(CPtr(mapEntry)))) {
-				bool sunk = sink(*mapName, *mapEntry, value);
-				if (sunk)
-					return nullptr;
-			}
-		}
-	}
-	return Value::asString(value);
-}
-
-bool ConfigProcessor::sink(String const& sinkName, String const& name, SPtr<Object> const& value) {
-	SinkMapConstIter sink = _sinks.find(sinkName);
-	if (sink == _sinks.end())
-		return false;
-	sink->second(name, value);
-	return true;
-}
-
-SPtr<Object> ConfigProcessor::getVar(String const& name) const {
+/*SPtr<Object> ConfigProcessor::getVar(String const& name) const {
 	SPtr<Object> value = _props.get(name);
 	if ((!value) && _vars)
 		value = _vars->get(name);

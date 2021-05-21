@@ -90,7 +90,7 @@ TEST(ExprTests, ExtraTests) {
 	res2 = ExpressionEvaluator::expressionValue(newS<String>("[\n1, , 2\n 3 * 5\r\n\n {a = 'b', c = [1, \t'x'\r\n], d = math.abs(-2), e = -1},]"), resolver, 0)->toString();
 	STRCMP_EQUAL("[1, 2, 15, {a=b, c=[1, x], d=2, e=-1}]", res2->c_str());
 
-	res1 = ExpressionEvaluator::expressionValue("[1, 2, 3 * 5, {a = 'b', c = [1 + xxx, 'x'], d = math.abs(-2), e = -1}]"_SPTR, resolver, EXPR_IGNORE_UNDEFINED);
+	res1 = ExpressionEvaluator::expressionValue("[1, 2, 3 * 5, {a = 'b', c = [1 + undefined, 'x'], d = math.abs(-2), e = -1}]"_SPTR, resolver, EXPR_IGNORE_UNDEFINED);
 	res2 = res1->toString();
 	STRCMP_EQUAL("[1, 2, 15, {a=b, c=[null, x], d=2, e=-1}]", res2->c_str());
 
@@ -98,7 +98,7 @@ TEST(ExprTests, ExtraTests) {
 	SPtr<Map<String, Object>> vars = newS<HashMap<String, Object>>();
 	SPtr<ChainedResolver> resolver1 = ChainedResolver::newInstance();
 	(*resolver1).add("system"_SPTR, systemInfo)
-	.add(vars, false);
+	.add(vars, Resolver::Mode::WRITABLE);
 	res1 = ExpressionEvaluator::expressionValue("{hostname = system.hostname, ip=system.ip, :a = 1, b = a + 1}"_SPTR, resolver1, 0);
 	res2 = res1->toString();
 	fmt::print("Expr: {}\n", *res2);

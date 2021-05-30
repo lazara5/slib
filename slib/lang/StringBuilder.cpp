@@ -422,7 +422,7 @@ StringBuilder& StringBuilder::add(const char *src, ptrdiff_t len /* = -1 */) {
 		len = (ptrdiff_t)strlen(src);
 	if (_len + (size_t)len + 1 > _size)
 		grow(_len + (size_t)len + 1);
-	memcpy(_buffer + _len, src, (size_t)len + 1);
+	memcpy(_buffer + _len, src, (size_t)len);
 	_len += (size_t)len;
 	_buffer[_len] = 0;
 	return *this;

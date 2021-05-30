@@ -153,10 +153,12 @@ protected:
 	UPtr<FunctionArgs> _argList;
 public:
 	FunctionParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName,
-				 SPtr<Resolver> const& resolver)
+						 SPtr<Resolver> const& resolver)
 	: _function(function)
 	, _resolver(resolver)
 	, _argList(newU<FunctionArgs>(symbolName)) {}
+
+	virtual ~FunctionParseContext() {};
 
 	static UPtr<FunctionParseContext> forFunction(SPtr<Function> const& function, SPtr<String> const& symbolName,
 												  SPtr<Resolver> const& resolver) {

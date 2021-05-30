@@ -61,6 +61,9 @@ endif(WITH_JSON)
 
 SET(CMAKE_CXX_FLAGS_DEBUG "-O0")
 
+SET(CMAKE_CXX_FLAGS_ASAN
+	"${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer")
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -std=c++11 -fPIC -ftemplate-backtrace-limit=0")
 
 if(WITH_TESTS)

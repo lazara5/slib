@@ -39,6 +39,10 @@ public:
 	: _size(0)
 	, _head(nullptr)
 	, _tail(nullptr) {}
+
+	virtual ~LinkedList() {
+		clear();
+	}
 private:
 	void linkHead(SPtr<E> const& elem) {
 		Node *h = _head;
@@ -173,8 +177,8 @@ public:
 	virtual ssize_t indexOf(const E& o) {
 		ssize_t index = 0;
 
-		for (Node *x = _head; x != nullptr; x = x->_next) {
-			if (o == (*x->_item))
+		for (Node *node = _head; node != nullptr; node = node->_next) {
+			if (o == (*node->_item))
 				return index;
 			index++;
 		}
@@ -297,10 +301,10 @@ public:
 	 * The list will be empty after this call returns.
 	 */
 	void clear() override {
-		for (Node *xnode = _head; xnode != nullptr; ) {
-			Node *next = xnode->_next;
-			delete xnode;
-			xnode = next;
+		for (Node *node = _head; node != nullptr; ) {
+			Node *next = node->_next;
+			delete node;
+			node = next;
 		}
 		_head = _tail = nullptr;
 		_size = 0;

@@ -55,5 +55,14 @@ TEST(ConfigTests, BasicTests)
 {
 	//config->init();
 	STRCMP_EQUAL("str123", config->getString("testName")->c_str());
+	CHECK_EQUAL(3, config->getLong("testLong1"));
+	CHECK_EQUAL(3, config->getLong("testLong1"));
+	CHECK_EQUAL(5, config->getLong("testObj.testLong2"));
+	CHECK_EQUAL(4.7, config->getDouble("testObj.testDouble1"));
+	CHECK_EQUAL(true, config->getBool("testObj.testBool1"));
+	CHECK_EQUAL(6, config->getLong("testObj.testArray.*.b", {0}));
+	CHECK_THROWS(MissingValueException, config->getLong("missing"));
+	CHECK_THROWS(MissingValueException, config->getLong("missing"));
+
 	fmt::print("hostname: {}", *config->getString("hostname"));
 }

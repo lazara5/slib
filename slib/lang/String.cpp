@@ -39,8 +39,8 @@ String::String(char c)
 
 String::~String() {}
 
-UPtr<ArrayList<std::string>> String::simpleSplit(const char *buffer, size_t len, const char delim, int limit /* = 65535 */) {
-	UPtr<ArrayList<std::string>> results = newU<ArrayList<std::string>>();
+UPtr<ArrayList<String>> String::simpleSplit(const char *buffer, size_t len, const char delim, int limit /* = 65535 */) {
+	UPtr<ArrayList<String>> results = newU<ArrayList<String>>();
 	if (len == 0)
 		return results;
 
@@ -48,16 +48,16 @@ UPtr<ArrayList<std::string>> String::simpleSplit(const char *buffer, size_t len,
 	const char *ptr = buffer;
 	do {
 		if (--limit == 0) {
-			results->add(newS<std::string>(ptr, len));
+			results->add(newS<String>(ptr, len));
 			return results;
 		}
 		nextDelim = (const char *)memchr(ptr, delim, len);
 		if (nextDelim)
 			len -= (size_t)(nextDelim - ptr + 1);
 		if (nextDelim == nullptr) {
-			results->add(newS<std::string>(ptr, len));
+			results->add(newS<String>(ptr, len));
 		} else {
-			results->add(newS<std::string>(ptr, (size_t)(nextDelim - ptr)));
+			results->add(newS<String>(ptr, (size_t)(nextDelim - ptr)));
 		}
 		ptr = nextDelim + 1;
 	} while (nextDelim != nullptr);
@@ -65,7 +65,7 @@ UPtr<ArrayList<std::string>> String::simpleSplit(const char *buffer, size_t len,
 	return results;
 }
 
-UPtr<ArrayList<String> > String::split(const char *buffer, size_t len, const char *pattern, int limit /* = 0 */) {
+UPtr<ArrayList<String>> String::split(const char *buffer, size_t len, const char *pattern, int limit /* = 0 */) {
 	UPtr<ArrayList<String>> results = newU<ArrayList<String>>();
 	if (len == 0)
 		return results;

@@ -550,6 +550,11 @@ public:
 		put(args);
 	}
 
+	HashMap(std::initializer_list<std::pair<SPtr<K>, SPtr<V>>> args)
+	: HashMap(newS<InternalHashMap<K, V, Pred>>()) {
+		put(args);
+	}
+
 	/** Removes all mappings from this map. */
 	virtual void clear() override {
 		internalMap()->clear();
@@ -661,6 +666,11 @@ public:
 	}
 
 	void put(std::initializer_list<std::pair<const K, SPtr<V>>> args) {
+		for (auto i = args.begin(); i != args.end(); ++i)
+			put(i->first, i->second);
+	}
+
+	void put(std::initializer_list<std::pair<SPtr<K>, SPtr<V>>> args) {
 		for (auto i = args.begin(); i != args.end(); ++i)
 			put(i->first, i->second);
 	}

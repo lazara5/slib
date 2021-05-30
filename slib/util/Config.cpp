@@ -21,7 +21,41 @@ namespace slib {
 
 using namespace expr;
 
-const SPtr<Config::ConfigValue> Config::_nullValue = newS<Config::ConfigValue>();
+const SPtr<Config::ConfigValue> ObjConfig::_nullValue = newS<ObjConfig::ConfigValue>();
+
+const UPtr<Map<Class, ObjConfig::NewConfigValue>> ObjConfig::_mapper
+	= newU<HashMap<Class, ObjConfig::NewConfigValue>, std::initializer_list<std::pair<SPtr<Class>, SPtr<ObjConfig::NewConfigValue>>>>({
+	{
+		newS<Class>(classOf<String>::_class()),
+		newS<Config::NewConfigValue>([](SPtr<Object> const& obj) {
+			return newS<ConfigValue>(Class::cast<String>(obj));
+		})
+	},
+	{
+		newS<Class>(classOf<Long>::_class()),
+		newS<Config::NewConfigValue>([](SPtr<Object> const& obj) {
+			return newS<ConfigValue>(Class::cast<Long>(obj)->longValue());
+		})
+	},
+	{
+		newS<Class>(classOf<Double>::_class()),
+		newS<Config::NewConfigValue>([](SPtr<Object> const& obj) {
+			return newS<ConfigValue>(Class::cast<Double>(obj)->doubleValue());
+		})
+	},
+	{
+		newS<Class>(classOf<Boolean>::_class()),
+		newS<Config::NewConfigValue>([](SPtr<Object> const& obj) {
+			return newS<ConfigValue>(Class::cast<Boolean>(obj)->booleanValue());
+		})
+	},
+	{
+		newS<Class>(classOf<Map<BasicString, Object>>::_class()),
+		newS<Config::NewConfigValue>([](SPtr<Object> const& obj) {
+			return newS<ConfigValue>(Class::cast<Map<BasicString, Object>>(obj));
+		})
+	},
+});
 
 ConfigLoader::ConfigResolver::ConfigResolver() {
 	char pathBuf[PATH_MAX] = "";
@@ -169,35 +203,12 @@ UPtr<String> SimpleConfigProcessor::processLine(SPtr<String> const& name, SPtr<S
 	return Value::asString(value);
 }
 
-SPtr<Object> SimpleConfigProcessor::getVar(String const& name) const {
-	SPtr<Object> value = _props.get(name);
-	if ((!value) && _vars)
-		value = _vars->get(name);
-	return value;
-}
-
 Config::Config(String const& confFileName, String const& appName)
 :_confFileName(confFileName)
 ,_appName(appName)
 ,_cfgProc(*this)
 ,_simpleCfgProc(*this) {}*/
 
-SPtr<String> searchConfigFile(List<String> const& configDirs, String const& configFile) {
-	UPtr<ConstIterator<SPtr<String>>> i = configDirs.constIterator();
-	while (i->hasNext()) {
-		SPtr<String> const& dir = i->next();
-		UPtr<String> fileName = FilenameUtils::concat(CPtr(dir), CPtr(configFile));
-		if (!access(fileName->c_str(), 0))
-			return dir;
-	}
-
-	return nullptr;
-}
-
-bool dmp(void *data SLIB_UNUSED, const std::string& k, const std::string& v) {
-	printf("%s = %s\n", k.c_str(), v.c_str());
-	return true;
-}
 
 /*SPtr<String> Config::locateConfigFile(String const& fileName) const {
 	ArrayList<String> confList;

@@ -52,8 +52,9 @@ public:
 
 			if (Number::isMathematicalInteger(d)) {
 				if ((d <= Double::MAX_SAFE_INTEGER) && (d >= Double::MIN_SAFE_INTEGER))
-					return newU<Value>(newS<Long>((int64_t)d));
-			}
+					return Value::of((int64_t)d);
+			} else
+				return Value::of(d);
 
 		}
 		return std::move(val);

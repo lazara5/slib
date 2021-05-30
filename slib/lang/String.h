@@ -187,7 +187,7 @@ public:
 		size_t prefixLen = strLen(prefix);
 		if (prefixLen > sLen)
 			return false;
-		return (strncmp(buffer, prefixBuffer, prefixLen) == 0);
+		return (memcmp(buffer, prefixBuffer, prefixLen) == 0);
 	}
 
 	/*template <class S1, class S2>
@@ -545,13 +545,13 @@ public:
 
 
 
-	static UPtr<ArrayList<std::string>> simpleSplit(const char *buffer, size_t len, const char delim, int limit = 65535);
+	static UPtr<ArrayList<String>> simpleSplit(const char *buffer, size_t len, const char delim, int limit = 65535);
 
 	template <class S>
-	static UPtr<ArrayList<std::string>> simpleSplit(S const* str, const char delim, int limit = 65535) {
+	static UPtr<ArrayList<String>> simpleSplit(S const* str, const char delim, int limit = 65535) {
 		if (!str)
 			throw NullPointerException(_HERE_);
-		return simpleSplit(str->c_str(), str->length(), delim, limit);
+		return simpleSplit(str->data(), str->length(), delim, limit);
 	}
 
 	static UPtr<ArrayList<String>> split(const char *buffer, size_t len, const char *pattern, int limit = 0);

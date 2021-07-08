@@ -154,6 +154,11 @@ public:
 	:Exception(where, "IndexOutOfBoundsException", "") {}
 };
 
+class ArrayIndexOutOfBoundsException : public IndexOutOfBoundsException {
+public:
+	ArrayIndexOutOfBoundsException(const char *where, size_t i);
+};
+
 } // namespace
 
 #endif // H_SLIB_EXCEPTION_EXCEPTION_H

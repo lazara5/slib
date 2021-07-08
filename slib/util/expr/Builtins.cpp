@@ -34,7 +34,7 @@ public:
 			}
 		));
 		math->emplaceKey<String>("abs", Function::impl<Number>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED,EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
 				return Value::of(newS<Double>(abs(args.get<Number>(0)->doubleValue())));
 			}
 		));
@@ -52,7 +52,7 @@ public:
 				try {
 					SPtr<Object> obj = args.get(0);
 					if (instanceof<String>(obj))
-						return Value::of(Double::parseDouble(CPtr(Class::cast<String>(obj))));
+						return Value::of(Double::parseDouble(Class::cast<String>(obj)));
 					else if (instanceof<Number>(obj))
 						return Value::of((Class::cast<Number>(obj))->doubleValue());
 					else
@@ -68,7 +68,7 @@ public:
 				try {
 					SPtr<Object> obj = args.get(0);
 						if (instanceof<String>(obj))
-							return Value::of(Long::parseLong(CPtr(Class::cast<String>(obj))));
+							return Value::of(Long::parseLong(Class::cast<String>(obj)));
 						else if (instanceof<Number>(obj))
 							return Value::of((Class::cast<Number>(obj))->longValue());
 						else

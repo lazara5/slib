@@ -2,15 +2,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef H_SLIB_UTIL_ARRAY_H
-#define H_SLIB_UTIL_ARRAY_H
+#ifndef H_SLIB_UTIL_STATICARRAY_H
+#define H_SLIB_UTIL_STATICARRAY_H
 
 #include <cstddef>
 
 namespace slib {
 
 template <typename T, size_t S>
-struct ArrayTraits {
+struct StaticArrayTraits {
 	typedef T _Type[S];
 
 	static constexpr T&
@@ -23,7 +23,7 @@ struct ArrayTraits {
 };
 
 template <typename T>
-struct ArrayTraits<T, 0> {
+struct StaticArrayTraits<T, 0> {
 	struct _Type { };
 
 	static constexpr T&
@@ -37,15 +37,15 @@ struct ArrayTraits<T, 0> {
 
 /** Minimal implementation of constexpr array */
 template <typename T, size_t S>
-class Array {
+class StaticArray {
 public:
 	typedef T value_type;
 	typedef value_type* pointer;
 	typedef const value_type *const_pointer;
-	typedef value_type&                   	      reference;
-	typedef const value_type&             	      const_reference;
+	typedef value_type& reference;
+	typedef const value_type& const_reference;
 
-	typedef ArrayTraits<T, S> _AT_Type;
+	typedef StaticArrayTraits<T, S> _AT_Type;
 	typename _AT_Type::_Type _M_elems;
 public:
 	constexpr size_t size() const noexcept {
@@ -67,4 +67,4 @@ public:
 
 } // namespace slib
 
-#endif // H_SLIB_UTIL_ARRAY_H
+#endif // H_SLIB_UTIL_STATICARRAY_H

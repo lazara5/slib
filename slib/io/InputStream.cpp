@@ -4,10 +4,10 @@ namespace slib {
 
 InputStream::~InputStream() {}
 
-ptrdiff_t InputStream::read(ByteBuffer &b) {
-	ptrdiff_t nRead = read(b.getFreePtr(), b.getFreeLength());
-	if (nRead > 0)
-		b.setLength(b.getLength() + (size_t)nRead);
+ssize_t InputStream::read(Array<uint8_t> &b) {
+	ssize_t nRead = read(b.data(), b.length());
+	/*if (nRead > 0)
+		b.setLength(b.getLength() + (size_t)nRead);*/
 	return nRead;
 }
 

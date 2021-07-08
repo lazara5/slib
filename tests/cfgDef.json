@@ -1,0 +1,23 @@
+{
+	"className": "ConfigObject",
+	"def": {
+		"a": "uint64",
+		"b": "string",
+		"c": {
+			"d": "bool",
+			"e": {
+				"f": "string",
+				"g": "string"
+			},
+			"h": "uint64",
+			"i": {
+				"f": "string",
+				"g": "string"
+			}
+		},
+		"j": {
+			"f": "string",
+			"g": "string"
+		}
+	}
+}

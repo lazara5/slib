@@ -3,6 +3,10 @@
 
 #include "slib/io/OutputStream.h"
 
+#include <stdio.h>
+
+#include <string>
+
 namespace slib {
 
 class FileOutputStream : public OutputStream {

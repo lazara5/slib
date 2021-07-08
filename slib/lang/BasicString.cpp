@@ -25,7 +25,7 @@ int BasicString::compareTo(const BasicString &other) const {
 }
 
 bool BasicString::equals(BasicString const& other) const {
-	return equals(this, CPtr(other));
+	return StringView::equals(this, other);
 }
 
 UPtr<String> BasicString::toUpperCase() const {

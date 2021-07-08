@@ -239,7 +239,7 @@ int32_t ParserStateMachine::parseInt(const SPtr<CharBuffer> &buffer) {
 	UPtr<String> intStr = buffer->subSequence(start, end)->toString();
 	buffer->position(end);
 	try {
-		int32_t res = Integer::parseInt(CPtr(intStr));
+		int32_t res = Integer::parseInt(intStr);
 		_rawToken.add(*intStr);
 		return res;
 	} catch (NumberFormatException e) {
@@ -290,7 +290,7 @@ static SPtr<String> padding(SPtr<FormatToken> const& token, StringBuilder &sourc
 	if (paddingRight) {
 		source.add(insertString);
 	} else {
-		source.insert((size_t)start, CPtr(insertString));
+		source.insert((size_t)start, insertString);
 	}
 	return source.toString();
 }

@@ -20,7 +20,6 @@ Properties::LineReader::LineReader(Properties *props, InputStream &inStream)
 }
 
 void Properties::LineReader::refill() {
-	_buffer.clear();
 	_available = _inStream.read(_buffer);
 	_offset = 0;
 }

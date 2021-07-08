@@ -9,15 +9,15 @@
 namespace slib {
 
 Exception::Exception(const char *where, const char *className, Exception const& e)
-	: _where(where)
-	, _errorMessage(fmt::format("caused by {} [{} ({})]", e.getName(), e.getMessage(), e.where()).c_str())
-	, _className(className) {
-	}
+: _where(where)
+, _errorMessage(fmt::format("caused by {} [{} ({})]", e.getName(), e.getMessage(), e.where()).c_str())
+, _className(className) {}
 
 Exception::Exception(const char *where, const char *className, const char *msg, Exception const& e)
-	: _where(where)
-	, _errorMessage(fmt::format("{}, caused by {} [{} ({})]", msg, e.getName(), e.getMessage(), e.where()).c_str())
-	, _className(className) {
-	}
+: _where(where)
+, _errorMessage(fmt::format("{}, caused by {} [{} ({})]", msg, e.getName(), e.getMessage(), e.where()).c_str())
+, _className(className) {}
 	
+ArrayIndexOutOfBoundsException::ArrayIndexOutOfBoundsException(const char *where, size_t i)
+: IndexOutOfBoundsException(where, fmt::format("Array index out of range: {}", i).c_str()) {}
 } // namespace

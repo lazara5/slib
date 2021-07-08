@@ -6,18 +6,6 @@
 
 namespace slib {
 
-const char *cStr(const char *str) {
-	return str;
-}
-
-const char *strData(const char *str) {
-	return str;
-}
-
-size_t strLen(const char *str) {
-	return str ? strlen(str) : 0;
-}
-
 template<>
 int32_t sizeTHash<8>(size_t h) {
 	uint32_t val = (uint32_t)(h ^ (h >> 32));

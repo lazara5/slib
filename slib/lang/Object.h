@@ -16,7 +16,7 @@ namespace slib {
 
 class String;
 
-class Object {
+class Object : virtual public TypedClass {
 public:
 	BASE_TYPE_INFO(Object, (Object));
 public:

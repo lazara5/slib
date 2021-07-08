@@ -6,6 +6,18 @@
 
 namespace slib {
 
+const char *cStr(const char *str) {
+	return str;
+}
+
+const char *strData(const char *str) {
+	return str;
+}
+
+size_t strLen(const char *str) {
+	return str ? strlen(str) : 0;
+}
+
 /*void format_arg(fmt::BasicFormatter<char> &f, const char *&format_str, StringView const& s) {
 	f.writer().write("{}", s.c_str());
 }*/

@@ -162,7 +162,7 @@ bool StringBuilder::operator ==(StringBuilder const& other) const {
 }
 
 bool StringBuilder::equals(StringBuilder const& other) const {
-	return BasicString::equals(this, CPtr(other));
+	return StringView::equals(this, CPtr(other));
 }
 
 bool StringBuilder::equalsIgnoreCase(StringBuilder const& other) const {
@@ -428,6 +428,10 @@ StringBuilder& StringBuilder::add(const char *src, ptrdiff_t len /* = -1 */) {
 	return *this;
 }
 
+StringBuilder& StringBuilder::add(Array<uint8_t> const& src) {
+	return add((const char *)src.constData(), src.length());
+}
+
 StringBuilder& StringBuilder::operator +=(const char* op) {
 	return add(op);
 }
@@ -551,6 +555,25 @@ const StringBuilder StringBuilder::operator+(int64_t other) const {
 	return StringBuilder(*this) += other;
 }
 
+// append uint64
+
+StringBuilder& StringBuilder::add(uint64_t i) {
+	_hash = 0;
+	char buffer[32];
+	int n = snprintf(buffer, 31, "%" PRIu64, i);
+	buffer[31] = 0;
+	add(buffer, n);
+	return *this;
+}
+
+StringBuilder& StringBuilder::operator+=(uint64_t op) {
+	return add(op);
+}
+
+const StringBuilder StringBuilder::operator+(uint64_t other) const {
+	return StringBuilder(*this) += other;
+}
+
 // append double
 
 StringBuilder& StringBuilder::add(double d) {
@@ -614,7 +637,7 @@ StringBuilder& StringBuilder::addFmtLine(const char *format, ...) {
 	va_start(ap, format);
 	internalAppend(format, ap);
 	va_end(ap);
-	add("\n", 1);
+	add('\n');
 	return *this;
 }
 

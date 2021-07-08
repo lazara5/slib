@@ -5,6 +5,7 @@
 #ifndef H_SLIB_COLLECTIONS_PROPERTIES_H
 #define H_SLIB_COLLECTIONS_PROPERTIES_H
 
+#include "slib/lang/Array.h"
 #include "slib/collections/LinkedHashMap.h"
 #include "slib/io/InputStream.h"
 #include "slib/exception/ValueException.h"
@@ -27,7 +28,7 @@ private:
 		Properties *_props;
 		InputStream &_inStream;
 
-		ByteBuffer _buffer;
+		Array<uint8_t> _buffer;
 		ptrdiff_t _available;
 		int _offset;
 	private:

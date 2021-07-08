@@ -28,8 +28,8 @@ pid_t PidFile::open(struct pidfh **pfh, SPtr<Config> const& cfg, const std::stri
 	}
 
 	SPtr<String> pidFile = cfg->getString("pidfile", newS<String>(*cfg->getAppName() + ".pid"));
-	if (!FilenameUtils::isPathAbsolute(CPtr(pidFile)))
-		pidFile = FilenameUtils::concat(CPtr(Log::getLogDir(cfg)), CPtr(pidFile));
+	if (!FilenameUtils::isPathAbsolute(pidFile))
+		pidFile = FilenameUtils::concat(Log::getLogDir(cfg), pidFile);
 
 	mode_t mode = 0;
 	try {

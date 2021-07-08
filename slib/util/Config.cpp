@@ -70,9 +70,9 @@ ConfigLoader::ConfigResolver::ConfigResolver() {
 }
 
 SPtr<Object> ConfigLoader::ConfigResolver::getVar(String const& key) const {
-	if (BasicString::equals(CPtr(key), CPtr("_EXEDIR"_SV))) {
+	if (StringView::equals(key, "_EXEDIR"_SV)) {
 		return _exeDir;
-	} else if (BasicString::equals(CPtr(key), CPtr("_CWD"_SV))) {
+	} else if (StringView::equals(key, "_CWD"_SV)) {
 		return _cwd;
 	}
 
@@ -123,7 +123,7 @@ SPtr<ConfigLoader::StringPair> ConfigLoader::searchConfigDir() {
 		SPtr<StringPair> const& cfgEntry = i->next();
 		UPtr<String> dir = ExpressionEvaluator::interpolate(*cfgEntry->_first, _quickResolver, true);
 		if (dir) {
-			UPtr<String> fileName = FilenameUtils::concat(CPtr(dir), CPtr(_confFileName));
+			UPtr<String> fileName = FilenameUtils::concat(dir, _confFileName);
 			if (access(fileName->c_str(), 0) == 0) {
 				UPtr<String> rootDir = (cfgEntry->_second)
 					? ExpressionEvaluator::interpolate(*cfgEntry->_first, _quickResolver, true)
@@ -145,12 +145,12 @@ SPtr<Config> ConfigLoader::load(bool quick) {
 		SPtr<String> confDir(std::move(conf->_first));
 		SPtr<String> appDir(std::move(conf->_second));
 
-		UPtr<String> fileName = FilenameUtils::concat(CPtr(confDir), CPtr(_confFileName));
+		UPtr<String> fileName = FilenameUtils::concat(confDir, _confFileName);
 
-		UPtr<ByteBuffer> contents = FileUtils::readAllBytes(CPtr(fileName));
+		UPtr<Array<uint8_t>> contents = FileUtils::readAllBytes(fileName);
 		StringBuilder configContents("{");
-		configContents.add((const char *)contents->getBuffer(), contents->getLength())
-		.add('}');
+		configContents.add(*contents)
+			.add('}');
 		SPtr<String> configText = configContents.toString();
 
 		_vars->clear();
@@ -173,51 +173,6 @@ SPtr<Config> ConfigLoader::load(bool quick) {
 		throw InitException(_HERE_, e);
 	}
 }
-
-/*SPtr<Object> ConfigProcessor::getVar(String const& name) const {
-	SPtr<Object> value = _props.get(name);
-	if ((!value) && _vars)
-		value = _vars->get(name);
-	if ((!value) && _sources) {
-		std::ptrdiff_t dotPos;
-		if ((dotPos = String::lastIndexOf(CPtr(name), '.')) > 0) {
-			UPtr<String> providerName = String::substring(CPtr(name), 0, (size_t)dotPos);
-			UPtr<String> propertyName = String::substring(CPtr(name), (size_t)dotPos + 1);
-			SourceMapConstIter provider = _sources->find(*providerName);
-			if (provider != _sources->end())
-				return provider->second->getVar(*propertyName);
-		}
-	}
-	return value;
-}
-
-UPtr<String> SimpleConfigProcessor::processLine(SPtr<String> const& name, SPtr<String> const& rawProperty) {
-	//SPtr<String> value = StringUtils::interpolate(rawProperty, *this, true);
-	SPtr<Object> value = ExpressionEvaluator::smartInterpolate(*rawProperty, _resolver, true);
-	if (String::startsWith(CPtr(name), '@')) {
-		if (!_vars)
-			_vars = newU<HashMap<String, Object>>();
-		_vars->put(newS<String>(CPtr(String::substring(CPtr(name), 1))), value);
-		return nullptr;
-	}
-	return Value::asString(value);
-}
-
-Config::Config(String const& confFileName, String const& appName)
-:_confFileName(confFileName)
-,_appName(appName)
-,_cfgProc(*this)
-,_simpleCfgProc(*this) {}*/
-
-
-/*SPtr<String> Config::locateConfigFile(String const& fileName) const {
-	ArrayList<String> confList;
-	confList.emplace<String>("/etc");
-	confList.add(FileUtils::buildPath(CPtr(_rootDir), "conf"));
-	onBeforeSearch(confList);
-
-	return searchConfigFile(confList, fileName);
-}*/
 
 /** @throws InitException */
 /*void Config::internalInit(bool minimal) {
@@ -256,16 +211,6 @@ Config::Config(String const& confFileName, String const& appName)
 	openConfigFile(minimal);
 	//_vars.forEach(&dmp, nullptr);
 	readConfig();
-}
-
-void Config::readConfig() {
-	// read home dir
-	_homeDir = getString("home", _rootDir);
-	
-	// read logdir
-	_logDir = getString("logdir", "");
-	if (!_logDir)
-		_logDir = FileUtils::buildPath(CPtr(_homeDir), "log");
 }
 
 void Config::openConfigFile(bool minimal) {

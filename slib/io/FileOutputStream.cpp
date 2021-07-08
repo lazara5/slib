@@ -1,5 +1,6 @@
 #include "slib/io/FileOutputStream.h"
 #include "slib/util/StringUtils.h"
+#include "slib/exception/IOException.h"
 
 namespace slib {
 

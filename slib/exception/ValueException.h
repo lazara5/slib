@@ -6,7 +6,7 @@
 #define H_SLIB_EXCEPTION_VALUEEXCEPTION_H
 
 #include "slib/exception/Exception.h"
-#include "slib/util/TemplateUtils.h"
+#include "slib/lang/StringView.h"
 
 #include "fmt/format.h"
 

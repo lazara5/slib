@@ -38,7 +38,7 @@ std::string pathToString(const Pointer& pointer) {
 const Value *getValue(const char *where, const char *path, const Value &v) {
 	if (!v.IsObject())
 		throw InvalidValueException(where, path, "Object params expected");
-	if (path[0] == '@') {
+	if (path[0] =='@') {
 		if (v.HasMember(path + 1))
 			return &(v[path + 1]);
 		return nullptr;

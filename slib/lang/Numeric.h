@@ -102,15 +102,15 @@ public:
 	virtual double doubleValue() const override;
 
 	template <class S>
-	static int64_t parseLong(S const* s, int radix = 10) {
-		const char *str = strData(s);
+	static int64_t parseLong(S const& s, int radix = 10) {
+		const char *str = strData(CPtr(s));
 		if (!str)
 			throw NumberFormatException(_HERE_, "null");
 
 		long result = 0;
 		bool negative = false;
 		size_t i = 0;
-		size_t len = strLen(s);
+		size_t len = strLen(CPtr(s));
 
 		int64_t limit = -MAX_VALUE;
 		int64_t cutoff;
@@ -187,7 +187,7 @@ public:
 			if (negative)
 				result = -result;
 		} catch (NumberFormatException const&) {
-			result = negative ? parseLong(CPtr(std::string("-") + (buffer + index)), radix) :
+			result = negative ? parseLong(std::string("-") + (buffer + index), radix) :
 								parseLong(buffer + index, radix);
 		}
 
@@ -269,12 +269,12 @@ public:
 
 	/** @throws NumberFormatException */
 	template <class S>
-	static int64_t parseULong(S const* s, int radix = 10) {
-		const char *str = strData(s);
+	static int64_t parseULong(S const& s, int radix = 10) {
+		const char *str = strData(CPtr(s));
 		if (!str)
 			throw NumberFormatException(_HERE_, "null");
 
-		size_t len = strLen(s);
+		size_t len = strLen(CPtr(s));
 		if (len > 0) {
 			char firstChar = str[0];
 
@@ -285,7 +285,7 @@ public:
 				if ((len <= 12) || (radix == 10 && len < 18))
 					return Long::parseLong(s, radix);
 
-				int64_t prefix = Long::parseLong(CPtr(StringView(str, len - 1)), radix);
+				int64_t prefix = Long::parseLong(StringView(str, len - 1), radix);
 				int suffix = Character::digit(str[len - 1], radix);
 				if (suffix < 0)
 					throw NumberFormatException(_HERE_, "Not a decimal number");
@@ -382,7 +382,7 @@ public:
 
 	/** @throws NumberFormatException */
 	template <class S>
-	static int32_t parseInt(S const* str, int radix = 10) {
+	static int32_t parseInt(S const& str, int radix = 10) {
 		int64_t val = Long::parseLong(str, radix);
 		if ((val > MAX_VALUE) || (val < MIN_VALUE))
 			throw NumericOverflowException(_HERE_, "Out of range");
@@ -426,11 +426,11 @@ public:
 		int32_t result = 0;
 
 		try {
-			result = parseInt(CPtr(StringView(buffer + index, len - index)), radix);
+			result = parseInt(StringView(buffer + index, len - index), radix);
 			if (negative)
 				result = -result;
 		} catch (NumberFormatException const&) {
-			result = negative ? parseInt(CPtr(std::string("-") + (buffer + index)), radix) :
+			result = negative ? parseInt(std::string("-") + (buffer + index), radix) :
 								parseInt(buffer + index, radix);
 		}
 
@@ -526,7 +526,7 @@ public:
 	virtual double doubleValue() const override;
 
 	template <class S>
-	static uint32_t parseUInt(S const* s, int radix = 10) {
+	static uint32_t parseUInt(S const& s, int radix = 10) {
 		int64_t val = Long::parseLong(s, radix);
 		if ((val < 0) || (val > MAX_VALUE))
 			throw NumericOverflowException(_HERE_, "Out of range");
@@ -691,12 +691,12 @@ public:
 	virtual double doubleValue() const override;
 
 	template <class S>
-	static double parseDouble(S const* s) {
-		const char *str = strData(s);
+	static double parseDouble(S const& s) {
+		const char *str = strData(CPtr(s));
 		if (!str)
 			throw NumberFormatException(_HERE_, "null");
 
-		size_t sLen = strLen(s);
+		size_t sLen = strLen(CPtr(s));
 		double val;
 		fast_float::from_chars_result res = fast_float::from_chars(str, str + sLen, val);
 
@@ -756,8 +756,8 @@ public:
 	}
 
 	template <class S>
-	static bool parseBoolean(S const* str) {
-		return String::equalsIgnoreCase(str, CPtr("true"_SV));
+	static bool parseBoolean(S const& str) {
+		return String::equalsIgnoreCase(str, "true"_SV);
 	}
 
 	virtual UPtr<String> toString() const override {

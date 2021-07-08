@@ -124,7 +124,7 @@ UPtr<String> getString(const char *where, P path, const rapidjson::Value& v) {
 	if (value == nullptr)
 		throw MissingValueException(where, pathToString(path).c_str());
 	if (value->IsString())
-		return String::trim(CPtr(value->GetString()));
+		return String::trim(value->GetString());
 	throw InvalidValueException(where, pathToString(path).c_str(), "String expected");
 }
 

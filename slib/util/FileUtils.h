@@ -8,7 +8,7 @@
 #include "slib/exception/Exception.h"
 #include "slib/lang/String.h"
 #include "slib/util/StringUtils.h"
-#include "slib/io/IO.h"
+#include "slib/lang/Array.h"
 #include "slib/io/FileInputStream.h"
 
 #include <string>
@@ -94,23 +94,23 @@ public:
 	}
 
 	template <class S>
-	static size_t getSize(S const* fileName) {
+	static size_t getSize(S const& fileName) {
 		struct stat st;
-		int ret = stat(cStr(fileName), &st);
+		int ret = stat(cStr(CPtr(fileName)), &st);
 		if (ret != 0)
 			throw IOException(_HERE_, fmt::format("File I/O error, errno='{}'", StringUtils::formatErrno()).c_str());
 		return st.st_size;
 	}
 
 	template <class S>
-	static UPtr<ByteBuffer> readAllBytes(S const* fileName) {
+	static UPtr<Array<uint8_t>> readAllBytes(S const& fileName) {
 		size_t size = getSize(fileName);
 
-		UPtr<ByteBuffer> data = newU<ByteBuffer>(size);
+		UPtr<Array<uint8_t>> data = newU<Array<uint8_t>>(size);
 		FileInputStream in(fileName);
-		ptrdiff_t read = in.read(data->getBuffer(), size);
+		ssize_t read = in.read(data->data(), size);
 		if (read >= 0)
-			data->setLength(read);
+			data->resize(read);
 		return data;
 	}
 };

@@ -133,7 +133,7 @@ protected:
 						index = *crtIndex;
 						crtIndex++;
 					} else
-						index = ULong::parseULong(CPtr(elem));
+						index = ULong::parseULong(elem);
 					obj = (Class::cast<List<Object>>(obj))->get(index);
 				} catch (Exception const& e) {
 					throwConfigException(_HERE_, name,

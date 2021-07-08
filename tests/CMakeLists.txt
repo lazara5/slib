@@ -18,9 +18,16 @@ if(WITH_COVERAGE)
 	append_coverage_compiler_flags()
 endif(WITH_COVERAGE)
 
+add_custom_command(
+	OUTPUT ConfigObject.h
+	COMMAND slibCfgGen ${CMAKE_CURRENT_SOURCE_DIR}/cfgDef.json ${CMAKE_CURRENT_SOURCE_DIR}/ConfigObject.h
+	DEPENDS slibCfgGen ${CMAKE_CURRENT_SOURCE_DIR}/cfgDef.json
+)
+
 set(TESTS_SOURCES
 	Global.h
 	AllTests.cpp
+	ConfigObject.h
 	TestConfig.cpp
 	TestExpression.cpp
 	TestLinkedList.cpp

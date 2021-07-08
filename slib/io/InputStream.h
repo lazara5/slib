@@ -1,7 +1,7 @@
 #ifndef H_SLIB_IO_INPUTSTREAM_H
 #define H_SLIB_IO_INPUTSTREAM_H
 
-#include "slib/io/IO.h"
+#include "slib/lang/Array.h"
 
 namespace slib {
 
@@ -28,9 +28,9 @@ public:
 	 * @param buffer  byte buffer
 	 * @param length  available space in buffer
 	 * @throws IOException */
-	virtual ptrdiff_t read(unsigned char *buffer, size_t length) = 0;
+	virtual ssize_t read(uint8_t *buffer, size_t length) = 0;
 
-	ptrdiff_t read(ByteBuffer &b);
+	ssize_t read(Array<uint8_t> &b);
 
 	virtual void close() = 0;
 };

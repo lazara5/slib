@@ -62,8 +62,8 @@ public:
 	}
 
 	template <class S>
-	static bool isBlank(S const* str) {
-		return isBlank(strData(str), strLen(str));
+	static bool isBlank(S const& str) {
+		return isBlank(strData(CPtr(str)), strLen(CPtr(str)));
 	}
 
 	template <class S>

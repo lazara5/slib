@@ -19,25 +19,6 @@ public:
 
 	virtual int compareTo(BasicString const& other) const;
 
-	template <class S1, class S2>
-	static bool equals(S1 const* str, S2 const* other) {
-		const char *buffer = strData(str);
-		const char *otherBuffer = strData(other);
-
-		if (buffer == nullptr)
-			return (otherBuffer == nullptr);
-		if (otherBuffer == nullptr)
-			return buffer == nullptr;
-		if (buffer == otherBuffer)
-			return true;
-
-		size_t len = strLen(str);
-		size_t otherLen = strLen(other);
-		if (len == otherLen)
-			return !memcmp(buffer, otherBuffer, len);
-		return false;
-	}
-
 	bool operator==(BasicString const& other) const {
 		return equals(other);
 	}
@@ -113,6 +94,18 @@ public:
 };
 
 } // namespace slib
+
+template <>
+struct fmt::formatter<slib::BasicString> {
+	const char *parse(format_parse_context& ctx) const {
+		return ctx.begin();
+	}
+
+	template <typename FormatContext>
+	format_context::iterator format(const slib::BasicString& sv, FormatContext& ctx) {
+		return format_to(ctx.out(), "{:.{}}", sv.data(), sv.length());
+	}
+};
 
 namespace std {
 	// for using BasicString as key in unordered_map

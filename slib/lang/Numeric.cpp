@@ -47,14 +47,14 @@ static bool isDigits(UPtr<String> const& str) {
 UPtr<Number> Number::createNumber(UPtr<String> const& str) {
 	if (!str)
 		return nullptr;
-	if (StringUtils::isBlank(CPtr(str)))
+	if (StringUtils::isBlank(str))
 		throw NumberFormatException(_HERE_, "Cannot convert blank string to number");
 
 	static const std::vector<std::string> hexPrefixes {"0x", "0X", "-0x", "-0X", "#", "-#"};
 
 	size_t prefixLen = 0;
 	for (std::string const& prefix : hexPrefixes) {
-		if (str->startsWith(CPtr(prefix))) {
+		if (str->startsWith(prefix)) {
 			prefixLen += prefix.length();
 			break;
 		}
@@ -131,7 +131,7 @@ UPtr<Number> Number::createNumber(UPtr<String> const& str) {
 			case 'd':
 			case 'D':
 				{
-					double d = Double::parseDouble(CPtr(numeric));
+					double d = Double::parseDouble(numeric);
 					if (!(Double::isInfinite(d) || (d == 0.0 && !allZeros)))
 						return newU<Double>(d);
 				}
@@ -156,7 +156,7 @@ UPtr<Number> Number::createNumber(UPtr<String> const& str) {
 
 	bool allZeros = isAllZeros(mantissa) && isAllZeros(exponent);
 	if (numDecimals <= 16) {
-		double d = Double::parseDouble(CPtr(str));
+		double d = Double::parseDouble(str);
 		if (!(Double::isInfinite(d) || (d == 0.0 && !allZeros)))
 			return newU<Double>(d);
 		throw NumberFormatException(_HERE_, "Invalid number");
@@ -169,14 +169,14 @@ UPtr<Number> Number::createNumber(UPtr<String> const& str) {
 UPtr<Number> Number::createLongOrDouble(UPtr<String> const& str) {
 	if (!str)
 		return nullptr;
-	if (StringUtils::isBlank(CPtr(str)))
+	if (StringUtils::isBlank(str))
 		throw NumberFormatException(_HERE_, "Cannot convert blank string to number");
 
 	static const std::vector<std::string> hexPrefixes {"0x", "0X", "-0x", "-0X", "#", "-#"};
 
 	size_t prefixLen = 0;
 	for (std::string const& prefix : hexPrefixes) {
-		if (str->startsWith(CPtr(prefix))) {
+		if (str->startsWith(prefix)) {
 			prefixLen += prefix.length();
 			break;
 		}
@@ -249,7 +249,7 @@ UPtr<Number> Number::createLongOrDouble(UPtr<String> const& str) {
 			case 'd':
 			case 'D':
 				{
-					double d = Double::parseDouble(CPtr(numeric));
+					double d = Double::parseDouble(numeric);
 					if (!(Double::isInfinite(d) || (d == 0.0 && !allZeros)))
 						return newU<Double>(d);
 				}
@@ -267,7 +267,7 @@ UPtr<Number> Number::createLongOrDouble(UPtr<String> const& str) {
 
 	bool allZeros = isAllZeros(mantissa) && isAllZeros(exponent);
 	if (numDecimals <= 16) {
-		double d = Double::parseDouble(CPtr(str));
+		double d = Double::parseDouble(str);
 		if (!(Double::isInfinite(d) || (d == 0.0 && !allZeros)))
 			return newU<Double>(d);
 		throw NumberFormatException(_HERE_, "Invalid number");

@@ -27,7 +27,6 @@ set(SLIB_SOURCES
 	slib/concurrent/Thread.cpp
 	slib/concurrent/FdThread.cpp
 	slib/exception/Exception.cpp
-	slib/io/IO.cpp
 	slib/io/InputStream.cpp
 	slib/io/FileInputStream.cpp
 	slib/io/OutputStream.cpp
@@ -54,6 +53,10 @@ set(SLIB_SOURCES
 	slib/util/expr/Resolver.cpp
 	)
 
+set(SLIB_CFG_GEN_SOURCES
+	slib/tools/cfgGen.cpp
+	)
+
 if(WITH_JSON)
 	MESSAGE("JSON utilities enabled")
 	list(APPEND SLIB_SOURCES slib/util/JsonUtils.cpp)
@@ -65,11 +68,6 @@ SET(CMAKE_CXX_FLAGS_ASAN
 	"${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -std=c++11 -fPIC -ftemplate-backtrace-limit=0")
-
-if(WITH_TESTS)
-	MESSAGE("Tests enabled")
-	add_subdirectory(tests)
-endif(WITH_TESTS)
 
 if(WITH_COVERAGE)
 	include(CodeCoverage)
@@ -85,7 +83,16 @@ endif(WITH_COVERAGE)
 
 add_library(slib STATIC ${SLIB_SOURCES})
 
+add_executable(slibCfgGen ${SLIB_CFG_GEN_SOURCES})
+target_link_libraries(slibCfgGen slib fmt)
+
+if(WITH_TESTS)
+	MESSAGE("Tests enabled")
+	add_subdirectory(tests)
+endif(WITH_TESTS)
+
 install (TARGETS slib DESTINATION lib)
+install (TARGETS slibCfgGen DESTINATION bin)
 
 install (DIRECTORY slib/
 	     DESTINATION include/slib

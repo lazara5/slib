@@ -19,7 +19,7 @@ int FileInputStream::read() {
 		return -1;
 }
 
-ptrdiff_t FileInputStream::read(unsigned char *buffer, size_t length) {
+ssize_t FileInputStream::read(uint8_t *buffer, size_t length) {
 	if (!_f)
 		throw IOException(_HERE_, "Stream closed");
 

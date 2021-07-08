@@ -5,7 +5,7 @@
 #ifndef H_SLIB_UTIL_TEMPLATEUTILS_H
 #define H_SLIB_UTIL_TEMPLATEUTILS_H
 
-#include <slib/util/Array.h>
+#include <slib/util/StaticArray.h>
 #include <slib/third-party/cppbits/make_unique.h>
 
 #include <memory>
@@ -54,29 +54,6 @@ T const* CPtr(UPtr<T> const& obj) {
 	return obj.get();
 }
 
-// ---- Helpers for generic string API ----
-template <class S>
-const char *cStr(S const* str) {
-	return str ? str->c_str() : nullptr;
-}
-
-const char *cStr(const char *str);
-
-template <class S>
-const char *strData(S const* str) {
-	return str ? str->data() : nullptr;
-}
-
-const char *strData(const char *str);
-
-template <class S>
-size_t strLen(S const* str) {
-	return str? str->length() : 0;
-}
-
-size_t strLen(const char *str);
-
-
 template<int = sizeof(size_t)>
 int32_t sizeTHash(size_t h);
 
@@ -113,14 +90,15 @@ struct counter_tuple<Size, Size>
 };
 
 template<typename T, size_t LL, size_t RL, size_t ... LLs, size_t ... RLs>
-constexpr Array<T, LL+RL> join(const Array<T, LL> rhs, const Array<T, RL> lhs, num_tuple<LLs...>, num_tuple<RLs...>)
+constexpr StaticArray<T, LL+RL> join(const StaticArray<T, LL> rhs, const StaticArray<T, RL> lhs,
+									 num_tuple<LLs...>, num_tuple<RLs...>)
 {
 	return {rhs[LLs]..., lhs[RLs]... };
 };
 
 
 template<typename T, size_t LL, size_t RL>
-constexpr Array<T, LL+RL> join(Array<T, LL> rhs, Array<T, RL> lhs)
+constexpr StaticArray<T, LL+RL> join(StaticArray<T, LL> rhs, StaticArray<T, RL> lhs)
 {
 	return join(rhs, lhs, typename counter_tuple<LL>::type(), typename counter_tuple<RL>::type());
 }

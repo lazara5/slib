@@ -14,7 +14,7 @@
 namespace slib {
 
 template <class K, class V>
-class ValueProvider {
+class ValueProvider : virtual public TypedClass {
 public:
 	BASE_TYPE_INFO(ValueProvider, CLASS(ValueProvider<K, V>));
 public:

@@ -1,7 +1,7 @@
 #ifndef H_SLIB_IO_OUTPUTSTREAM_H
 #define H_SLIB_IO_OUTPUTSTREAM_H
 
-#include "slib/io/IO.h"
+#include <stddef.h>
 
 namespace slib {
 

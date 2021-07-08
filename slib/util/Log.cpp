@@ -135,7 +135,7 @@ static int getNextIntParam(UPtr<ConstIterator<SPtr<String>>> const& params, int 
 	if (params->hasNext()) {
 		UPtr<String> strValue = params->next()->trim();
 		try {
-			return Integer::parseInt(CPtr(strValue));
+			return Integer::parseInt(strValue);
 		} catch (NumberFormatException const&) {
 			throw InitException(_HERE_, fmt::format("Invalid int parameter: {}", *strValue).c_str());
 		}
@@ -145,8 +145,8 @@ static int getNextIntParam(UPtr<ConstIterator<SPtr<String>>> const& params, int 
 
 bool getNextBoolParam(ConstIterator<std::string> &params, bool defaultValue) {
 	if (params.hasNext()) {
-		UPtr<String> strValue = String::trim(CPtr(params.next()));
-		return Boolean::parseBoolean(CPtr(strValue));
+		UPtr<String> strValue = String::trim(params.next());
+		return Boolean::parseBoolean(strValue);
 	} else
 		return defaultValue;
 }
@@ -217,7 +217,7 @@ SPtr<String> Log::getLogDir(SPtr<Config> const& cfg) {
 	SPtr<String> appDir = cfg->getAppDir();
 	if (!appDir)
 		throw InitException(_HERE_, "Could not determine logdir");
-	return FilenameUtils::concat(CPtr(appDir), "log");
+	return FilenameUtils::concat(appDir, "log");
 }
 
 SPtr<String> Log::_defaultLogConfig = ""_SPTR;
@@ -234,10 +234,10 @@ void Log::staticInit(SPtr<Config> const& cfg, String const& name, SPtr<String> c
 
 static UPtr<String> createLogPath(SPtr<Config> const& cfg, String const& fileName) {
 	UPtr<String> logFileName;
-	if (FilenameUtils::isPathAbsolute(CPtr(fileName)))
+	if (FilenameUtils::isPathAbsolute(fileName))
 		logFileName = newU<String>(fileName);
 	else
-		logFileName = FilenameUtils::concat(CPtr(Log::getLogDir(cfg)), CPtr(fileName));
+		logFileName = FilenameUtils::concat(Log::getLogDir(cfg), CPtr(fileName));
 
 	UPtr<String> logPath = FilenameUtils::getPath(CPtr(logFileName));
 	int res = FileUtils::mkdirs(CPtr(logPath), "rwxrwxr-x");

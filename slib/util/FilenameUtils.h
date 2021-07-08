@@ -80,11 +80,11 @@ public:
 	 * @return the length of the prefix, -1 if invalid
 	 */
 	template <class S>
-	static int getPrefixLength(S const* fileName) {
-		size_t len = strLen(fileName);
+	static int getPrefixLength(S const& fileName) {
+		size_t len = strLen(CPtr(fileName));
 		if (len == 0)
 			return 0;
-		const char *fileNameStr = strData(fileName);
+		const char *fileNameStr = strData(CPtr(fileName));
 
 		char c0 = fileNameStr[0];
 
@@ -136,11 +136,11 @@ private:
 	 * @return the normalized file name
 	 */
 	template <class S>
-	static UPtr<String> doNormalize(S const* fileName, char sep, bool keepSep) {
-		const char *fileNameStr = strData(fileName);
+	static UPtr<String> doNormalize(S const& fileName, char sep, bool keepSep) {
+		const char *fileNameStr = strData(CPtr(fileName));
 		if (!fileNameStr)
 			return nullptr;
-		ptrdiff_t fileNameLen = strLen(fileName);
+		ptrdiff_t fileNameLen = strLen(CPtr(fileName));
 		if (fileNameLen == 0)
 			return ""_UPTR;
 
@@ -249,7 +249,7 @@ private:
 public:
 	/** @throws InvalidPathException */
 	template <class S>
-	static UPtr<String> normalize(S const* fileName) {
+	static UPtr<String> normalize(S const& fileName) {
 		return doNormalize(fileName, SYSTEM_SEPARATOR, true);
 	}
 
@@ -264,7 +264,7 @@ public:
 	}
 
 	template <class S>
-	static bool isPathAbsolute(S const* path) {
+	static bool isPathAbsolute(S const& path) {
 		return String::startsWith(path, UNIX_SEPARATOR);
 	}
 
@@ -319,33 +319,33 @@ public:
 	 * @return the concatenated path, or \c nullptr if invalid.
 	 */
 	template <class S1, class S2>
-	static UPtr<String> concat(S1 const* basePath, S2 const* fullFileNameToAdd) {
+	static UPtr<String> concat(S1 const& basePath, S2 const& fullFileNameToAdd) {
 		int prefix = getPrefixLength(fullFileNameToAdd);
 		if (prefix < 0)
 			return nullptr;
 		if (prefix > 0)
 			return normalize(fullFileNameToAdd);
-		if (!basePath)
+		if (!CPtr(basePath))
 			return nullptr;
 
-		size_t baseLen = strLen(basePath);
+		size_t baseLen = strLen(CPtr(basePath));
 		if (baseLen == 0)
 			return normalize(fullFileNameToAdd);
 
-		size_t fileNameLen = strLen(fullFileNameToAdd);
+		size_t fileNameLen = strLen(CPtr(fullFileNameToAdd));
 
-		const char *basePathStr = strData(basePath);
+		const char *basePathStr = strData(CPtr(basePath));
 		char ch = basePathStr[baseLen - 1];
 		if (isSeparator(ch)) {
 			StringBuilder path(baseLen + fileNameLen);
-			path.addStr(basePath).add(fullFileNameToAdd);
-			return normalize(CPtr(path));
+			path.addStr(basePath).addStr(fullFileNameToAdd);
+			return normalize(path);
 		}
 
 		StringBuilder path(baseLen + 1 + fileNameLen);
-		path.addStr(basePath).add(UNIX_SEPARATOR).add(fullFileNameToAdd);
+		path.addStr(basePath).add(UNIX_SEPARATOR).addStr(fullFileNameToAdd);
 
-		return normalize(CPtr(path));
+		return normalize(path);
 	}
 
 	template <class S>

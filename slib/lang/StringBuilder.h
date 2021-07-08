@@ -7,6 +7,7 @@
 
 #include "slib/lang/Object.h"
 #include "slib/lang/String.h"
+#include "slib/lang/Array.h"
 #include "slib/exception/NullPointerException.h"
 
 #include <string>
@@ -15,7 +16,7 @@
 
 namespace slib {
 
-/**
+/**xxx
  * Mutable string container (roughly equivalent with a Java <b>%String</b> + <b>%StringBuilder</b>, i.e. <b>NOT</b>
  * thread-safe when used in a mutable fashion !!!)
  */
@@ -98,6 +99,7 @@ public:
 
 	// appenders
 	StringBuilder& add(const char *src, std::ptrdiff_t len = -1);
+	StringBuilder& add(Array<uint8_t> const& src);
 	StringBuilder& add(BasicString const& src);
 	StringBuilder& add(ASCIICaseInsensitiveString const& src);
 	StringBuilder& add(std::string const& src);
@@ -110,6 +112,7 @@ public:
 	StringBuilder& addLine(const char *src, std::ptrdiff_t len = -1);
 	StringBuilder& add(int i);
 	StringBuilder& add(int64_t i);
+	StringBuilder& add(uint64_t i);
 	StringBuilder& add(double d);
 
 	StringBuilder& add(char c) {
@@ -131,8 +134,8 @@ public:
 	}
 
 	template <class S>
-	StringBuilder& addStr(S const* str) {
-		return add(strData(str), strLen(str));
+	StringBuilder& addStr(S const& str) {
+		return add(strData(CPtr(str)), strLen(CPtr(str)));
 	}
 
 	/** for std container compatibility */
@@ -146,6 +149,11 @@ public:
 		__attribute__((format (printf, 2, 0)));
 	StringBuilder& addFmtLine(const char *format, ...)
 		__attribute__((format (printf, 2, 3)));
+
+	StringBuilder& addNewLine() {
+		add('\n');
+		return *this;
+	}
 
 	// appender operators
 	StringBuilder& operator +=(StringBuilder const& op);
@@ -163,26 +171,29 @@ public:
 	StringBuilder& operator +=(int64_t op);
 	const StringBuilder operator+(int64_t other) const;
 
+	StringBuilder& operator +=(uint64_t op);
+	const StringBuilder operator+(uint64_t other) const;
+
 	StringBuilder& operator +=(double op);
 	const StringBuilder operator+(double other) const;
 
 	bool operator <(StringBuilder const& other) const;
 
 	template <class S>
-	const StringBuilder& insert(size_t offset, S const* str) {
+	const StringBuilder& insert(size_t offset, S const& str) {
 		if (offset > _len)
 			throw StringIndexOutOfBoundsException(_HERE_, (ptrdiff_t)offset);
 
-		const char *strBuffer = str ? str->c_str() : "null";
-		size_t strLen = str ? str->length() : 4;
+		const char *strBuffer = CPtr(str) ? strData(CPtr(str)) : "null";
+		size_t sLen = CPtr(str) ? strLen(CPtr(str)) : 4;
 		if (!_buffer) {
-			grow(strLen + 1);
+			grow(sLen + 1);
 			_buffer[0] = 0;
 		} else
-			grow(_size + strLen);
-		memmove(_buffer + offset + strLen, _buffer + offset, _len - offset + 1);
-		memcpy(_buffer + offset, strBuffer, strLen);
-		_len += strLen;
+			grow(_size + sLen);
+		memmove(_buffer + offset + sLen, _buffer + offset, _len - offset + 1);
+		memcpy(_buffer + offset, strBuffer, sLen);
+		_len += sLen;
 		return *this;
 	}
 

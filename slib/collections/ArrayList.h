@@ -48,17 +48,19 @@ private:
 		return removed;
 	}
 public:
-	ArrayList(int initialCapacity)
+	ArrayList(int initialCapacity, bool init = false)
 	try: _elements() {
 		if (initialCapacity < 0)
 			throw IllegalArgumentException(_HERE_, fmt::format("Illegal capacity: {:d}", initialCapacity).c_str());
 		_elements.reserve(initialCapacity);
+		if (init)
+			_elements.resize(initialCapacity);
 	} catch (std::bad_alloc const &) {
 		throw OutOfMemoryError(_HERE_);
 	}
 
-	ArrayList()
-	: ArrayList(DEFAULT_CAPACITY) {}
+	ArrayList(bool init = false)
+	: ArrayList(DEFAULT_CAPACITY, init) {}
 
 	virtual void clear() override {
 		_modCount++;
@@ -132,6 +134,12 @@ public:
 
 	virtual SPtr<E> get(size_t index) const override {
 		accessRangeCheck(index);
+		return _elements[index];
+	}
+
+	SPtr<E> operator [](size_t index) const {
+		if (index >= size())
+			throw ArrayIndexOutOfBoundsException(_HERE_, index);
 		return _elements[index];
 	}
 

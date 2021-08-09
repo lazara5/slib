@@ -16,6 +16,17 @@ namespace slib {
 
 namespace expr {
 
+enum class ValueDomain : uint8_t {
+	DEFAULT,
+	LOCAL,
+	MAX,
+	NONE = MAX
+};
+
+const std::array<ValueDomain, static_cast<uint8_t>(ValueDomain::MAX)> allValueDomains = {
+	ValueDomain::DEFAULT, ValueDomain::LOCAL
+};
+
 class Resolver : virtual public Object {
 public:
 	TYPE_INFO(Resolver, CLASS(Resolver), INHERITS(Object));
@@ -33,13 +44,13 @@ public:
 	 * @param key  variable name
 	 * @return variable value or nullptr if not defined
 	 */
-	virtual SPtr<Object> getVar(String const& key) const = 0;
+	virtual SPtr<Object> getVar(String const& key, ValueDomain domain) const = 0;
 
-	virtual bool isReadOnly() const {
+	virtual bool isReadOnly(ValueDomain domain SLIB_UNUSED) const {
 		return true;
 	}
 
-	virtual void setVar(String const& key SLIB_UNUSED, SPtr<Object> const& value SLIB_UNUSED) {
+	virtual void setVar(SPtr<String> const& key SLIB_UNUSED, SPtr<Object> const& value SLIB_UNUSED, ValueDomain domain SLIB_UNUSED) {
 		throw EvaluationException(_HERE_, "Attempted to write to read-only resolver");
 	}
 };
@@ -49,26 +60,28 @@ public:
 	TYPE_INFO(MapResolver, CLASS(MapResolver), INHERITS(Resolver));
 private:
 	SPtr<Map<String, Object>> _map;
-	Mode _mode;
+	ValueDomain _writableDomain;
 public:
-	MapResolver(SPtr<Map<String, Object>> map, Mode mode = Mode::READ_ONLY)
+	MapResolver(SPtr<Map<String, Object>> map, ValueDomain writableDomain = ValueDomain::NONE)
 	: _map(map)
-	, _mode(mode) {}
+	, _writableDomain(writableDomain) {}
 
 	virtual ~MapResolver() override;
 
-	virtual SPtr<Object> getVar(const String &key) const override {
+	virtual SPtr<Object> getVar(const String &key, ValueDomain domain) const override {
+		if (domain != ValueDomain::DEFAULT)
+			return nullptr;
 		return _map->get(key);
 	}
 
-	virtual bool isReadOnly() const override {
-		return _mode == Mode::READ_ONLY;
+	virtual bool isReadOnly(ValueDomain domain) const override {
+		return _writableDomain != domain;
 	}
 
-	virtual void setVar(String const& key, SPtr<Object> const& value) override {
-		if (isReadOnly())
-			return Resolver::setVar(key, value);
-		_map->emplaceKey<String>(key, value);
+	virtual void setVar(SPtr<String> const& key, SPtr<Object> const& value, ValueDomain domain) override {
+		if (isReadOnly(domain))
+			return Resolver::setVar(key, value, domain);
+		_map->put(key, value);
 	}
 };
 
@@ -78,7 +91,7 @@ public:
 private:
 	UPtr<List<Resolver>> _resolvers;
 	UPtr<Map<String, Resolver>> _namedResolvers;
-	SPtr<Resolver> _writableResolver;
+	SPtr<Resolver> _writableResolver[static_cast<uint8_t>(ValueDomain::MAX)];
 public:
 	/** do NOT use directly, only public for make_shared */
 	ChainedResolver(bool /* dontUse */)
@@ -93,8 +106,11 @@ public:
 
 	ChainedResolver& add(SPtr<Resolver> const& resolver) {
 		_resolvers->add(resolver);
-		if ((!_writableResolver) && (!resolver->isReadOnly()))
-			_writableResolver = resolver;
+		for (ValueDomain domain : allValueDomains) {
+			uint8_t iDomain = static_cast<uint8_t>(domain);
+			if ((!_writableResolver[iDomain]) && (!resolver->isReadOnly(domain)))
+				_writableResolver[iDomain] = resolver;
+		}
 		return *this;
 	}
 
@@ -103,11 +119,14 @@ public:
 		return *this;
 	}
 
-	ChainedResolver& add(SPtr<Map<String, Object>> map, Mode mode = Mode::READ_ONLY) {
-		SPtr<Resolver> resolver = newS<MapResolver>(map, mode);
+	ChainedResolver& add(SPtr<Map<String, Object>> map, ValueDomain writableDomain = ValueDomain::NONE) {
+		SPtr<Resolver> resolver = newS<MapResolver>(map, writableDomain);
 		_resolvers->add(resolver);
-		if ((!_writableResolver) && (!resolver->isReadOnly()))
-			_writableResolver = resolver;
+		for (ValueDomain domain : allValueDomains) {
+			uint8_t iDomain = static_cast<uint8_t>(domain);
+			if ((!_writableResolver[iDomain]) && (!resolver->isReadOnly(domain)))
+				_writableResolver[iDomain] = resolver;
+		}
 		return *this;
 	}
 
@@ -119,17 +138,19 @@ public:
 	ChainedResolver& clear() {
 		_resolvers->clear();
 		_namedResolvers->clear();
-		_writableResolver = nullptr;
+		for (uint8_t i = 0; i < static_cast<uint8_t>(ValueDomain::MAX); i++)
+			_writableResolver[i] = nullptr;
 		return *this;
 	}
 
-	virtual SPtr<Object> getVar(const String &key) const override;
+	virtual SPtr<Object> getVar(const String &key, ValueDomain domain) const override;
 
-	virtual bool isReadOnly() const override {
-		return !((bool)_writableResolver);
+	virtual bool isReadOnly(ValueDomain domain) const override {
+		uint8_t iDomain = static_cast<uint8_t>(domain);
+		return !((bool)_writableResolver[iDomain]);
 	}
 
-	virtual void setVar(String const& key, SPtr<Object> const& value) override;
+	virtual void setVar(SPtr<String> const& key, SPtr<Object> const& value, ValueDomain domain) override;
 };
 
 class LazyResolver : public Resolver {
@@ -152,7 +173,7 @@ public:
 
 	virtual SPtr<Object> provideVar(String const& name) const = 0;
 
-	virtual SPtr<Object> getVar(String const& name) const override final {
+	virtual SPtr<Object> getVar(String const& name, ValueDomain domain SLIB_UNUSED) const override final {
 		if (!_initialized)
 			const_cast<LazyResolver *>(this)->init();
 		return provideVar(name);

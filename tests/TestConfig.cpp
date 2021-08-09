@@ -114,6 +114,8 @@ TEST(ConfigTests, BasicTests)
 	f->set(x, String("yyy"));
 	Class cls = classOf<X>::_class();
 
+	fmt::print("config: {}\n", *config->getRoot()->toString());
+
 	STRCMP_EQUAL("str123", config->getString("testName")->c_str());
 	CHECK_EQUAL(3, config->getLong("testLong1"));
 	CHECK_EQUAL(3, config->getLong("testLong1"));

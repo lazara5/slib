@@ -42,7 +42,7 @@ TEST_GROUP(ExprTests) {
 };
 
 UPtr<String> strEval(const char *expr) {
-	return ExpressionEvaluator::strExpressionValue(newS<String>(expr), resolver, 0);
+	return ExpressionEvaluator::strExpressionValue(newS<String>(expr), resolver);
 }
 
 TEST(ExprTests, BasicTests) {
@@ -50,6 +50,7 @@ TEST(ExprTests, BasicTests) {
 	STRCMP_EQUAL("0", strEval("1 + -1")->c_str());
 	STRCMP_EQUAL("-1", strEval("1 + -1 * 2")->c_str());
 	STRCMP_EQUAL("2.5", strEval("(7 - 2)/2")->c_str());
+	STRCMP_EQUAL("2.5", strEval("(7 - 2)/* some comment including a * *//2")->c_str());
 	STRCMP_EQUAL("5", strEval("math.ceil(2.3) + math.floor(2.5)")->c_str());
 	STRCMP_EQUAL("abcdef", strEval("'abc' + 'de' + 'f'")->c_str());
 }
@@ -57,9 +58,13 @@ TEST(ExprTests, BasicTests) {
 TEST(ExprTests, AdvancedTests) {
 	STRCMP_EQUAL("a", strEval("if (1 < 2, 'a', 'b')")->c_str());
 	STRCMP_EQUAL("b", strEval("if (1 > 2, 'a', 'b')")->c_str());
-	// newline not allowed in function argument lists
-	CHECK_THROWS(SyntaxErrorException, strEval("if (1 < 2,\n 'a', 'b')")->c_str());
 	STRCMP_EQUAL("", strEval("if (1 > 2, 'a')")->c_str());
+	STRCMP_EQUAL("cd", strEval("'a', 'c' + 'd'")->c_str());
+}
+
+TEST(ExprTests, LoopTests) {
+	STRCMP_EQUAL("23456789", strEval("for (:i = 3, :$ = '2'; :i < 10; :i = :i + 1; :$ = :$ + string(:i))")->c_str());
+	STRCMP_EQUAL("15abc2", strEval("for (:i; [1, 5, 'abc', 2]; :$ = :$ + string(:i))")->c_str());
 }
 
 TEST(ExprTests, FormatTests) {
@@ -74,23 +79,23 @@ TEST(ExprTests, ExtraTests) {
 	res = strEval("oo[4]");
 	STRCMP_EQUAL("yyy", res->c_str());
 
-	SPtr<Object> res1 = ExpressionEvaluator::expressionValue(newS<String>("{a = 3, b = 2 * (2 + 1), c = {d = '123', e = 1 + 2}}"), resolver, 0);
+	SPtr<Object> res1 = ExpressionEvaluator::expressionValue(newS<String>("{a = 3, b = 2 * (2 + 1), c = {d = '123', e = 1 + 2}}"), resolver);
 	UPtr<String> res2 = res1->toString();
 	CHECK((instanceof<Map<BasicString, Object>>(res1)));
 	STRCMP_EQUAL("{a=3, b=6, c={d=123, e=3}}", res2->c_str());
 
-	res2 = ExpressionEvaluator::expressionValue(newS<String>("{a = 3\r\n b = 2 * (2 + 1)\n c = {\nd = '123',\r\n e = 1 + 2}\n}"), resolver, 0)->toString();
+	res2 = ExpressionEvaluator::expressionValue(newS<String>("{a = 3\r\n b = 2 * (2 + 1)\n c = {\nd = '123',\r\n e = 1 + 2}\n}"), resolver)->toString();
 	STRCMP_EQUAL("{a=3, b=6, c={d=123, e=3}}", res2->c_str());
 
-	res1 = ExpressionEvaluator::expressionValue(newS<String>("[1, 2, 3 * 5, {a = xxx, c = [1, 'x'], d = math.abs(-2), e = -1}]"), resolver, 0);
+	res1 = ExpressionEvaluator::expressionValue(newS<String>("[1, 2, 3 * 5, {a = xxx, c = [1, 'x'], d = math.abs(-2), e = -1}]"), resolver);
 	res2 = res1->toString();
 	CHECK((instanceof<List<Object>>(res1)));
 	STRCMP_EQUAL("[1, 2, 15, {a=null, c=[1, x], d=2, e=-1}]", res2->c_str());
 
-	res2 = ExpressionEvaluator::expressionValue(newS<String>("[\n1, , 2\n 3 * 5\r\n\n {a = 'b', c = [1, \t'x'\r\n], d = math.abs(-2), e = -1},]"), resolver, 0)->toString();
+	res2 = ExpressionEvaluator::expressionValue(newS<String>("[\n1, , 2\n 3 * 5\r\n\n {a = 'b', c = [1, \t'x'\r\n], d = math.abs(-2), e = -1},]"), resolver)->toString();
 	STRCMP_EQUAL("[1, 2, 15, {a=b, c=[1, x], d=2, e=-1}]", res2->c_str());
 
-	res1 = ExpressionEvaluator::expressionValue("[1, 2, 3 * 5, {a = 'b', c = [1 + undefined, 'x'], d = math.abs(-2), e = -1}]"_SPTR, resolver, EXPR_IGNORE_UNDEFINED);
+	res1 = ExpressionEvaluator::expressionValue("[1, 2, 3 * 5, {a = 'b', c = [1 + undefined, 'x'], d = math.abs(-2), e = -1}]"_SPTR, resolver);
 	res2 = res1->toString();
 	STRCMP_EQUAL("[1, 2, 15, {a=b, c=[null, x], d=2, e=-1}]", res2->c_str());
 
@@ -98,8 +103,8 @@ TEST(ExprTests, ExtraTests) {
 	SPtr<Map<String, Object>> vars = newS<HashMap<String, Object>>();
 	SPtr<ChainedResolver> resolver1 = ChainedResolver::newInstance();
 	(*resolver1).add("system"_SPTR, systemInfo)
-	.add(vars, Resolver::Mode::WRITABLE);
-	res1 = ExpressionEvaluator::expressionValue("{hostname = system.hostname, ip=system.ip, :a = 1, b = a + 1}"_SPTR, resolver1, 0);
+		.add(vars, ValueDomain::LOCAL);
+	res1 = ExpressionEvaluator::expressionValue("{hostname = system.hostname, ip=system.ip, :a = 1, b = a + 1}"_SPTR, resolver1);
 	res2 = res1->toString();
 	fmt::print("Expr: {}\n", *res2);
 

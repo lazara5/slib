@@ -8,6 +8,84 @@
 namespace slib {
 namespace expr {
 
+void ExpressionInputStream::skipBlanks() {
+	enum class BSSTATE { SCAN, SLASH, MLC, MLCSTAR, SLC };
+
+	BSSTATE state = BSSTATE::SCAN;
+
+	ptrdiff_t beforeSlash = 0;
+
+	while (true) {
+		switch (state) {
+			case BSSTATE::SCAN:
+				switch (_currentChar) {
+					case ' ':
+					case '\t':
+					case '\r':
+					case '\n':
+						break;
+					case '/':
+						beforeSlash = _iter.getIndex();
+						state = BSSTATE::SLASH;
+						break;
+					default:
+						return;
+				}
+				break;
+			case BSSTATE::SLASH:
+				switch (_currentChar) {
+					case '*':
+						state = BSSTATE::MLC;
+						break;
+					case '/':
+						state = BSSTATE::SLC;
+						break;
+					default:
+						_iter.setIndex(beforeSlash);
+						_currentChar = _iter.current();
+						return;
+				}
+				break;
+			case BSSTATE::MLC:
+				switch (_currentChar) {
+					case CharacterIterator::DONE:
+						throw SyntaxErrorException(_HERE_, "Unexpected end of stream");
+					case '*':
+						state = BSSTATE::MLCSTAR;
+						break;
+					default:
+						break;
+				}
+				break;
+			case BSSTATE::MLCSTAR:
+				switch (_currentChar) {
+					case CharacterIterator::DONE:
+						throw SyntaxErrorException(_HERE_, "Unexpected end of stream");
+					case '/':
+						state = BSSTATE::SCAN;
+						break;
+					default:
+						state = BSSTATE::MLC;
+						break;
+				}
+				break;
+			case BSSTATE::SLC:
+				switch (_currentChar) {
+					case CharacterIterator::DONE:
+						return;
+					case '\n':
+						// Single line comments do NOT swallow \n !
+						return;
+					default:
+						break;
+				}
+				break;
+		}
+
+		_currentChar = _iter.next();
+	}
+}
+
 UPtr<String> ExpressionInputStream::readName() {
 	skipBlanks();
 	char ch = peek();
@@ -34,10 +112,10 @@ UPtr<String> ExpressionInputStream::readDottedNameRemainder() {
 	return str.toString();
 }
 
-enum class SSMODE { SCAN, ESCAPE, ESCAPE2 };
-
 /** @throws SyntaxErrorException */
 UPtr<Value> ExpressionInputStream::readString() {
+	enum class SSMODE { SCAN, ESCAPE, ESCAPE2 };
+
 	// read ' or "
 	char delimiter = readChar();
 	StringBuilder str;
@@ -110,6 +188,18 @@ UPtr<Value> ExpressionInputStream::readString() {
 	return Value::of(str.toString());
 }
 
+ValueDomain ExpressionInputStream::readDomain() {
+	ValueDomain domain = ValueDomain::DEFAULT;
+
+	char ch = peek();
+	if (ch == ':') {
+		domain = ValueDomain::LOCAL;
+		readChar();
+	}
+
+	return domain;
+}
+
 UPtr<Value> ExpressionInputStream::readNumber() {
 	UPtr<String> str = readReal();
 	try {
@@ -168,9 +258,9 @@ UPtr<String> ExpressionInputStream::readReal() {
 	return s.toString();
 }
 
-enum class ASMODE { SCAN, STRING, ESCAPE };
+SPtr<Lambda> ExpressionInputStream::readArgLambda(char argSep, char argEnd) {
+	enum class LSMODE { SCAN, STRING, ESCAPE };
 
-SPtr<Expression> ExpressionInputStream::readArg() {
 	char delimiter = '\1';
 
 	int argDepth = 0;
@@ -180,14 +270,14 @@ SPtr<Expression> ExpressionInputStream::readArg() {
 
 	StringBuilder str;
 	bool complete = false;
-	ASMODE mode = ASMODE::SCAN;
+	LSMODE mode = LSMODE::SCAN;
 
 	do {
 		char ch = peek();
 		switch (mode) {
-			case ASMODE::SCAN:
+			case LSMODE::SCAN:
 				{
-					if (((ch == ',') || (ch == ')')) && (argDepth == 0))
+					if (((ch == argSep) || (ch == argEnd)) && (argDepth == 0))
 						complete = true;
 					else {
 						readChar();
@@ -196,7 +286,7 @@ SPtr<Expression> ExpressionInputStream::readArg() {
 						str.add(ch);
 						if (ch == '"' || ch == '\'') {
 							delimiter = ch;
-							mode = ASMODE::STRING;
+							mode = LSMODE::STRING;
 						} else if (ch == '(') {
 							argStack.push_back(argClose);
 							argClose = ')';
@@ -219,32 +309,32 @@ SPtr<Expression> ExpressionInputStream::readArg() {
 					}
 				}
 				break;
-			case ASMODE::STRING:
+			case LSMODE::STRING:
 				{
 					readChar();
 					if (ch == CharacterIterator::DONE)
 						throw SyntaxErrorException(_HERE_, "Unexpected EOS reading argument string");
 					str.add(ch);
 					if (ch == '\\' || ch == '`') {
-						mode = ASMODE::ESCAPE;
+						mode = LSMODE::ESCAPE;
 					} else if (ch == delimiter) {
 						delimiter = '\1';
-						mode = ASMODE::SCAN;
+						mode = LSMODE::SCAN;
 					}
 				}
 				break;
-			case ASMODE::ESCAPE:
+			case LSMODE::ESCAPE:
 				{
 					readChar();
 					if (ch == CharacterIterator::DONE)
 						throw SyntaxErrorException(_HERE_, "Unexpected EOS reading string escape sequence");
 					str.add(ch);
-					mode = ASMODE::STRING;
+					mode = LSMODE::STRING;
 				}
 				break;
 		}
 	} while (!complete);
-	return newS<Expression>(str.toString());
+	return newS<Lambda>(str.toString());
 }
 
 } // namespace expr

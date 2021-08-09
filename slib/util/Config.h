@@ -42,8 +42,8 @@ public:
 	ResolverProxy(Resolver *resolver)
 	: _resolver(resolver) {}
 
-	virtual SPtr<Object> getVar(String const& key) const override {
-		return _resolver->getVar(key);
+	virtual SPtr<Object> getVar(String const& key, expr::ValueDomain valueDomain) const override {
+		return _resolver->getVar(key, valueDomain);
 	}
 };
 
@@ -189,6 +189,10 @@ public:
 	, _propCache(newU<HashMap<BasicString, ConfigValue>>()) {}
 
 	virtual ~ObjConfig() {}
+
+	SPtr<Map<BasicString, Object>> getRoot() {
+		return _configRoot;
+	}
 
 	template <class S>
 	SPtr<String> getString(S const* name, std::initializer_list<int> indices = {}) const {
@@ -361,7 +365,7 @@ protected:
 	public:
 		ConfigResolver();
 
-		virtual SPtr<Object> getVar(String const& key) const;
+		virtual SPtr<Object> getVar(String const& key, expr::ValueDomain domain) const override;
 	};
 
 	struct StringPair {

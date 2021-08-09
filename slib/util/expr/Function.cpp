@@ -7,24 +7,36 @@
 namespace slib {
 namespace expr {
 
-UPtr<FunctionParseContext> defaultNewParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName,
-												  SPtr<Resolver> const& resolver) {
-	return newU<FunctionParseContext>(function, symbolName, resolver);
-}
-
 Function::~Function() {}
 
-void FunctionArgs::add(SPtr<Object> const& obj, SPtr<Function> const& function) {
+void FunctionInstance::addArg(SPtr<Object> const& obj) {
 	size_t np = _args.size();
-	Class const& clazz = function->getParamType(np);
+	Class const& clazz = _function->getParamType(np);
 	if ((!obj) || (clazz.isAssignableFrom(obj->getClass())))
 		_args.add(obj);
 	else
 		throw CastException(_HERE_, fmt::format("Function {}(): invalid parameter type: expected {}, got {}", *_symbolName, clazz.getName(), obj->getClass().getName()).c_str());
 }
 
-Class const& FunctionArgs::peek(SPtr<Function> const& function) {
-	return function->getParamType(_args.size());
+Class const& FunctionInstance::peekArg() {
+	return _function->getParamType(_args.size());
+}
+
+void FunctionInstance::readArg(SPtr<ExpressionInputStream> const& input) {
+	Class const& argClass = peekArg();
+	if (argClass == classOf<Lambda>::_class())
+		addArg(input->readArgLambda(_function->_argSeparator, _function->_argClose));
+	else {
+		if (_function->_argSeparator == ',')
+			addArg(ExpressionEvaluator::singleExpressionValue(input, _argResolver)->getValue());
+		else
+			addArg(ExpressionEvaluator::expressionValue(input, _argResolver)->getValue());
+	}
+}
+
+SPtr<FunctionInstance> defaultNewFunctionInstance(SPtr<Function> const& function, SPtr<String> const& symbolName,
+												  SPtr<Resolver> const& resolver) {
+	return newU<FunctionInstance>(function, symbolName, resolver, resolver);
 }
 
 } // namespace expr

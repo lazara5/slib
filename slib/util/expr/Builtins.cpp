@@ -12,43 +12,41 @@
 namespace slib {
 namespace expr {
 
-class Builtins : public HashMap<String, Object> {
-public:
-	Builtins() {
+Builtins::Builtins() {
 		// constants
 		emplace<String, Boolean>("true", true);
 		emplace<String, Boolean>("false", false);
 		put("nil"_SPTR, nullptr);
 
 		SPtr<Map<BasicString, Object>> math = newS<HashMap<BasicString, Object>>();
-		emplaceKey<String>("math", math);
+		put("math"_SPTR, math);
 
-		math->emplaceKey<String>("ceil", Function::impl<Number>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+		math->put("ceil"_SPTR, Function::impl<Number>(
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, ArgList const& args) {
 				return Value::of(newS<Double>(ceil(args.get<Number>(0)->doubleValue())));
 			}
 		));
-		math->emplaceKey<String>("floor", Function::impl<Number>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED,EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+		math->put("floor"_SPTR, Function::impl<Number>(
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, ArgList const& args) {
 				return Value::of(newS<Double>(floor(args.get<Number>(0)->doubleValue())));
 			}
 		));
-		math->emplaceKey<String>("abs", Function::impl<Number>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+		math->put("abs"_SPTR, Function::impl<Number>(
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, ArgList const& args) {
 				return Value::of(newS<Double>(abs(args.get<Number>(0)->doubleValue())));
 			}
 		));
 
-		emplaceKey<String>("format", Function::impl<String>(
-			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+		put("format"_SPTR, Function::impl<String>(
+			[](SPtr<Resolver> const& resolver, ArgList const& args) {
 				StringBuilder result;
 				ExpressionFormatter::format(result, args, resolver);
 				return Value::of(result.toString());
 			}
 		));
 
-		emplaceKey<String>("double", Function::impl<Object>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+		put("double"_SPTR, Function::impl<Object>(
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, ArgList const& args) {
 				try {
 					SPtr<Object> obj = args.get(0);
 					if (instanceof<String>(obj))
@@ -63,8 +61,8 @@ public:
 			}
 		));
 
-		emplaceKey<String>("long", Function::impl<Object>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+		put("long"_SPTR, Function::impl<Object>(
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, ArgList const& args) {
 				try {
 					SPtr<Object> obj = args.get(0);
 						if (instanceof<String>(obj))
@@ -79,59 +77,116 @@ public:
 			}
 		));
 
-		emplaceKey<String>("if", Function::impl<Object, Expression, Expression>(
-			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args) {
+		put("string"_SPTR, Function::impl<Object>(
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, ArgList const& args) {
+				SPtr<Object> obj = args.get(0);
+				return Value::of(obj->toString());
+			}
+		));
+
+		put("if"_SPTR, Function::impl<Object, Lambda, Lambda>(
+			[](SPtr<Resolver> const& resolver, ArgList const& args) {
 				bool val = Value::isTrue(args.getNullable(0));
 				if (val)
-					return (args.get<Expression>(1))->evaluate(resolver, evalFlags);
+					return (args.get<Lambda>(1))->evaluate(resolver);
 				else {
 					if (args.size() > 2)
-						return (args.get<Expression>(2))->evaluate(resolver, evalFlags);
+						return (args.get<Lambda>(2))->evaluate(resolver);
 					else
 						return Value::of(""_SPTR);
 				}
 			}
 		));
 
-		emplaceKey<String>("for", Function::impl<String, Object, Expression, Expression, Expression>(
-			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args) {
-				size_t nArgs = args.size();
-				if (nArgs == 5) {
-					// classic "for"
-					SPtr<String> loopVarName = args.get<String>(0);
-					SPtr<Object> initialValue = args.getNullable(1);
-					SPtr<Expression> condExpression = args.get<Expression>(2);
-					SPtr<Expression> updateExpression = args.get<Expression>(3);
-					SPtr<Expression> evalExpression = args.get<Expression>(4);
+		/** Resolver that provides the for loop variable */
+		class LoopResolver : public Resolver {
+		private:
+			SPtr<Object> _result;
+			UPtr<Map<String, Object>> _locals;
+			SPtr<Resolver> _parentResolver;
+		public:
+			LoopResolver(SPtr<Resolver> const& parentResolver)
+			: _result(Value::voidObj())
+			, _locals(newU<HashMap<String, Object>>())
+			, _parentResolver(parentResolver) {}
 
-					SPtr<ExpressionEvaluator::LoopResolver> loopResolver = newS<ExpressionEvaluator::LoopResolver>(loopVarName, resolver);
-					loopResolver->setVar(initialValue);
+			virtual ~LoopResolver() {};
+
+			SPtr<Object> getResult() {
+				return _result;
+			}
+
+			virtual SPtr<Object> getVar(const String &key, ValueDomain domain) const override {
+				if (key.equals("$"))
+					return _result;
+
+				switch (domain) {
+					case ValueDomain::LOCAL:
+						return _locals->get(key);
+					case ValueDomain::DEFAULT:
+						return _parentResolver->getVar(key, domain);
+					default:
+						throw EvaluationException(_HERE_, "Invalid value domain");
+				}
+			}
+
+			virtual bool isReadOnly(ValueDomain domain) const override {
+				return (domain == ValueDomain::LOCAL) ? false : _parentResolver->isReadOnly(domain);
+			}
+
+			virtual void setVar(SPtr<String> const& key, SPtr<Object> const& value, ValueDomain domain) override {
+				if (StringView::equals(key, "$"))
+					_result = value;
+
+				switch (domain) {
+					case ValueDomain::LOCAL:
+						_locals->put(key, value);
+						break;
+					case ValueDomain::DEFAULT:
+						_parentResolver->setVar(key, value, domain);
+						break;
+					default:
+						throw EvaluationException(_HERE_, "Invalid value domain");
+				}
+			}
+		};
+
+		put("for"_SPTR, Function::impl<Lambda, Lambda, Lambda, Lambda>(
+			[](SPtr<Resolver> const& resolver, ArgList const& args) {
+				size_t nArgs = args.size();
+				if (nArgs == 4) {
+					// classic "for"
+					SPtr<Lambda> loopInit = args.get<Lambda>(0);
+					SPtr<Lambda> loopCond = args.get<Lambda>(1);
+					SPtr<Lambda> loopUpdate = args.get<Lambda>(2);
+					SPtr<Lambda> loopEval = args.get<Lambda>(3);
+
+					SPtr<LoopResolver> loopResolver = newS<LoopResolver>(resolver);
+					loopInit->evaluate(loopResolver);
 
 					UPtr<Value> finalValue = Value::Nil();
-					bool cond = true;
 
-					while (cond) {
-						UPtr<Value> condValue = condExpression->evaluate(loopResolver, evalFlags);
+					while (true) {
+						UPtr<Value> condValue = loopCond->evaluate(loopResolver);
 						if (!Value::isTrue(condValue))
 							break;
-						UPtr<Value> exprValue = evalExpression->evaluate(loopResolver, evalFlags);
-						if (finalValue->isNil())
-							finalValue = std::move(exprValue);
-						else
-							finalValue = finalValue->add(exprValue);
-						SPtr<Value> updatedValue = updateExpression->evaluate(loopResolver, evalFlags);
-						loopResolver->setVar(updatedValue->getValue());
+						loopEval->evaluate(loopResolver);
+						SPtr<Value> updatedValue = loopUpdate->evaluate(loopResolver);
 					}
 
-					return finalValue;
+					return Value::of(loopResolver->getResult());
 				} else if (nArgs == 3) {
 					// generic "for"
-					SPtr<String> loopVarName = args.get<String>(0);
-					SPtr<Object> iterable = args.get(1);
-					if (instanceof<ConstIterable<Object>>(iterable)) {
-						SPtr<Expression> evalExpression = args.get<Expression>(2);
+					SPtr<Lambda> loopVarLambda = args.get<Lambda>(0);
+					UPtr<Value> loopVar = loopVarLambda->readLiteral();
+					SPtr<String> loopVarName = Class::cast<String>(loopVar->getValue());
+					UPtr<Value> iterableValue = args.get<Lambda>(1)->evaluate(resolver);
+					SPtr<Object> iterable = iterableValue ? iterableValue->getValue() : nullptr;
 
-						SPtr<ExpressionEvaluator::LoopResolver> loopResolver = newS<ExpressionEvaluator::LoopResolver>(loopVarName, resolver);
+					if (instanceof<ConstIterable<Object>>(iterable)) {
+						SPtr<Lambda> loopEval = args.get<Lambda>(2);
+
+						SPtr<LoopResolver> loopResolver = newS<LoopResolver>(resolver);
 
 						UPtr<Value> finalValue = Value::Nil();
 
@@ -139,25 +194,22 @@ public:
 						UPtr<ConstIterator<SPtr<Object>>> iter = i->constIterator();
 						while (iter->hasNext()) {
 							SPtr<Object> val = iter->next();
-							loopResolver->setVar(val);
-
-							UPtr<Value> exprValue = evalExpression->evaluate(loopResolver, evalFlags);
-							if (finalValue->isNil())
-								finalValue = std::move(exprValue);
-							else
-								finalValue = finalValue->add(exprValue);
+							loopResolver->setVar(loopVarName, val, loopVar->getDomain());
+							loopEval->evaluate(loopResolver);
 						}
 
-						return finalValue;
+						return Value::of(loopResolver->getResult());
 					} else
 						throw EvaluationException(_HERE_, "generic for(): second argument is not iterable");
 				} else
 					throw EvaluationException(_HERE_, "for(): invalid number of arguments");
-			}
+			},
+			defaultNewFunctionInstance,
+			'\0', ';', ')'
 		));
 
-		emplaceKey<String>("assert", Function::impl<Object>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+		put("assert"_SPTR, Function::impl<Object>(
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, ArgList const& args) {
 				int nArgs = args.size();
 				for (int i = 0; i < nArgs - 1; i += 2) {
 					bool val = Value::isTrue(args.getNullable(i));
@@ -171,89 +223,123 @@ public:
 			}
 		));
 
-		emplaceKey<String>("@", Function::impl<String>(
-			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args) {
+		put("@"_SPTR, Function::impl<String>(
+			[](SPtr<Resolver> const& resolver, ArgList const& args) {
 				SPtr<String> pattern = args.get<String>(0);
 				SPtr<String> value = ExpressionEvaluator::interpolate(*pattern, resolver,
-							   (evalFlags & EXPR_IGNORE_UNDEFINED) ? true : false);
+							   true);
 				return Value::of(value);
 			}
 		));
 
-		emplaceKey<String>("$", Function::impl<String>(
-			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+		put("$"_SPTR, Function::impl<String>(
+			[](SPtr<Resolver> const& resolver, ArgList const& args) {
 				SPtr<String> varName = args.get<String>(0);
-				SPtr<Object> value = resolver->getVar(*varName);
+				SPtr<Object> value = resolver->getVar(*varName, ValueDomain::DEFAULT);
 				return value ? Value::of(value, varName) : Value::Nil(varName);
 			}
 		));
 
-		emplaceKey<String>("#", Function::impl<String>(
-			[](SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args) {
-				return ExpressionEvaluator::expressionValue(newS<ExpressionInputStream>(args.get<String>(0)), resolver, evalFlags);
+		put("#"_SPTR, Function::impl<String>(
+			[](SPtr<Resolver> const& resolver, ArgList const& args) {
+				return ExpressionEvaluator::expressionValue(newS<ExpressionInputStream>(args.get<String>(0)), resolver);
 			}
 		));
 
-		class ObjParseContext : public FunctionParseContext {
+		class ObjResolver : public Resolver {
 		private:
 			SPtr<Map<BasicString, Object>> _obj;
-			int _numVal;
+			SPtr<Resolver> _parentResolver;
 		public:
-			ObjParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName, SPtr<Resolver> const& resolver)
-			: FunctionParseContext(function, symbolName, resolver)
-			, _obj(newS<LinkedHashMap<BasicString, Object>>()) {}
+			ObjResolver(SPtr<Resolver> const& parentResolver)
+			: _obj(newS<LinkedHashMap<BasicString, Object>>())
+			, _parentResolver(parentResolver) {}
 
-			virtual void addArg(SPtr<Object> const& obj) override {
-				if (!instanceof<KeyValue<String>>(obj))
-					throw EvaluationException(_HERE_, "Object member not a key-value pair");
-				SPtr<KeyValue<String>> tuple = Class::cast<KeyValue<String>>(obj);
-				if (tuple->_global)
-					_resolver->setVar(*tuple->_key, tuple->_value);
-				else {
-					_obj->put(tuple->_key, tuple->_value);
-					_numVal++;
+			virtual ~ObjResolver() {};
+
+			virtual SPtr<Object> getVar(const String &key, ValueDomain domain) const override {
+				switch (domain) {
+					case ValueDomain::LOCAL:
+						return _parentResolver->getVar(key, domain);
+					case ValueDomain::DEFAULT: {
+						SPtr<Object> res =_obj->get(key);
+						if (res)
+							return res;
+						return _parentResolver->getVar(key, domain);
+					}
+					default:
+						throw EvaluationException(_HERE_, "Invalid value domain");
 				}
 			}
 
-			Class const& peekArg() {
-				return _function->getParamType(_numVal);
+			virtual bool isReadOnly(ValueDomain domain) const override {
+				return (domain == ValueDomain::DEFAULT) ? false : _parentResolver->isReadOnly(domain);
 			}
 
-			virtual UPtr<Value> evaluate(SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED) override {
-				return Value::of(_obj);
+			virtual void setVar(SPtr<String> const& key, SPtr<Object> const& value, ValueDomain domain) override {
+				switch (domain) {
+					case ValueDomain::LOCAL:
+						_parentResolver->setVar(key, value, domain);
+						break;
+					case ValueDomain::DEFAULT:
+
+						_obj->put(key, value);
+						break;
+					default:
+						throw EvaluationException(_HERE_, "Invalid value domain");
+				}
+			}
+
+			SPtr<Map<BasicString, Object>> getObj() {
+				return _obj;
 			}
 		};
 
-		emplaceKey<String>("::makeObj", Function::impl<KeyValue<String>>(
+		class ObjFunctionInstance : public FunctionInstance {
+		private:
+			SPtr<ObjResolver> _objResolver;
+		public:
+			ObjFunctionInstance(SPtr<Function> const& function, SPtr<String> const& symbolName, SPtr<Resolver> const& resolver)
+			: FunctionInstance(function, symbolName, resolver, nullptr)
+			, _objResolver(newS<ObjResolver>(resolver)) {
+				_argResolver = _objResolver;
+			}
+
+			virtual UPtr<Value> evaluate() override {
+				return Value::of(_objResolver->getObj());
+			}
+		};
+
+		emplaceKey<String>("::makeObj", Function::impl<Object>(
 			/* LCOV_EXCL_START */
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args SLIB_UNUSED) {
-				// unused, the parse context evaluates directly
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, ArgList const& args SLIB_UNUSED) {
+				// unused, the instance evaluates directly
 				return nullptr;
 			},
-			/* LCOV_EXCL_STOP */
 			[](SPtr<Function> const& function, SPtr<String> const& symbolName, SPtr<Resolver> const& resolver) {
-				return newU<ObjParseContext>(function, symbolName, resolver);
-			}
+				return newS<ObjFunctionInstance>(function, symbolName, resolver);
+			},
+			'(', ',', '}'
+			/* LCOV_EXCL_STOP */
 		));
 
 		emplaceKey<String>("::makeArray", Function::impl<Object>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED, EvalFlags evalFlags SLIB_UNUSED, ArgList const& args) {
+			[](SPtr<Resolver> const& resolver SLIB_UNUSED, ArgList const& args) {
 				SPtr<ArrayList<Object>> array = newS<ArrayList<Object>>();
 				for (size_t i = 0; i < args.size(); i++) {
 					SPtr<Object> e = args.getNullable(i);
 					array->add(e);
 				}
 				return Value::of(array);
-			}
+			},
+			defaultNewFunctionInstance,
+			'(', ',', ']'
 		));
 	}
 
-	virtual ~Builtins();
-};
-
 Builtins::~Builtins() {}
 
-UPtr<Map<String, Object>> ExpressionEvaluator::_builtins = newU<Builtins>();
+UPtr<Builtins> ExpressionEvaluator::_builtins = newU<Builtins>();
 
 } // namespace expr
 } // namespace slib

@@ -45,7 +45,7 @@ set(SLIB_SOURCES
 	slib/util/SystemInfo.cpp
 	slib/util/TemplateUtils.cpp
 	slib/util/expr/Builtins.cpp
-	slib/util/expr/Expression.cpp
+	slib/util/expr/Lambda.cpp
 	slib/util/expr/ExpressionEvaluator.cpp
 	slib/util/expr/ExpressionFormatter.cpp
 	slib/util/expr/ExpressionInputStream.cpp

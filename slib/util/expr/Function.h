@@ -71,33 +71,27 @@ public:
 	//virtual ConstIterator<SPtr<Object>> varargIterator() const = 0;
 };
 
-class FunctionArgs : public ArgList {
-public:
-	FunctionArgs(SPtr<String> const& symbolName)
-	: ArgList(symbolName) {}
-
-	/** @throws CastException */
-	void add(SPtr<Object> const& obj, SPtr<Function> const& function);
-
-	Class const& peek(SPtr<Function> const& function);
-};
-
-class FunctionParseContext;
-
 /** @throws EvaluationException */
-typedef std::function<UPtr<Value>(SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args)> Evaluate;
-typedef std::function<UPtr<FunctionParseContext>(SPtr<Function> const& function, SPtr<String> const& symbolName,
-												 SPtr<Resolver> const& resolver)> NewParseContext;
+typedef std::function<UPtr<Value>(SPtr<Resolver> const& resolver, ArgList const& args)> Evaluate;
 
-UPtr<FunctionParseContext> defaultNewParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName,
+class FunctionInstance;
+
+typedef std::function<SPtr<FunctionInstance>(SPtr<Function> const& function, SPtr<String> const& symbolName,
+											 SPtr<Resolver> const& resolver)> NewFunctionInstance;
+
+SPtr<FunctionInstance> defaultNewFunctionInstance(SPtr<Function> const& function, SPtr<String> const& symbolName,
 												  SPtr<Resolver> const& resolver);
 
-class Function : virtual public Object {
+class Function : public std::enable_shared_from_this<Function>, virtual public Object {
 public:
 	TYPE_INFO(Function, CLASS(Function), INHERITS(Object));
 public:
-	friend class FunctionParseContext;
+	const char _peekOverride;
+	const char _argSeparator;
+	const char _argClose;
 private:
+	const NewFunctionInstance _newFunctionInstance;
+
 	/** Number of fixed params */
 	size_t _fixedParams;
 
@@ -105,12 +99,17 @@ private:
 	UPtr<std::vector<Class>> _paramTypes;
 protected:
 	Evaluate _evaluate;
-	NewParseContext _newParseContext;
+
 public:
 	/** do NOT use directly, only public for make_shared */
-	Function(bool /* dontUse */, std::initializer_list<Class> argTypes, Evaluate evaluate, NewParseContext newParseContext)
-	: _evaluate(evaluate)
-	, _newParseContext(newParseContext) {
+	Function(bool /* dontUse */, std::initializer_list<Class> argTypes, Evaluate evaluate,
+			 NewFunctionInstance newFunctionInstance,
+			 char peekOverride, char argSeparator, char argClose) 
+	: _peekOverride(peekOverride)
+	, _argSeparator(argSeparator)
+	, _argClose(argClose)
+	, _newFunctionInstance(newFunctionInstance)
+	, _evaluate(evaluate) {
 		auto functionParams = argTypes.size();
 		if (functionParams > 0) {
 			_paramTypes = newU<std::vector<Class>>();
@@ -126,11 +125,22 @@ public:
 	}
 
 	template <typename ...Args>
-	static SPtr<Function> impl(Evaluate evaluate, NewParseContext newParsecontext = defaultNewParseContext) {
-		return newS<Function>(true, std::initializer_list<Class>({classOf<Args>::_class()...}), evaluate, newParsecontext);
+	static SPtr<Function> impl(Evaluate evaluate,
+							   NewFunctionInstance newFunctionInstance = defaultNewFunctionInstance,
+							   char peekOverride = '\0',
+							   char argSeparator = ',',
+							   char argClose = ')') {
+		return newS<Function>(true, std::initializer_list<Class>({classOf<Args>::_class()...}), evaluate,
+							  newFunctionInstance,
+							  peekOverride, argSeparator, argClose);
 	}
 
 	virtual ~Function() override;
+
+	SPtr<FunctionInstance> newInstance(SPtr<String> const& symbolName,
+									   SPtr<Resolver> const& resolver) {
+		return _newFunctionInstance(shared_from_this(), symbolName, resolver);
+	}
 
 	Class const& getParamType(size_t i) {
 		return (i < _fixedParams) ? (*_paramTypes)[i] : classOf<Object>::_class();
@@ -141,43 +151,36 @@ public:
 	}
 
 	/** @throws EvaluationException; */
-	UPtr<Value> evaluate(SPtr<Resolver> const& resolver, EvalFlags evalFlags, ArgList const& args) {
-		return _evaluate(resolver, evalFlags, args);
+	UPtr<Value> evaluate(SPtr<Resolver> const& resolver, ArgList const& args) {
+		return _evaluate(resolver, args);
 	}
 };
 
-class FunctionParseContext {
+class FunctionInstance : public ArgList {
 protected:
 	SPtr<Function> _function;
-	SPtr<Resolver> _resolver;
-	UPtr<FunctionArgs> _argList;
-public:
-	FunctionParseContext(SPtr<Function> const& function, SPtr<String> const& symbolName,
-						 SPtr<Resolver> const& resolver)
-	: _function(function)
-	, _resolver(resolver)
-	, _argList(newU<FunctionArgs>(symbolName)) {}
-
-	virtual ~FunctionParseContext() {};
-
-	static UPtr<FunctionParseContext> forFunction(SPtr<Function> const& function, SPtr<String> const& symbolName,
-												  SPtr<Resolver> const& resolver) {
-		return function->_newParseContext(function, symbolName, resolver);
-	}
+	SPtr<Resolver> _evalResolver;
+	SPtr<Resolver> _argResolver;
+protected:
+	Class const& peekArg();
 
 	/** @throws CastException */
-	virtual void addArg(SPtr<Object> const& obj) {
-		_argList->add(obj, _function);
-	}
+	virtual void addArg(SPtr<Object> const& obj);
+public:
+	FunctionInstance(SPtr<Function> const& function, SPtr<String> const& symbolName,
+					 SPtr<Resolver> evalResolver, SPtr<Resolver> argResolver)
+	: ArgList(symbolName)
+	, _function(function)
+	, _evalResolver(evalResolver)
+	, _argResolver(argResolver) {}
 
-	Class const& peekArg() {
-		return _argList->peek(_function);
-	}
+	void readArg(SPtr<ExpressionInputStream> const& input);
 
-	virtual UPtr<Value> evaluate(SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
-		return _function->evaluate(resolver, evalFlags, *_argList);
+	virtual UPtr<Value> evaluate() {
+		return _function->evaluate(_evalResolver, *this);
 	}
 };
+
 
 } // namespace expr
 } // namespace slib

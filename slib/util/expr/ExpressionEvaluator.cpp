@@ -8,8 +8,10 @@
 namespace slib {
 namespace expr {
 
-SPtr<Object> ExpressionEvaluator::InternalResolver::getVar(const String &key) const {
-	SPtr<Object> value = _externalResolver->getVar(key);
+Object Value::_void;
+
+SPtr<Object> ExpressionEvaluator::InternalResolver::getVar(const String &key, ValueDomain domain) const {
+	SPtr<Object> value = _externalResolver->getVar(key, domain);
 
 	/*HashMap<String, Object> *b = (HashMap<String, Object>*)_builtins.get();
 	b->forEach([](String const& key1, SPtr<Object> const& val) {
@@ -23,117 +25,6 @@ SPtr<Object> ExpressionEvaluator::InternalResolver::getVar(const String &key) co
 	//fmt::print("{}, {} -> {}\n", key, key.hashCode(), value ? value->getClass().getName().c_str() : "null");
 
 	return value;
-}
-
-ExpressionEvaluator::LoopResolver::~LoopResolver() {}
-
-UPtr<String> ExpressionEvaluator::strExpressionValue(SPtr<BasicString> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
-	return strExpressionValue(newS<ExpressionInputStream>(input), newS<InternalResolver>(resolver), evalFlags);
-}
-
-SPtr<Object> ExpressionEvaluator::expressionValue(const SPtr<BasicString> &input, SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
-	UPtr<Value> val = expressionValue(newS<ExpressionInputStream>(input), newS<InternalResolver>(resolver), evalFlags);
-	return val->_value;
-}
-
-// surrogate values for multi-char operators
-static const int OP_LTE = 500;
-static const int OP_GTE = 501;
-static const int OP_EQ = 502;
-static const int OP_NEQ = 503;
-
-UPtr<String> ExpressionEvaluator::strExpressionValue(const SPtr<ExpressionInputStream> &input, SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
-	SPtr<Value> val = expressionValue(input, resolver, evalFlags);
-	if (val->isNil()) {
-		if (evalFlags & EXPR_IGNORE_UNDEFINED)
-			return nullptr;
-		else
-			Value::checkNil(*val);
-	}
-	if (instanceof<Number>(val->_value)) {
-		double d = Class::cast<Number>(val->_value)->doubleValue();
-		if (Number::isMathematicalInteger(d))
-			return Long::toString((long)d);
-		else
-			return Double::toString(d);
-	} else
-		return val->_value->toString();
-}
-
-UPtr<Value> ExpressionEvaluator::expressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
-	input->skipBlanks();
-
-	UPtr<Value> val = prefixTermValue(input, resolver, evalFlags);
-	input->skipBlanks();
-	while (input->peek() == '+' || input->peek() == '-' ||
-		   input->peek() == '&' || input->peek() == '|' ||
-		   input->peek() == '<' || input->peek() == '>' || input->peek() == '~' ||
-		   input->peek() == '=' ) {
-		int op = input->readChar();
-		if (op == '<') {
-			if (input->peek() == '=') {
-				input->readChar();
-				op = OP_LTE;
-			}
-		} else if (op == '>') {
-			if (input->peek() == '=') {
-				input->readChar();
-				op = OP_GTE;
-			}
-		} else if (op == '=') {
-			if (input->peek() == '=') {
-				input->readChar();
-				op = OP_EQ;
-			}
-		} else if (op == '~') {
-			if (input->peek() == '=') {
-				input->readChar();
-				op = OP_NEQ;
-			} else
-				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '~{}'", input->peek()).c_str());
-		}
-
-		input->skipBlanks();
-		UPtr<Value> nextVal = prefixTermValue(input, resolver, evalFlags);
-		switch (op) {
-			case '+':
-				val = val->add(nextVal);
-				break;
-			case '-':
-				val = val->subtract(nextVal);
-				break;
-			case '&':
-				val = val->logicalAnd(nextVal);
-				break;
-			case '|':
-				val = val->logicalOr(nextVal);
-				break;
-			case '<':
-				val = val->lt(nextVal);
-				break;
-			case OP_LTE:
-				val = val->lte(nextVal);
-				break;
-			case '>':
-				val = val->gt(nextVal);
-				break;
-			case OP_GTE:
-				val = val->gte(nextVal);
-				break;
-			case OP_EQ:
-				val = val->eq(nextVal);
-				break;
-			case OP_NEQ:
-				val = val->neq(nextVal);
-				break;
-			default:
-				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
-		}
-
-		input->skipBlanks();
-	}
-
-	return Value::normalize(std::move(val));
 }
 
 /** States used by the string interpolator */
@@ -176,8 +67,7 @@ UPtr<String> ExpressionEvaluator::interpolate(String const& pattern, SPtr<Resolv
 				if (c == '}') {
 					SPtr<String> expr = pattern.substring(dollarBegin + 2, pos);
 					try {
-						UPtr<String> exprValue = strExpressionValue(newS<ExpressionInputStream>(expr), resolver,
-																	ignoreMissing ? EXPR_IGNORE_UNDEFINED : 0);
+						UPtr<String> exprValue = strExpressionValue(newS<ExpressionInputStream>(expr), resolver);
 						if ((!exprValue) && ignoreMissing)
 							return nullptr;
 						result.add(*exprValue);
@@ -227,14 +117,23 @@ private:
 	}
 public:
 	/** @throws EvaluationException */
-	void appendExpr(SPtr<String> expr, SPtr<Resolver> const& resolver, EvalFlags evalFlags) {
+	bool appendExpr(SPtr<String> expr, SPtr<Resolver> const& resolver) {
 		if (_result)
 			convertToString();
 
-		if (_strResult)
-			_strResult->add(ExpressionEvaluator::strExpressionValue(newS<ExpressionInputStream>(expr), resolver, evalFlags));
-		else
-			_result = ExpressionEvaluator::expressionValue(newS<ExpressionInputStream>(expr), newS<ExpressionEvaluator::InternalResolver>(resolver), evalFlags);
+		if (_strResult) {
+			UPtr<String> exprVal = ExpressionEvaluator::strExpressionValue(newS<ExpressionInputStream>(expr), resolver);
+			if (!exprVal)
+				return false;
+			_strResult->addStr(exprVal);
+		} else {
+			SPtr<Value> exprVal = ExpressionEvaluator::expressionValue(newS<ExpressionInputStream>(expr), newS<ExpressionEvaluator::InternalResolver>(resolver));
+			if (!exprVal)
+				return false;
+			_result = std::move(exprVal);
+		}
+
+		return true;
 	}
 
 	/** @throws EvaluationException */
@@ -273,75 +172,345 @@ public:
 
 /** @throws EvaluationException */
 SPtr<Object> ExpressionEvaluator::smartInterpolate(String const& pattern, SPtr<Resolver> const& resolver, bool ignoreMissing) {
-		ResultHolder result;
+	ResultHolder result;
 
-		InterState state = InterState::APPEND;
-		size_t pos = 0;
+	InterState state = InterState::APPEND;
+	size_t pos = 0;
 
-		size_t dollarBegin = 0;
-		char delim = 0;
+	size_t dollarBegin = 0;
+	char delim = 0;
 
-		while (pos < pattern.length()) {
-			char c = pattern.charAt(pos);
-			switch (state) {
-				case InterState::APPEND:
-					if (c == '$') {
-						state = InterState::DOLLAR;
-						dollarBegin = pos;
-						break;
-					}
-					result.add(c);
+	while (pos < pattern.length()) {
+		char c = pattern.charAt(pos);
+		switch (state) {
+			case InterState::APPEND:
+				if (c == '$') {
+					state = InterState::DOLLAR;
+					dollarBegin = pos;
 					break;
-				case InterState::DOLLAR:
-					if (c == '$') {
-						state = InterState::APPEND;
-						result.add('$');
-						break;
-					} else if (c == '{') {
-						state = InterState::READEXPR;
-						break;
+				}
+				result.add(c);
+				break;
+			case InterState::DOLLAR:
+				if (c == '$') {
+					state = InterState::APPEND;
+					result.add('$');
+					break;
+				} else if (c == '{') {
+					state = InterState::READEXPR;
+					break;
+				}
+				state = InterState::APPEND;
+				result.add('$').add(c);
+				break;
+			case InterState::READEXPR:
+				if (c == '}') {
+					UPtr<String> expr = pattern.substring(dollarBegin + 2, pos);
+					try {
+						result.appendExpr(std::move(expr), resolver);
+					} catch (MissingSymbolException const& e) {
+						if (ignoreMissing)
+							result.add("${").add(*expr).add('}');
+						else
+							throw;
+					} catch (NilValueException const& e) {
+						if (ignoreMissing)
+							result.add("${").add(*expr).add('}');
+						else
+							throw;
 					}
 					state = InterState::APPEND;
-					result.add('$').add(c);
-					break;
-				case InterState::READEXPR:
-					if (c == '}') {
-						UPtr<String> expr = pattern.substring(dollarBegin + 2, pos);
-						try {
-							result.appendExpr(std::move(expr), resolver,
-											  ignoreMissing ? EXPR_IGNORE_UNDEFINED : 0);
-						} catch (MissingSymbolException const& e) {
-							if (ignoreMissing)
-								result.add("${").add(*expr).add('}');
-							else
-								throw;
-						} catch (NilValueException const& e) {
-							if (ignoreMissing)
-								result.add("${").add(*expr).add('}');
-							else
-								throw;
-						}
-						state = InterState::APPEND;
-					} else if (c == '"' || c == '\'') {
-						delim = c;
-						state = InterState::STRING;
-					}
-					break;
-				case InterState::STRING:
-					if (c == delim) {
-						delim = 0;
-						state = InterState::READEXPR;
-					}
-					break;
-			}
-			pos++;
+				} else if (c == '"' || c == '\'') {
+					delim = c;
+					state = InterState::STRING;
+				}
+				break;
+			case InterState::STRING:
+				if (c == delim) {
+					delim = 0;
+					state = InterState::READEXPR;
+				}
+				break;
 		}
-
-		return result.toObject();
+		pos++;
 	}
 
-UPtr<Value> ExpressionEvaluator::prefixTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
-												 EvalFlags evalFlags) {
+	return result.toObject();
+}
+
+
+UPtr<String> ExpressionEvaluator::strExpressionValue(SPtr<BasicString> const& input, SPtr<Resolver> const& resolver) {
+	return strExpressionValue(newS<ExpressionInputStream>(input), newS<InternalResolver>(resolver));
+}
+
+SPtr<Object> ExpressionEvaluator::expressionValue(const SPtr<BasicString> &input, SPtr<Resolver> const& resolver) {
+	UPtr<Value> val = expressionValue(newS<ExpressionInputStream>(input), newS<InternalResolver>(resolver));
+	return val->_value;
+}
+
+// surrogate values for multi-char operators
+static const int OP_LTE = 500;
+static const int OP_GTE = 501;
+static const int OP_EQ = 502;
+static const int OP_NEQ = 503;
+
+UPtr<String> ExpressionEvaluator::strExpressionValue(const SPtr<ExpressionInputStream> &input, SPtr<Resolver> const& resolver) {
+	SPtr<Value> val = expressionValue(input, resolver);
+	if (val->isNil())
+			return nullptr;
+	if (val->isVoid())
+			return ""_UPTR;
+
+	if (instanceof<Number>(val->_value)) {
+		double d = Class::cast<Number>(val->_value)->doubleValue();
+		if (Number::isMathematicalInteger(d))
+			return Long::toString((long)d);
+		else
+			return Double::toString(d);
+	} else
+		return val->_value->toString();
+}
+
+static UPtr<Value> assignmentValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+static UPtr<Value> logicalTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+static UPtr<Value> eqTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+static UPtr<Value> relTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+static UPtr<Value> addTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+static UPtr<Value> termValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+static UPtr<Value> unaryValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+static UPtr<Value> factorValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+static UPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+static UPtr<Value> evaluateSymbol(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, ValueDomain domain);
+
+UPtr<Value> ExpressionEvaluator::expressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver) {
+	UPtr<Value> val = assignmentValue(input, resolver);
+	input->skipBlanks();
+	while (input->peek() == ',') {
+		input->readChar();
+
+		input->skipBlanks();
+		val = assignmentValue(input, resolver);
+	}
+
+	return Value::normalize(std::move(val));
+}
+
+UPtr<Value> ExpressionEvaluator::singleExpressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver) {
+	UPtr<Value> val = assignmentValue(input, resolver);
+
+	return Value::normalize(std::move(val));
+}
+
+static UPtr<Value> assignmentValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver) {
+	input->skipBlanks();
+
+	UPtr<Value> val = logicalTermValue(input, resolver);
+	input->skipBlanks();
+
+	char c = input->peek();
+	if (c != '=')
+		return val;
+	input->readChar();
+
+	input->skipBlanks();
+	UPtr<Value> assignVal = Value::normalize(logicalTermValue(input, resolver));
+
+	val->assign(assignVal->getValue());
+
+	return assignVal;
+}
+
+static UPtr<Value> logicalTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver) {
+	input->skipBlanks();
+
+	UPtr<Value> val = eqTermValue(input, resolver);
+	input->skipBlanks();
+	while (input->peek() == '&' || input->peek() == '|') {
+		int op = input->readChar();
+
+		input->skipBlanks();
+		UPtr<Value> nextVal = eqTermValue(input, resolver);
+		switch (op) {
+			case '&':
+				val = val->logicalAnd(nextVal);
+				break;
+			case '|':
+				val = val->logicalOr(nextVal);
+				break;
+			default:
+				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
+		}
+
+		input->skipBlanks();
+	}
+
+	return val;
+}
+
+static UPtr<Value> eqTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver) {
+	input->skipBlanks();
+
+	UPtr<Value> val = relTermValue(input, resolver);
+	input->skipBlanks();
+	while (input->peek() == '~' || input->peek() == '=' ) {
+		ssize_t beforeEquals = input->getIndex();
+		int op = input->readChar();
+		if (op == '=') {
+			if (input->peek() == '=') {
+				input->readChar();
+				op = OP_EQ;
+			} else {
+				// probably an assignment, pass up callstack
+				input->setIndex(beforeEquals);
+				break;
+			}
+		} else if (op == '~') {
+			if (input->peek() == '=') {
+				input->readChar();
+				op = OP_NEQ;
+			} else
+				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '~{}'", input->peek()).c_str());
+		}
+
+		input->skipBlanks();
+		UPtr<Value> nextVal = relTermValue(input, resolver);
+		switch (op) {
+			case OP_EQ:
+				val = val->eq(nextVal);
+				break;
+			case OP_NEQ:
+				val = val->neq(nextVal);
+				break;
+			default:
+				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
+		}
+
+		input->skipBlanks();
+	}
+
+	return val;
+}
+
+static UPtr<Value> relTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver) {
+	input->skipBlanks();
+
+	UPtr<Value> val = addTermValue(input, resolver);
+	input->skipBlanks();
+	while (input->peek() == '<' || input->peek() == '>') {
+		int op = input->readChar();
+		if (op == '<') {
+			if (input->peek() == '=') {
+				input->readChar();
+				op = OP_LTE;
+			}
+		} else if (op == '>') {
+			if (input->peek() == '=') {
+				input->readChar();
+				op = OP_GTE;
+			}
+		}
+
+		input->skipBlanks();
+		UPtr<Value> nextVal = addTermValue(input, resolver);
+		switch (op) {
+			case '<':
+				val = val->lt(nextVal);
+				break;
+			case OP_LTE:
+				val = val->lte(nextVal);
+				break;
+			case '>':
+				val = val->gt(nextVal);
+				break;
+			case OP_GTE:
+				val = val->gte(nextVal);
+				break;
+			default:
+				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
+		}
+
+		input->skipBlanks();
+	}
+
+	return val;
+}
+
+static UPtr<Value> addTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver) {
+	input->skipBlanks();
+
+	UPtr<Value> val = termValue(input, resolver);
+	while (input->peek() == '+' || input->peek() == '-' ) {
+		int op = input->readChar();
+
+		input->skipBlanks();
+		UPtr<Value> nextVal = termValue(input, resolver);
+
+		switch (op) {
+			case '+':
+				val = val->add(nextVal);
+				break;
+			case '-':
+				val = val->subtract(nextVal);
+				break;
+			default:
+				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
+		}
+
+		input->skipBlanks();
+	}
+
+	return val;
+}
+
+static UPtr<Value> termValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver) {
+	input->skipBlanks();
+	UPtr<Value> val = unaryValue(input, resolver);
+	input->skipBlanks();
+	while (input->peek() == '*' || input->peek() == '/' || input->peek() == '%') {
+		char op = input->readChar();
+		UPtr<Value> nextVal = unaryValue(input, resolver);
+		switch (op) {
+			case '*':
+				val = val->multiply(nextVal);
+				break;
+			case '/':
+				val = val->divide(nextVal);
+				break;
+			default:
+				val = val->remainder(nextVal);
+				break;
+		}
+		input->skipBlanks();
+	}
+	return val;
+}
+
+static void swallowSeparators(SPtr<ExpressionInputStream> const& input, SPtr<Function> const& func) {
+	char argSep = func->_argSeparator;
+	do {
+		input->skipBlanks();
+		switch (input->peek()) {
+			case ';':
+				if (argSep == ';') {
+					input->readChar();
+					input->skipBlanks();
+					continue;
+				}
+				return;
+			case ',':
+				if (argSep == ',') {
+					input->readChar();
+					input->skipBlanks();
+					continue;
+				}
+				return;
+			default:
+				return;
+		}
+	} while (true);
+}
+
+static UPtr<Value> unaryValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver) {
 	bool negative = false;
 	bool negate = false;
 
@@ -353,7 +522,7 @@ UPtr<Value> ExpressionEvaluator::prefixTermValue(SPtr<ExpressionInputStream> con
 		negate = true;
 	}
 
-	UPtr<Value> val = termValue(input, resolver, evalFlags);
+	UPtr<Value> val = factorValue(input, resolver);
 	if (negative)
 		val = val->inverse();
 	else if (negate)
@@ -362,101 +531,17 @@ UPtr<Value> ExpressionEvaluator::prefixTermValue(SPtr<ExpressionInputStream> con
 	return val;
 }
 
-UPtr<Value> ExpressionEvaluator::termValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
-										   EvalFlags evalFlags) {
-	input->skipBlanks();
-	UPtr<Value> val = factorValue(input, resolver, evalFlags);
-	input->skipBlanks();
-	while (input->peek() == '*' || input->peek() == '/' || input->peek() == '%') {
-		char op = input->readChar();
-		UPtr<Value> nextVal = factorValue(input, resolver, evalFlags);
-		if (op == '*')
-			val = val->multiply(nextVal);
-		else if (op == '/')
-			val = val->divide(nextVal);
-		else
-			val = val->remainder(nextVal);
-		input->skipBlanks();
-	}
-	return val;
-}
-
-static void swallowSeparators(SPtr<ExpressionInputStream> const& input, bool newlineIsSep) {
-	do {
-		input->skipBlanks();
-		switch (input->peek()) {
-			case '\n':
-				if (!newlineIsSep)
-					return;
-				/* fall through */
-			case ',':
-				input->readChar();
-				input->skipBlanks();
-				continue;
-			default:
-				return;
-		}
-	} while (true);
-}
-
-typedef struct {
-	char functionClose;
-	bool newlineIsSep;
-} FunctionParseOpts;
-
-static void resetFPO(FunctionParseOpts &fpo) {
-	fpo = {
-		.functionClose = ')',
-		.newlineIsSep = false
-	};
-}
-
-/** @throws EvaluationException */
-static UPtr<Value> checkedExpressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
-										  EvalFlags evalFlags) {
-	try {
-		return ExpressionEvaluator::expressionValue(input, resolver, evalFlags);
-	} catch (MissingSymbolException const& e) {
-		if (evalFlags & EXPR_IGNORE_UNDEFINED) {
-			return Value::Nil(e.getSymbolName());
-		} else
-			throw;
-	} catch (NilValueException const& e) {
-		if (evalFlags & EXPR_IGNORE_UNDEFINED) {
-			return Value::Nil();
-		} else
-			throw;
-	}
-}
-
-UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
-											 EvalFlags evalFlags) {
+static UPtr<Value> factorValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver) {
 	input->skipBlanks();
 
-	PrimaryType primaryType = PrimaryType::NONE;
-	UPtr<Value> val = primaryValue(input, resolver, primaryType, evalFlags);
-
-	FunctionParseOpts fpo = {
-		.functionClose = ')',
-		.newlineIsSep = false
-	};
+	UPtr<Value> val = primaryValue(input, resolver);
 
 	// override next char to skip to function
 	char peekOverride = '\0';
 
-	switch(primaryType) {
-		case OBJ_CONSTRUCTOR:
-			fpo.functionClose = '}';
-			fpo.newlineIsSep = true;
-			peekOverride = '(';
-			break;
-		case ARRAY_CONSTRUCTOR:
-			fpo.functionClose = ']';
-			fpo.newlineIsSep = true;
-			peekOverride = '(';
-			break;
-		default:
-			break;
+	if (val->is<Function>()) {
+		SPtr<Function> func = Class::cast<Function>(val->getValue());
+		peekOverride = func->_peekOverride;
 	}
 
 	bool inFactor = true;
@@ -471,7 +556,7 @@ UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 			case '[':
 				{
 					input->readChar();
-					UPtr<Value> arg = expressionValue(input, resolver, evalFlags);
+					UPtr<Value> arg = ExpressionEvaluator::expressionValue(input, resolver);
 					input->skipBlanks();
 					if (input->peek() != ']')
 						throw SyntaxErrorException(_HERE_, "Missing right bracket after array argument");
@@ -481,61 +566,32 @@ UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 				break;
 			case '(':
 				{
-					if (!instanceof<Function>(val->_value))
+					if (!val->is<Function>())
 						throw EvaluationException(_HERE_, "Not a function");
 
 					input->readChar();
 
 					// evaluate function
-					SPtr<Function> func = Class::cast<Function>(val->_value);
+					SPtr<Function> func = Class::cast<Function>(val->getValue());
 					SPtr<String> symbolName = val->getName();
 					if (!symbolName)
 						symbolName = "<unknown>"_SPTR;
-					UPtr<FunctionParseContext> parseCtx = FunctionParseContext::forFunction(func, symbolName, resolver);
+
+					SPtr<FunctionInstance> fInstance = func->newInstance(symbolName, resolver);
 
 					do {
-						swallowSeparators(input, fpo.newlineIsSep);
+						swallowSeparators(input, func);
 
-						if (input->peek() == fpo.functionClose) {
+						if (input->peek() == func->_argClose) {
 							input->readChar();
-							resetFPO(fpo);
 							break;
 						}
 
-						Class const& argClass = parseCtx->peekArg();
-						if (argClass == classOf<Expression>::_class())
-							parseCtx->addArg(input->readArg());
-						else {
-							parseCtx->addArg(checkedExpressionValue(input, resolver, evalFlags)->_value);
-						}
+						fInstance->readArg(input);
 					} while (true);
 
-					/*// check for 0 parameters
-					input->skipBlanks();
-					if (input->peek() == functionClose) {
-						functionClose = ')';
-						input->readChar();
-					} else {
-						do {
-							Class const& argClass = params.peek();
-							if (argClass == classOf<Expression>::_class())
-								params.add(input->readArg());
-							else
-								params.add(expressionValue(input, resolver)->_value);
-							input->skipBlanks();
-							if (input->peek() == ',') {
-								input->readChar();
-								continue;
-							} else if (input->peek() == functionClose) {
-								functionClose = ')';
-								input->readChar();
-								break;
-							} else
-								throw SyntaxErrorException(_HERE_, fmt::format("Missing right paranthesis after function arguments ({})", *symbolName).c_str());
-						} while (true);
-					}*/
 					try {
-						val = parseCtx->evaluate(resolver, evalFlags);
+						val = fInstance->evaluate();
 					} catch (ClassCastException const& e) {
 						throw CastException(_HERE_, fmt::format("Cast exception in function {}()", *symbolName).c_str(), e);
 					}
@@ -550,20 +606,9 @@ UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 						input->skipBlanks();
 						if (input->peek() != '.') {
 							// reached end of dotted and still nothing
-							Value::checkNil(*val);
+							// continue with nil
 						}
 					}
-				}
-				break;
-			case '=':
-				{
-					if (primaryType != PrimaryType::LITERAL)
-						throw SyntaxErrorException(_HERE_, "Object key must be literal");
-					input->readChar();
-					SPtr<String> tupleName = Class::cast<String>(val->getValue());
-					UPtr<Value> tupleVal = checkedExpressionValue(input, resolver, evalFlags);
-					val = Value::of(newS<KeyValue<String>>(tupleName, val->isGlobal(), tupleVal->getValue()));
-					inFactor = false;
 				}
 				break;
 			default:
@@ -575,43 +620,30 @@ UPtr<Value> ExpressionEvaluator::factorValue(SPtr<ExpressionInputStream> const& 
 	return val;
 }
 
-UPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver, PrimaryType &type,
-											  EvalFlags evalFlags) {
-	type = PrimaryType::NONE;
-	bool global = false;
-
+static UPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver) {
 	input->skipBlanks();
+	ValueDomain domain = input->readDomain();
 	char ch = input->peek();
-	if (ch == ':') {
-		global = true;
-		input->readChar();
-		ch = input->peek();
-	}
-	if (std::isdigit(ch)) {
-		type = PrimaryType::VALUE;
+
+	if (std::isdigit(ch))
 		return input->readNumber();
-	} else if (ExpressionInputStream::isIdentifierStart(ch)) {
-		type = PrimaryType::VALUE;
-		return evaluateSymbol(input, resolver, type, global);
-	} else if (ch == '(') {
-		type = PrimaryType::VALUE;
+	else if (ExpressionInputStream::isIdentifierStart(ch))
+		return evaluateSymbol(input, resolver, domain);
+	else if (ch == '(') {
 		input->readChar();
-		UPtr<Value> val = expressionValue(input, resolver, evalFlags);
+		UPtr<Value> val = ExpressionEvaluator::expressionValue(input, resolver);
 		input->skipBlanks();
 		if (input->peek() != ')')
 			throw SyntaxErrorException(_HERE_, "Missing right paranthesis");
 		input->readChar();
 		return val;
-	} else if (ch == '\'' || ch == '\"') {
-		type = PrimaryType::VALUE;
+	} else if (ch == '\'' || ch == '\"')
 		return input->readString();
-	} else if (ch == '{') {
-		type = PrimaryType::OBJ_CONSTRUCTOR;
-		return Value::of(resolver->getVar("::makeObj"));
-	} else if (ch == '[') {
-		type = PrimaryType::ARRAY_CONSTRUCTOR;
-		return Value::of(resolver->getVar("::makeArray"));
-	} else if (ch == CharacterIterator::DONE)
+	else if (ch == '{')
+		return Value::of(resolver->getVar("::makeObj", ValueDomain::DEFAULT));
+	else if (ch == '[')
+		return Value::of(resolver->getVar("::makeArray", ValueDomain::DEFAULT));
+	else if (ch == CharacterIterator::DONE)
 		throw SyntaxErrorException(_HERE_, "Unexpected end of stream");
 	else if (ch == ')')
 		throw SyntaxErrorException(_HERE_, "Extra right paranthesis");
@@ -621,23 +653,16 @@ UPtr<Value> ExpressionEvaluator::primaryValue(SPtr<ExpressionInputStream> const&
 		throw SyntaxErrorException(_HERE_, fmt::format("Unexpected character '{}' encountered", ch).c_str());
 }
 
-UPtr<Value> ExpressionEvaluator::evaluateSymbol(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
-												PrimaryType &type, bool global) {
-	UPtr<String> symbolName = input->readName();
+static UPtr<Value> evaluateSymbol(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
+								  ValueDomain domain) {
+	SPtr<String> symbolName = input->readName();
 	input->skipBlanks();
 	char ch = input->peek();
-	if (ch == '=') {
-		// tuple key literal
-		type = PrimaryType::LITERAL;
-		return Value::scopedOf(std::move(symbolName), global);
-	} else {
-		type = PrimaryType::VALUE;
-		SPtr<Object> value = resolver->getVar(*symbolName);
-		if (value)
-			return newU<Value>(value, std::move(symbolName));
-		return Value::Nil(std::move(symbolName));
-	}
+	SPtr<Object> value = (ch == '=') ? nullptr : resolver->getVar(*symbolName, domain);
+	return Value::assignableOf(newS<ResolverAssignable>(resolver, symbolName, domain),
+							   value, symbolName, domain);
 }
 
 } // namespace expr
 } // namespace slib
+

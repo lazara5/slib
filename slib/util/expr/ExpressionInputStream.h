@@ -9,7 +9,7 @@
 #include "slib/lang/StringBuilder.h"
 #include "slib/util/expr/Exceptions.h"
 #include "slib/util/expr/Value.h"
-#include "slib/util/expr/Expression.h"
+#include "slib/util/expr/Lambda.h"
 
 #include <cctype>
 
@@ -28,8 +28,7 @@ private:
 	UPtr<String> readReal();
 
 	static inline bool isSpace(char ch) {
-		// newline is NOT whitespace
-		return (ch == ' ') || (ch == '\t') || (ch == '\r');
+		return (ch == ' ') || (ch == '\t') || (ch == '\r') || (ch == '\n');
 	}
 public:
 	ExpressionInputStream(SPtr<BasicString> const& s)
@@ -37,10 +36,10 @@ public:
 		_currentChar = _iter.first();
 	}
 
-	void skipBlanks() {
+	void skipBlanks(); /* {
 		while ((_currentChar != CharacterIterator::DONE) && (isSpace(_currentChar)))
 			_currentChar = _iter.next();
-	}
+	}*/
 
 	void reset() {
 		_currentChar = _iter.first();
@@ -61,6 +60,11 @@ public:
 		return _iter.getIndex();
 	}
 
+	void setIndex(ssize_t pos) {
+		_iter.setIndex(pos);
+		_currentChar = _iter.current();
+	}
+
 	static bool isIdentifierStart(char ch) {
 		return (ch == '_') || isSpecialNameChar(ch) || std::isalpha(ch);
 	}
@@ -78,10 +82,12 @@ public:
 	UPtr<Value> readString();
 
 	/** @throws SyntaxErrorException */
-	SPtr<Expression> readArg();
+	SPtr<Lambda> readArgLambda(char argSep, char argEnd);
 
 	/** @throws EvaluationException */
 	UPtr<Value> readNumber();
+
+	ValueDomain readDomain();
 };
 
 } // namespace expr

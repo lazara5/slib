@@ -17,33 +17,71 @@
 namespace slib {
 namespace expr {
 
+class Assignable {
+public:
+	virtual ~Assignable() {};
+
+	virtual void assign(SPtr<Object> const& value) = 0;
+};
+
+class ResolverAssignable : public Assignable {
+private:
+	SPtr<Resolver> _resolver;
+	SPtr<String> _name;
+	ValueDomain _domain;
+public:
+	ResolverAssignable(SPtr<Resolver> resolver, SPtr<String> name, ValueDomain domain)
+	: _resolver(resolver)
+	, _name(name)
+	, _domain(domain) {}
+
+	virtual void assign(SPtr<Object> const& value) override {
+		_resolver->setVar(_name, value, _domain);
+	}
+};
+
 class Value {
 friend class ExpressionEvaluator;
 friend class ResultHolder;
 private:
 	SPtr<Object> _value;
 	SPtr<String> _name;
-	bool _global;
+	SPtr<Assignable> _assignable;
+	ValueDomain _domain;
+private:
+	static Object _void;
 public:
-	Value(SPtr<Object> const& value, SPtr<String> const& name = nullptr, bool global = false)
+	Value(SPtr<Assignable> assignable, SPtr<Object> const& value,
+		  SPtr<String> const& name = nullptr, ValueDomain domain = ValueDomain::DEFAULT)
 	: _value(value)
 	, _name(name)
-	, _global(global) {}
+	, _assignable(std::move(assignable))
+	, _domain(domain) {}
 
-	static UPtr<Value> of(SPtr<Object> const& value) {
-		return newU<Value>(value);
+	Value(Value const& other)
+	: _value(other._value)
+	, _name(other._name)
+	, _assignable(other._assignable)
+	, _domain(other._domain) {}
+
+	static SPtr<Object> voidObj() {
+		return SPtr<Object>(SPtr<Object>{}, &_void);
+	}
+
+	UPtr<Value> clone() const {
+		return newU<Value>(*this);
 	}
 
 	static UPtr<Value> of(double value) {
-		return newU<Value>(newS<Double>(value));
+		return newU<Value>(nullptr, newS<Double>(value));
 	}
 
 	static UPtr<Value> of(int64_t value) {
-		return newU<Value>(newS<Long>(value));
+		return newU<Value>(nullptr, newS<Long>(value));
 	}
 
 	static UPtr<Value> of(bool value) {
-		return newU<Value>(newS<Long>(value));
+		return newU<Value>(nullptr, newS<Long>(value));
 	}
 
 	static UPtr<Value> normalize(UPtr<Value> && val) {
@@ -66,19 +104,32 @@ public:
 	}*/
 
 	static UPtr<Value> of(SPtr<Object> const& value, SPtr<String> const& varName) {
-		return newU<Value>(value, varName);
+		return newU<Value>(nullptr, value, varName);
 	}
 
-	static UPtr<Value> scopedOf(SPtr<Object> const& value, bool global) {
-		return newU<Value>(value, nullptr, global);
+	static UPtr<Value> of(SPtr<Object> const& value,
+						  ValueDomain domain = ValueDomain::DEFAULT) {
+		return newU<Value>(nullptr, value, nullptr, domain);
+	}
+
+	static UPtr<Value> assignableOf(SPtr<Assignable> assignable,
+									SPtr<Object> const& value, SPtr<String> const& varName,
+									ValueDomain domain = ValueDomain::DEFAULT) {
+		return newU<Value>(assignable, value, varName, domain);
+	}
+
+	static UPtr<Value> assignableOf(SPtr<Assignable> assignable,
+									SPtr<Object> const& value,
+									ValueDomain domain = ValueDomain::DEFAULT) {
+		return newU<Value>(assignable, value, nullptr, domain);
 	}
 
 	static UPtr<Value> Nil() {
-		return newU<Value>(nullptr, nullptr);
+		return newU<Value>(nullptr, nullptr, nullptr);
 	}
 
 	static UPtr<Value> Nil(SPtr<String> const& varName) {
-		return newU<Value>(nullptr, varName);
+		return newU<Value>(nullptr, nullptr, varName);
 	}
 
 	SPtr<Object> getValue() const {
@@ -89,45 +140,42 @@ public:
 		return _name;
 	}
 
-	bool isGlobal() const {
-		return _global;
-	}
-
-	UPtr<Value> clone() {
-		return newU<Value>(_value, _name);
+	ValueDomain getDomain() const {
+		return _domain;
 	}
 
 	bool isNil() const {
 		return !_value;
 	}
 
-	/** @throws EvaluationException */
-	static void checkNil(SPtr<Object> const& value, SPtr<String> const& name) {
-		if (!value) {
-			if (name)
-				throw MissingSymbolException(_HERE_, name);
-			else
-				throw NilValueException(_HERE_);
-		}
+	bool isVoid() const {
+		return (_value.get() == &_void);
 	}
 
-	/** @throws EvaluationException */
-	static void checkNil(Value const& v) {
-		checkNil(v._value, v._name);
+	template <class T>
+	bool is() const {
+		return instanceof<T>(_value);
+	}
+
+	void assign(SPtr<Object> const& value) {
+		if (_assignable)
+			_assignable->assign(value);
+		else
+			throw EvaluationException(_HERE_, "Can only assign to lvalues");
 	}
 
 	/** @throws EvaluationException */
 	static UPtr<String> asString(SPtr<Object> const& value, SPtr<String> const& name = nullptr) {
+		if (!value)
+			return nullptr;
 		if (instanceof<Number>(value)) {
 			double d = (Class::castPtr<Number>(value))->doubleValue();
 			if (Number::isMathematicalInteger(d))
 				return Long::toString((long) d);
 			else
 				return Double::toString(d);
-		} else {
-			checkNil(value, name);
+		} else
 			return value->toString();
-		}
 	}
 
 	/** @throws EvaluationException */
@@ -137,7 +185,8 @@ public:
 
 	/** @throws EvaluationException */
 	UPtr<Value> inverse() {
-		checkNil(*this);
+		if (isNil())
+			return Value::Nil();
 		if (instanceof<Number>(_value)) {
 			Number *n = Class::castPtr<Number>(_value);
 			return Value::of(-n->doubleValue());
@@ -166,13 +215,17 @@ public:
 
 	/** @throws EvaluationException */
 	UPtr<Value> logicalNegate() {
-		return newU<Value>(newS<Integer>(isTrue(_value) ? 0 : 1));
+		return Value::of(newS<Integer>(isTrue(_value) ? 0 : 1));
 	}
 
 	/** @throws EvaluationException */
 	UPtr<Value> add(UPtr<Value> const& other) {
-		checkNil(*this);
-		checkNil(*other);
+		if (isNil() || (other->isNil()))
+			return Value::Nil();
+		if (isVoid())
+			return other->clone();
+		if (other->isVoid())
+			return clone();
 		if (instanceof<Number>(_value)) {
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
@@ -186,7 +239,7 @@ public:
 				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
 				StringBuilder result(*v1);
 				result += *v2;
-				return newU<Value>(result.toString());
+				return Value::of(result.toString());
 			} else
 				throw EvaluationException(_HERE_, "+", _value->getClass(), other->_value->getClass());
 		} else
@@ -195,8 +248,8 @@ public:
 
 	/** @throws EvaluationException */
 	UPtr<Value> subtract(UPtr<Value> const& other) {
-		checkNil(*this);
-		checkNil(*other);
+		if (isNil() || (other->isNil()))
+			return Value::Nil();
 		if (instanceof<Number>(_value)) {
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
@@ -218,8 +271,8 @@ public:
 
 	/** @throws EvaluationException */
 	UPtr<Value> multiply(UPtr<Value> const& other) {
-		checkNil(*this);
-		checkNil(*other);
+		if (isNil() || (other->isNil()))
+			return Value::Nil();
 		if (instanceof<Number>(_value)) {
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
@@ -233,8 +286,8 @@ public:
 
 	/** @throws EvaluationException */
 	UPtr<Value> divide(UPtr<Value> const& other) {
-		checkNil(*this);
-		checkNil(*other);
+		if (isNil() || (other->isNil()))
+			return Value::Nil();
 		if (instanceof<Number>(_value)) {
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
@@ -248,8 +301,8 @@ public:
 
 	/** @throws EvaluationException */
 	UPtr<Value> remainder(UPtr<Value> const& other) {
-		checkNil(*this);
-		checkNil(*other);
+		if (isNil() || (other->isNil()))
+			return Value::Nil();
 		if (instanceof<Number>(_value)) {
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
@@ -263,8 +316,8 @@ public:
 
 	/** @throws EvaluationException */
 	UPtr<Value> gt(UPtr<Value> const& other) {
-		checkNil(*this);
-		checkNil(*other);
+		if (isNil() || (other->isNil()))
+			return Value::Nil();
 		if (instanceof<Number>(_value)) {
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
@@ -285,8 +338,8 @@ public:
 
 	/** @throws EvaluationException */
 	UPtr<Value> gte(UPtr<Value> const& other) {
-		checkNil(*this);
-		checkNil(*other);
+		if (isNil() || (other->isNil()))
+			return Value::Nil();
 		if (instanceof<Number>(_value)) {
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
@@ -307,8 +360,8 @@ public:
 
 	/** @throws EvaluationException */
 	UPtr<Value> lt(UPtr<Value> const& other) {
-		checkNil(*this);
-		checkNil(*other);
+		if (isNil() || (other->isNil()))
+			return Value::Nil();
 		if (instanceof<Number>(_value)) {
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
@@ -329,8 +382,8 @@ public:
 
 	/** @throws EvaluationException */
 	UPtr<Value> lte(UPtr<Value> const& other) {
-		checkNil(*this);
-		checkNil(*other);
+		if (isNil() || (other->isNil()))
+			return Value::Nil();
 		if (instanceof<Number>(_value)) {
 			Number *v1 = Class::castPtr<Number>(_value);
 			if (instanceof<Number>(other->_value)) {
@@ -395,16 +448,16 @@ private:
 public:
 	/** @throws EvaluationException */
 	UPtr<Value> index(UPtr<Value> const& arg) {
-		checkNil(*this);
-		checkNil(*arg);
+		if (isNil() || arg->isNil())
+			return Value::Nil();
 		if (instanceof<Map<BasicString, Object>>(_value)) {
 			return newU<Value>(
-				(Class::castPtr<Map<BasicString, Object>>(_value))->get(*Class::castPtr<String>(arg->_value))
+				nullptr, (Class::castPtr<Map<BasicString, Object>>(_value))->get(*Class::castPtr<String>(arg->_value))
 			);
 		} else if (instanceof<Map<Object, Object>>(_value)) {
 			SPtr<Object> val = (Class::castPtr<Map<Object, Object>>(_value))->get(*(arg->_value));
 			if (val)
-				return newU<Value>(std::move(val));
+				return newU<Value>(nullptr, std::move(val));
 
 			// expression indices are internally normalized to Long. Retry with Double
 			if (arg->_value->getClass() == classOf<Long>::_class()) {
@@ -418,7 +471,7 @@ public:
 			int64_t i = getIndex(arg);
 			if ((i < 0) || (i >= (int64_t)list->size()))
 				throw EvaluationException(_HERE_, "Array index out of bounds");
-			return newU<Value>(list->get((int)i));
+			return newU<Value>(nullptr, list->get((int)i));
 		} else
 			throw EvaluationException(_HERE_, "[]", _value->getClass());
 	}
@@ -429,43 +482,21 @@ public:
 			// maybe it is a dotted variable name
 			if (!_name) {
 				// this is not a named variable, no dotted expression possible
-				checkNil(*this);
+				return Value::Nil();
 			}
 			SPtr<String> dottedName = newS<String>(fmt::format("{}.{}", *_name, *memberName));
-			SPtr<Object> val = resolver->getVar(*dottedName);
+			SPtr<Object> val = resolver->getVar(*dottedName, ValueDomain::DEFAULT);
 			if (val)
-				return newU<Value>(val);
+				return newU<Value>(nullptr, val);
 			return Nil(dottedName);
 		} else {
 			if (instanceof<Resolver>(_value))
-				return newU<Value>((Class::cast<Resolver>(_value))->getVar(*memberName), memberName);
+				return newU<Value>(nullptr, (Class::cast<Resolver>(_value))->getVar(*memberName, ValueDomain::DEFAULT), memberName);
 			else if (instanceof<Map<BasicString, Object>>(_value)) {
-				return newU<Value>((Class::cast<Map<BasicString, Object>>(_value))->get(*memberName), memberName);
+				return newU<Value>(nullptr, (Class::cast<Map<BasicString, Object>>(_value))->get(*memberName), memberName);
 			} else
 				throw EvaluationException(_HERE_, ".", _value->getClass());
 		}
-	}
-};
-template <class K>
-class KeyValue : virtual public Object {
-public:
-	TYPE_INFO(KeyValue, CLASS(KeyValue<K>), INHERITS(Object));
-public:
-	const SPtr<K> _key;
-	const bool _global;
-	const SPtr<Object> _value;
-
-	KeyValue(SPtr<K> const& key, bool global, SPtr<Object> const& value)
-	: _key(key)
-	, _global(global)
-	, _value(value) {}
-
-	virtual UPtr<String> toString() const override {
-		StringBuilder sb("<");
-		if (_global)
-			sb.add(':');
-		sb.add(slib::toString(_key)).add('=').add(slib::toString(_value));
-		return sb.add('>').toString();
 	}
 };
 

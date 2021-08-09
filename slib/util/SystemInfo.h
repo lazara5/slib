@@ -46,7 +46,9 @@ public:
 
 class EnvResolver : public expr::Resolver {
 public:
-	virtual SPtr<Object> getVar(String const& key) const override {
+	virtual SPtr<Object> getVar(String const& key, expr::ValueDomain valueDomain) const override {
+		if (valueDomain != expr::ValueDomain::DEFAULT)
+			return nullptr;
 		char *var = getenv(key.c_str());
 		return var ? newS<String>(var) : nullptr;
 	}

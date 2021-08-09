@@ -69,7 +69,7 @@ ConfigLoader::ConfigResolver::ConfigResolver() {
 	}
 }
 
-SPtr<Object> ConfigLoader::ConfigResolver::getVar(String const& key) const {
+SPtr<Object> ConfigLoader::ConfigResolver::getVar(String const& key, ValueDomain domain) const {
 	if (StringView::equals(key, "_EXEDIR"_SV)) {
 		return _exeDir;
 	} else if (StringView::equals(key, "_CWD"_SV)) {
@@ -88,8 +88,9 @@ ConfigLoader::ConfigLoader(SPtr<String> const& confFileName, SPtr<String> const&
 	(*_quickResolver).add(newS<ConfigResolver>())
 	.add("env"_SPTR, newS<EnvResolver>());
 
-	(*_resolver).add(_quickResolver)
-	.add(_vars, Resolver::Mode::WRITABLE);
+	(*_resolver)
+		.add(_quickResolver)
+		.add(_vars, ValueDomain::LOCAL);
 
 	_searchPaths.add(newS<StringPair>("/etc"_SPTR, nullptr));
 	_searchPaths.add(newS<StringPair>("${_EXEDIR}/conf"_SPTR, "${_EXEDIR}"_SPTR));
@@ -155,8 +156,7 @@ SPtr<Config> ConfigLoader::load(bool quick) {
 
 		_vars->clear();
 		SPtr<Object> parsedConfig = ExpressionEvaluator::expressionValue(configText,
-			quick ? _quickResolver : _resolver,
-			quick ? EXPR_IGNORE_UNDEFINED : 0);
+			quick ? _quickResolver : _resolver);
 		if (!parsedConfig)
 			throw InitException(_HERE_, "Error parsing config");
 		if (!instanceof<Map<BasicString, Object>>(*parsedConfig))

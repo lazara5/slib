@@ -14,7 +14,12 @@
 namespace slib {
 namespace expr {
 
+class Function;
+
 class Builtins : public HashMap<String, Object> {
+public:
+	const SPtr<Function> _objectConstructor;
+	const SPtr<Function> _arrayConstructor;
 public:
 	Builtins();
 	virtual ~Builtins();
@@ -23,9 +28,9 @@ public:
 class ExpressionEvaluator {
 friend class Expression;
 friend class ResultHolder;
+public:
+	static const UPtr<Builtins> _builtins;
 private:
-	static UPtr<Builtins> _builtins;
-
 	class InternalResolver : public Resolver {
 	private:
 		SPtr<Resolver> const& _externalResolver;

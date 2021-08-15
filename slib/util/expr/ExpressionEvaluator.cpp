@@ -332,10 +332,10 @@ static UPtr<Value> logicalTermValue(SPtr<ExpressionInputStream> const& input, SP
 		UPtr<Value> nextVal = eqTermValue(input, resolver);
 		switch (op) {
 			case '&':
-				val = val->logicalAnd(nextVal);
+				val = Value::logicalAnd(std::move(val), std::move(nextVal));
 				break;
 			case '|':
-				val = val->logicalOr(nextVal);
+				val = Value::logicalOr(std::move(val), std::move(nextVal));
 				break;
 			default:
 				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
@@ -447,7 +447,7 @@ static UPtr<Value> addTermValue(SPtr<ExpressionInputStream> const& input, SPtr<R
 
 		switch (op) {
 			case '+':
-				val = val->add(nextVal);
+				val = Value::add(std::move(val), std::move(nextVal));
 				break;
 			case '-':
 				val = val->subtract(nextVal);
@@ -640,9 +640,9 @@ static UPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, SPtr<R
 	} else if (ch == '\'' || ch == '\"')
 		return input->readString();
 	else if (ch == '{')
-		return Value::of(resolver->getVar("::makeObj", ValueDomain::DEFAULT));
+		return Value::of(ExpressionEvaluator::_builtins->_objectConstructor);
 	else if (ch == '[')
-		return Value::of(resolver->getVar("::makeArray", ValueDomain::DEFAULT));
+		return Value::of(ExpressionEvaluator::_builtins->_arrayConstructor);
 	else if (ch == CharacterIterator::DONE)
 		throw SyntaxErrorException(_HERE_, "Unexpected end of stream");
 	else if (ch == ')')

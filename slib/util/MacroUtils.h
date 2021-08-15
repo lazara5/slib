@@ -80,4 +80,18 @@
 /** Forces packed data structures */
 #define SLIB_PACKED __attribute__((__packed__))
 
+/**
+ * Hint to the compiler that the expression e is likely to be true
+ *
+ * @param e  Expression
+ */
+#define SLIB_LIKELY(e) __builtin_expect((e), 1)
+
+/**
+ * Hint to the compiler that the expression e is likely to be false
+ *
+ * @param e  Expression
+ */
+#define SLIB_UNLIKELY(e) __builtin_expect((e), 0)
+
 #endif // H_SLIB_UTIL_MACROUTILS_H

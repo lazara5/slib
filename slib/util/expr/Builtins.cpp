@@ -12,12 +12,101 @@
 namespace slib {
 namespace expr {
 
-Builtins::Builtins() {
+class ObjResolver : public Resolver {
+private:
+	SPtr<Map<BasicString, Object>> _obj;
+	SPtr<Resolver> _parentResolver;
+public:
+	ObjResolver(SPtr<Resolver> const& parentResolver)
+	: _obj(newS<LinkedHashMap<BasicString, Object>>())
+	, _parentResolver(parentResolver) {}
+
+	virtual ~ObjResolver() {};
+
+	virtual SPtr<Object> getVar(const String &key, ValueDomain domain) const override {
+		switch (domain) {
+			case ValueDomain::LOCAL:
+				return _parentResolver->getVar(key, domain);
+			case ValueDomain::DEFAULT: {
+				SPtr<Object> res =_obj->get(key);
+				if (res)
+					return res;
+				return _parentResolver->getVar(key, domain);
+			}
+			default:
+				throw EvaluationException(_HERE_, "Invalid value domain");
+		}
+	}
+
+	virtual bool isReadOnly(ValueDomain domain) const override {
+		return (domain == ValueDomain::DEFAULT) ? false : _parentResolver->isReadOnly(domain);
+	}
+
+	virtual void setVar(SPtr<String> const& key, SPtr<Object> const& value, ValueDomain domain) override {
+		switch (domain) {
+			case ValueDomain::LOCAL:
+				_parentResolver->setVar(key, value, domain);
+				break;
+			case ValueDomain::DEFAULT:
+
+				_obj->put(key, value);
+				break;
+			default:
+				throw EvaluationException(_HERE_, "Invalid value domain");
+		}
+	}
+
+	SPtr<Map<BasicString, Object>> getObj() {
+		return _obj;
+	}
+};
+
+class ObjFunctionInstance : public FunctionInstance {
+private:
+	SPtr<ObjResolver> _objResolver;
+public:
+	ObjFunctionInstance(SPtr<Function> const& function, SPtr<String> const& symbolName, SPtr<Resolver> const& resolver)
+	: FunctionInstance(function, symbolName, resolver, nullptr)
+	, _objResolver(newS<ObjResolver>(resolver)) {
+		_argResolver = _objResolver;
+	}
+
+	virtual UPtr<Value> evaluate() override {
+		return Value::of(_objResolver->getObj());
+	}
+};
+
+Builtins::Builtins()
+: _objectConstructor(Function::impl<Object>(
+		/* LCOV_EXCL_START */
+		[](SPtr<Resolver> const& resolver SLIB_UNUSED, ArgList const& args SLIB_UNUSED) {
+			// unused, the instance evaluates directly
+			return nullptr;
+		},
+		[](SPtr<Function> const& function, SPtr<String> const& symbolName, SPtr<Resolver> const& resolver) {
+			return newS<ObjFunctionInstance>(function, symbolName, resolver);
+		},
+		'(', ',', '}'
+		/* LCOV_EXCL_STOP */
+	))
+, _arrayConstructor(Function::impl<Object>(
+		[](SPtr<Resolver> const& resolver SLIB_UNUSED, ArgList const& args) {
+			SPtr<ArrayList<Object>> array = newS<ArrayList<Object>>();
+			for (size_t i = 0; i < args.size(); i++) {
+				SPtr<Object> e = args.getNullable(i);
+				array->add(e);
+			}
+			return Value::of(array);
+		},
+		defaultNewFunctionInstance,
+		'(', ',', ']'
+	)) {
 		// constants
 		emplace<String, Boolean>("true", true);
 		emplace<String, Boolean>("false", false);
 		put("nil"_SPTR, nullptr);
 
+		// Math library
 		SPtr<Map<BasicString, Object>> math = newS<HashMap<BasicString, Object>>();
 		put("math"_SPTR, math);
 
@@ -226,8 +315,7 @@ Builtins::Builtins() {
 		put("@"_SPTR, Function::impl<String>(
 			[](SPtr<Resolver> const& resolver, ArgList const& args) {
 				SPtr<String> pattern = args.get<String>(0);
-				SPtr<String> value = ExpressionEvaluator::interpolate(*pattern, resolver,
-							   true);
+				SPtr<String> value = ExpressionEvaluator::interpolate(*pattern, resolver, true);
 				return Value::of(value);
 			}
 		));
@@ -245,101 +333,11 @@ Builtins::Builtins() {
 				return ExpressionEvaluator::expressionValue(newS<ExpressionInputStream>(args.get<String>(0)), resolver);
 			}
 		));
-
-		class ObjResolver : public Resolver {
-		private:
-			SPtr<Map<BasicString, Object>> _obj;
-			SPtr<Resolver> _parentResolver;
-		public:
-			ObjResolver(SPtr<Resolver> const& parentResolver)
-			: _obj(newS<LinkedHashMap<BasicString, Object>>())
-			, _parentResolver(parentResolver) {}
-
-			virtual ~ObjResolver() {};
-
-			virtual SPtr<Object> getVar(const String &key, ValueDomain domain) const override {
-				switch (domain) {
-					case ValueDomain::LOCAL:
-						return _parentResolver->getVar(key, domain);
-					case ValueDomain::DEFAULT: {
-						SPtr<Object> res =_obj->get(key);
-						if (res)
-							return res;
-						return _parentResolver->getVar(key, domain);
-					}
-					default:
-						throw EvaluationException(_HERE_, "Invalid value domain");
-				}
-			}
-
-			virtual bool isReadOnly(ValueDomain domain) const override {
-				return (domain == ValueDomain::DEFAULT) ? false : _parentResolver->isReadOnly(domain);
-			}
-
-			virtual void setVar(SPtr<String> const& key, SPtr<Object> const& value, ValueDomain domain) override {
-				switch (domain) {
-					case ValueDomain::LOCAL:
-						_parentResolver->setVar(key, value, domain);
-						break;
-					case ValueDomain::DEFAULT:
-
-						_obj->put(key, value);
-						break;
-					default:
-						throw EvaluationException(_HERE_, "Invalid value domain");
-				}
-			}
-
-			SPtr<Map<BasicString, Object>> getObj() {
-				return _obj;
-			}
-		};
-
-		class ObjFunctionInstance : public FunctionInstance {
-		private:
-			SPtr<ObjResolver> _objResolver;
-		public:
-			ObjFunctionInstance(SPtr<Function> const& function, SPtr<String> const& symbolName, SPtr<Resolver> const& resolver)
-			: FunctionInstance(function, symbolName, resolver, nullptr)
-			, _objResolver(newS<ObjResolver>(resolver)) {
-				_argResolver = _objResolver;
-			}
-
-			virtual UPtr<Value> evaluate() override {
-				return Value::of(_objResolver->getObj());
-			}
-		};
-
-		emplaceKey<String>("::makeObj", Function::impl<Object>(
-			/* LCOV_EXCL_START */
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED, ArgList const& args SLIB_UNUSED) {
-				// unused, the instance evaluates directly
-				return nullptr;
-			},
-			[](SPtr<Function> const& function, SPtr<String> const& symbolName, SPtr<Resolver> const& resolver) {
-				return newS<ObjFunctionInstance>(function, symbolName, resolver);
-			},
-			'(', ',', '}'
-			/* LCOV_EXCL_STOP */
-		));
-
-		emplaceKey<String>("::makeArray", Function::impl<Object>(
-			[](SPtr<Resolver> const& resolver SLIB_UNUSED, ArgList const& args) {
-				SPtr<ArrayList<Object>> array = newS<ArrayList<Object>>();
-				for (size_t i = 0; i < args.size(); i++) {
-					SPtr<Object> e = args.getNullable(i);
-					array->add(e);
-				}
-				return Value::of(array);
-			},
-			defaultNewFunctionInstance,
-			'(', ',', ']'
-		));
 	}
 
 Builtins::~Builtins() {}
 
-UPtr<Builtins> ExpressionEvaluator::_builtins = newU<Builtins>();
+const UPtr<Builtins> ExpressionEvaluator::_builtins = newU<Builtins>();
 
 } // namespace expr
 } // namespace slib

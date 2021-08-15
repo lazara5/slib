@@ -44,10 +44,10 @@ class Value {
 friend class ExpressionEvaluator;
 friend class ResultHolder;
 private:
-	SPtr<Object> _value;
-	SPtr<String> _name;
-	SPtr<Assignable> _assignable;
-	ValueDomain _domain;
+	const SPtr<Object> _value;
+	const SPtr<String> _name;
+	const SPtr<Assignable> _assignable;
+	const ValueDomain _domain;
 private:
 	static Object _void;
 public:
@@ -58,18 +58,8 @@ public:
 	, _assignable(std::move(assignable))
 	, _domain(domain) {}
 
-	Value(Value const& other)
-	: _value(other._value)
-	, _name(other._name)
-	, _assignable(other._assignable)
-	, _domain(other._domain) {}
-
 	static SPtr<Object> voidObj() {
 		return SPtr<Object>(SPtr<Object>{}, &_void);
-	}
-
-	UPtr<Value> clone() const {
-		return newU<Value>(*this);
 	}
 
 	static UPtr<Value> of(double value) {
@@ -165,7 +155,7 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	static UPtr<String> asString(SPtr<Object> const& value, SPtr<String> const& name = nullptr) {
+	static UPtr<String> asString(SPtr<Object> const& value) {
 		if (!value)
 			return nullptr;
 		if (instanceof<Number>(value)) {
@@ -180,7 +170,7 @@ public:
 
 	/** @throws EvaluationException */
 	UPtr<String> asString() {
-		return asString(_value, _name);
+		return asString(_value);
 	}
 
 	/** @throws EvaluationException */
@@ -219,31 +209,31 @@ public:
 	}
 
 	/** @throws EvaluationException */
-	UPtr<Value> add(UPtr<Value> const& other) {
-		if (isNil() || (other->isNil()))
+	static UPtr<Value> add(UPtr<Value> first, UPtr<Value> second) {
+		if (first->isNil() || (second->isNil()))
 			return Value::Nil();
-		if (isVoid())
-			return other->clone();
-		if (other->isVoid())
-			return clone();
-		if (instanceof<Number>(_value)) {
-			Number *v1 = Class::castPtr<Number>(_value);
-			if (instanceof<Number>(other->_value)) {
-				Number *v2 = Class::castPtr<Number>(other->_value);
+		if (first->isVoid())
+			return second;
+		if (second->isVoid())
+			return first;
+		if (instanceof<Number>(first->_value)) {
+			Number *v1 = Class::castPtr<Number>(first->_value);
+			if (instanceof<Number>(second->_value)) {
+				Number *v2 = Class::castPtr<Number>(second->_value);
 				return Value::of(v1->doubleValue() + v2->doubleValue());
 			} else
-				throw EvaluationException(_HERE_, "+", _value->getClass(), other->_value->getClass());
-		} else if (instanceof<BasicString>(_value)) {
-			BasicString *v1 = Class::castPtr<BasicString>(_value);
-			if (instanceof<BasicString>(other->_value)) {
-				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
+				throw EvaluationException(_HERE_, "+", first->_value->getClass(), second->_value->getClass());
+		} else if (instanceof<BasicString>(first->_value)) {
+			BasicString *v1 = Class::castPtr<BasicString>(first->_value);
+			if (instanceof<BasicString>(second->_value)) {
+				BasicString *v2 = Class::castPtr<BasicString>(second->_value);
 				StringBuilder result(*v1);
 				result += *v2;
 				return Value::of(result.toString());
 			} else
-				throw EvaluationException(_HERE_, "+", _value->getClass(), other->_value->getClass());
+				throw EvaluationException(_HERE_, "+", first->_value->getClass(), second->_value->getClass());
 		} else
-			throw EvaluationException(_HERE_, "+", _value->getClass(), other->_value->getClass());
+			throw EvaluationException(_HERE_, "+", first->_value->getClass(), second->_value->getClass());
 	}
 
 	/** @throws EvaluationException */
@@ -261,12 +251,12 @@ public:
 			throw EvaluationException(_HERE_, "-", _value->getClass(), other->_value->getClass());
 	}
 
-	UPtr<Value> logicalAnd(UPtr<Value> &other) {
-		return (isTrue(_value) ? std::move(other) : clone());
+	static UPtr<Value> logicalAnd(UPtr<Value> first, UPtr<Value> second) {
+		return (isTrue(first->_value) ? std::move(second) : std::move(first));
 	}
 
-	UPtr<Value> logicalOr(UPtr<Value> &other) {
-		return (isTrue(_value) ? clone() : std::move(other));
+	static UPtr<Value> logicalOr(UPtr<Value> first, UPtr<Value> second) {
+		return (isTrue(first->_value) ? std::move(first) : std::move(second));
 	}
 
 	/** @throws EvaluationException */

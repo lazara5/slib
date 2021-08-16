@@ -31,24 +31,26 @@ public:
 				SPtr<Object> res =_obj->get(key);
 				if (res)
 					return res;
-				return _parentResolver->getVar(key, domain);
 			}
+			/* fall through */
+			case ValueDomain::GLOBAL:
+				return _parentResolver->getVar(key, domain);
 			default:
 				throw EvaluationException(_HERE_, "Invalid value domain");
 		}
 	}
 
-	virtual bool isReadOnly(ValueDomain domain) const override {
-		return (domain == ValueDomain::DEFAULT) ? false : _parentResolver->isReadOnly(domain);
+	virtual bool isWritable(ValueDomain domain) const override {
+		return (domain == ValueDomain::DEFAULT) ? true : _parentResolver->isWritable(domain);
 	}
 
 	virtual void setVar(SPtr<String> const& key, SPtr<Object> const& value, ValueDomain domain) override {
 		switch (domain) {
 			case ValueDomain::LOCAL:
+			case ValueDomain::GLOBAL:
 				_parentResolver->setVar(key, value, domain);
 				break;
 			case ValueDomain::DEFAULT:
-
 				_obj->put(key, value);
 				break;
 			default:
@@ -86,7 +88,7 @@ Builtins::Builtins()
 		[](SPtr<Function> const& function, SPtr<String> const& symbolName, SPtr<Resolver> const& resolver) {
 			return newS<ObjFunctionInstance>(function, symbolName, resolver);
 		},
-		'(', ',', '}'
+		',', '}'
 		/* LCOV_EXCL_STOP */
 	))
 , _arrayConstructor(Function::impl<Object>(
@@ -99,13 +101,8 @@ Builtins::Builtins()
 			return Value::of(array);
 		},
 		defaultNewFunctionInstance,
-		'(', ',', ']'
+		',', ']'
 	)) {
-		// constants
-		emplace<String, Boolean>("true", true);
-		emplace<String, Boolean>("false", false);
-		put("nil"_SPTR, nullptr);
-
 		// Math library
 		SPtr<Map<BasicString, Object>> math = newS<HashMap<BasicString, Object>>();
 		put("math"_SPTR, math);
@@ -213,14 +210,15 @@ Builtins::Builtins()
 					case ValueDomain::LOCAL:
 						return _locals->get(key);
 					case ValueDomain::DEFAULT:
+					case ValueDomain::GLOBAL:
 						return _parentResolver->getVar(key, domain);
 					default:
 						throw EvaluationException(_HERE_, "Invalid value domain");
 				}
 			}
 
-			virtual bool isReadOnly(ValueDomain domain) const override {
-				return (domain == ValueDomain::LOCAL) ? false : _parentResolver->isReadOnly(domain);
+			virtual bool isWritable(ValueDomain domain) const override {
+				return (domain == ValueDomain::LOCAL) ? true : _parentResolver->isWritable(domain);
 			}
 
 			virtual void setVar(SPtr<String> const& key, SPtr<Object> const& value, ValueDomain domain) override {
@@ -232,6 +230,7 @@ Builtins::Builtins()
 						_locals->put(key, value);
 						break;
 					case ValueDomain::DEFAULT:
+					case ValueDomain::GLOBAL:
 						_parentResolver->setVar(key, value, domain);
 						break;
 					default:
@@ -294,7 +293,7 @@ Builtins::Builtins()
 					throw EvaluationException(_HERE_, "for(): invalid number of arguments");
 			},
 			defaultNewFunctionInstance,
-			'\0', ';', ')'
+			';', ')'
 		));
 
 		put("assert"_SPTR, Function::impl<Object>(
@@ -315,8 +314,12 @@ Builtins::Builtins()
 		put("@"_SPTR, Function::impl<String>(
 			[](SPtr<Resolver> const& resolver, ArgList const& args) {
 				SPtr<String> pattern = args.get<String>(0);
-				SPtr<String> value = ExpressionEvaluator::interpolate(*pattern, resolver, true);
-				return Value::of(value);
+				try {
+					SPtr<String> value = ExpressionEvaluator::interpolate(*pattern, resolver, false);
+					return Value::of(value);
+				} catch (NullPointerException const&) {
+					return Value::Nil();
+				}
 			}
 		));
 

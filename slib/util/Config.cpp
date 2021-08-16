@@ -90,7 +90,7 @@ ConfigLoader::ConfigLoader(SPtr<String> const& confFileName, SPtr<String> const&
 
 	(*_resolver)
 		.add(_quickResolver)
-		.add(_vars, ValueDomain::LOCAL);
+		.add(_vars, ValueDomain::LOCAL, Resolver::Mode::WRITABLE);
 
 	_searchPaths.add(newS<StringPair>("/etc"_SPTR, nullptr));
 	_searchPaths.add(newS<StringPair>("${_EXEDIR}/conf"_SPTR, "${_EXEDIR}"_SPTR));

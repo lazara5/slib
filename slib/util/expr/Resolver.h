@@ -17,6 +17,7 @@ namespace slib {
 namespace expr {
 
 enum class ValueDomain : uint8_t {
+	GLOBAL,
 	DEFAULT,
 	LOCAL,
 	MAX,
@@ -24,7 +25,7 @@ enum class ValueDomain : uint8_t {
 };
 
 const std::array<ValueDomain, static_cast<uint8_t>(ValueDomain::MAX)> allValueDomains = {
-	ValueDomain::DEFAULT, ValueDomain::LOCAL
+	ValueDomain::GLOBAL, ValueDomain::DEFAULT, ValueDomain::LOCAL
 };
 
 class Resolver : virtual public Object {
@@ -46,8 +47,8 @@ public:
 	 */
 	virtual SPtr<Object> getVar(String const& key, ValueDomain domain) const = 0;
 
-	virtual bool isReadOnly(ValueDomain domain SLIB_UNUSED) const {
-		return true;
+	virtual bool isWritable(ValueDomain domain SLIB_UNUSED) const {
+		return false;
 	}
 
 	virtual void setVar(SPtr<String> const& key SLIB_UNUSED, SPtr<Object> const& value SLIB_UNUSED, ValueDomain domain SLIB_UNUSED) {
@@ -61,25 +62,43 @@ public:
 private:
 	SPtr<Map<String, Object>> _map;
 	ValueDomain _writableDomain;
+	bool _domains[static_cast<uint8_t>(ValueDomain::MAX)];
+	bool _writable;
 public:
-	MapResolver(SPtr<Map<String, Object>> map, ValueDomain writableDomain = ValueDomain::NONE)
+	MapResolver(SPtr<Map<String, Object>> map, ValueDomain domain = ValueDomain::DEFAULT, Mode mode = Mode::READ_ONLY)
 	: _map(map)
-	, _writableDomain(writableDomain) {}
+	, _writable(mode == Mode::WRITABLE) {
+		memset(_domains, 0, sizeof(_domains));
+		switch (domain) {
+			case ValueDomain::GLOBAL:
+			case ValueDomain::DEFAULT:
+				_domains[static_cast<uint8_t>(ValueDomain::GLOBAL)] = true;
+				_domains[static_cast<uint8_t>(ValueDomain::DEFAULT)] = true;
+				break;
+			case ValueDomain::LOCAL:
+				_domains[static_cast<uint8_t>(ValueDomain::LOCAL)] = true;
+				break;
+			default:
+				throw EvaluationException(_HERE_, "Invalid value domain");
+		}
+	}
 
 	virtual ~MapResolver() override;
 
 	virtual SPtr<Object> getVar(const String &key, ValueDomain domain) const override {
-		if (domain != ValueDomain::DEFAULT)
+		uint8_t iDomain = static_cast<uint8_t>(domain);
+		if (!_domains[iDomain])
 			return nullptr;
 		return _map->get(key);
 	}
 
-	virtual bool isReadOnly(ValueDomain domain) const override {
-		return _writableDomain != domain;
+	virtual bool isWritable(ValueDomain domain) const override {
+		uint8_t iDomain = static_cast<uint8_t>(domain);
+		return (_domains[iDomain] && _writable);
 	}
 
 	virtual void setVar(SPtr<String> const& key, SPtr<Object> const& value, ValueDomain domain) override {
-		if (isReadOnly(domain))
+		if (!isWritable(domain))
 			return Resolver::setVar(key, value, domain);
 		_map->put(key, value);
 	}
@@ -108,7 +127,7 @@ public:
 		_resolvers->add(resolver);
 		for (ValueDomain domain : allValueDomains) {
 			uint8_t iDomain = static_cast<uint8_t>(domain);
-			if ((!_writableResolver[iDomain]) && (!resolver->isReadOnly(domain)))
+			if ((!_writableResolver[iDomain]) && (resolver->isWritable(domain)))
 				_writableResolver[iDomain] = resolver;
 		}
 		return *this;
@@ -119,12 +138,13 @@ public:
 		return *this;
 	}
 
-	ChainedResolver& add(SPtr<Map<String, Object>> map, ValueDomain writableDomain = ValueDomain::NONE) {
-		SPtr<Resolver> resolver = newS<MapResolver>(map, writableDomain);
+	ChainedResolver& add(SPtr<Map<String, Object>> map, ValueDomain domain = ValueDomain::DEFAULT,
+						 Resolver::Mode mode = Resolver::Mode::WRITABLE) {
+		SPtr<Resolver> resolver = newS<MapResolver>(map, domain, mode);
 		_resolvers->add(resolver);
 		for (ValueDomain domain : allValueDomains) {
 			uint8_t iDomain = static_cast<uint8_t>(domain);
-			if ((!_writableResolver[iDomain]) && (!resolver->isReadOnly(domain)))
+			if ((!_writableResolver[iDomain]) && (resolver->isWritable(domain)))
 				_writableResolver[iDomain] = resolver;
 		}
 		return *this;
@@ -145,9 +165,9 @@ public:
 
 	virtual SPtr<Object> getVar(const String &key, ValueDomain domain) const override;
 
-	virtual bool isReadOnly(ValueDomain domain) const override {
+	virtual bool isWritable(ValueDomain domain) const override {
 		uint8_t iDomain = static_cast<uint8_t>(domain);
-		return !((bool)_writableResolver[iDomain]);
+		return (bool)_writableResolver[iDomain];
 	}
 
 	virtual void setVar(SPtr<String> const& key, SPtr<Object> const& value, ValueDomain domain) override;

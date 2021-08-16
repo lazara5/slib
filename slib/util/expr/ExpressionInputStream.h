@@ -17,29 +17,24 @@ namespace slib {
 namespace expr {
 
 class ExpressionInputStream {
+public:
+	enum class ReservedWord { NONE, TRUE, FALSE, NIL };
 private:
 	StringCharacterIterator _iter;
 	char _currentChar;
 private:
 	static bool isSpecialNameChar(char ch) {
-		return (ch == '$') || (ch == '#') || (ch == '?') || (ch == '@');
+		return (ch == '$') || (ch == '#') || (ch == '@');
 	}
 
 	UPtr<String> readReal();
-
-	static inline bool isSpace(char ch) {
-		return (ch == ' ') || (ch == '\t') || (ch == '\r') || (ch == '\n');
-	}
 public:
 	ExpressionInputStream(SPtr<BasicString> const& s)
 	:_iter(s) {
 		_currentChar = _iter.first();
 	}
 
-	void skipBlanks(); /* {
-		while ((_currentChar != CharacterIterator::DONE) && (isSpace(_currentChar)))
-			_currentChar = _iter.next();
-	}*/
+	void skipBlanks();
 
 	void reset() {
 		_currentChar = _iter.first();
@@ -74,9 +69,7 @@ public:
 	 * @return name
 	 * @throws SyntaxErrorException
 	 */
-	UPtr<String> readName();
-
-	UPtr<String> readDottedNameRemainder();
+	UPtr<String> readName(ReservedWord &reservedWord);
 
 	/** @throws SyntaxErrorException */
 	UPtr<Value> readString();

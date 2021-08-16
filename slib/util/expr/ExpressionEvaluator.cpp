@@ -71,11 +71,6 @@ UPtr<String> ExpressionEvaluator::interpolate(String const& pattern, SPtr<Resolv
 						if ((!exprValue) && ignoreMissing)
 							return nullptr;
 						result.add(*exprValue);
-					} catch (MissingSymbolException const& e) {
-						if (ignoreMissing) {
-							result.add("${").add(*expr).add('}');
-						} else
-							throw;
 					} catch (NilValueException const& e) {
 						if (ignoreMissing) {
 							result.add("${").add(*expr).add('}');
@@ -208,11 +203,6 @@ SPtr<Object> ExpressionEvaluator::smartInterpolate(String const& pattern, SPtr<R
 					UPtr<String> expr = pattern.substring(dollarBegin + 2, pos);
 					try {
 						result.appendExpr(std::move(expr), resolver);
-					} catch (MissingSymbolException const& e) {
-						if (ignoreMissing)
-							result.add("${").add(*expr).add('}');
-						else
-							throw;
 					} catch (NilValueException const& e) {
 						if (ignoreMissing)
 							result.add("${").add(*expr).add('}');
@@ -313,11 +303,15 @@ static UPtr<Value> assignmentValue(SPtr<ExpressionInputStream> const& input, SPt
 	input->readChar();
 
 	input->skipBlanks();
-	UPtr<Value> assignVal = Value::normalize(logicalTermValue(input, resolver));
+	UPtr<Value> assignVal = Value::normalize(assignmentValue(input, resolver));
 
 	val->assign(assignVal->getValue());
 
 	return assignVal;
+}
+
+static bool isLogicalOp(char c) {
+	return (c == '&') || (c == '|') || (c == '?');
 }
 
 static UPtr<Value> logicalTermValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver) {
@@ -325,7 +319,7 @@ static UPtr<Value> logicalTermValue(SPtr<ExpressionInputStream> const& input, SP
 
 	UPtr<Value> val = eqTermValue(input, resolver);
 	input->skipBlanks();
-	while (input->peek() == '&' || input->peek() == '|') {
+	while (isLogicalOp(input->peek())) {
 		int op = input->readChar();
 
 		input->skipBlanks();
@@ -336,6 +330,9 @@ static UPtr<Value> logicalTermValue(SPtr<ExpressionInputStream> const& input, SP
 				break;
 			case '|':
 				val = Value::logicalOr(std::move(val), std::move(nextVal));
+				break;
+			case '?':
+				val = Value::selectOr(std::move(val), std::move(nextVal));
 				break;
 			default:
 				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
@@ -532,6 +529,8 @@ static UPtr<Value> unaryValue(SPtr<ExpressionInputStream> const& input, SPtr<Res
 }
 
 static UPtr<Value> factorValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver) {
+	using ReservedWord = ExpressionInputStream::ReservedWord;
+
 	input->skipBlanks();
 
 	UPtr<Value> val = primaryValue(input, resolver);
@@ -600,7 +599,10 @@ static UPtr<Value> factorValue(SPtr<ExpressionInputStream> const& input, SPtr<Re
 			case '.':
 				{
 					input->readChar();
-					SPtr<String> name = input->readName();
+					ReservedWord reservedWord;
+					SPtr<String> name = input->readName(reservedWord);
+					if (reservedWord != ReservedWord::NONE)
+						throw SyntaxErrorException(_HERE_, fmt::format("Symbol name expected, reserved word '{}' found instead", *name).c_str());
 					val = val->member(name, resolver);
 					if (val->isNil()) {
 						input->skipBlanks();
@@ -655,8 +657,27 @@ static UPtr<Value> primaryValue(SPtr<ExpressionInputStream> const& input, SPtr<R
 
 static UPtr<Value> evaluateSymbol(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver,
 								  ValueDomain domain) {
-	SPtr<String> symbolName = input->readName();
+	using ReservedWord = ExpressionInputStream::ReservedWord;
+
+	ReservedWord reservedWord;
+	SPtr<String> symbolName = input->readName(reservedWord);
 	input->skipBlanks();
+	if (reservedWord != ReservedWord::NONE) {
+		if (domain == ValueDomain::DEFAULT) {
+			switch (reservedWord) {
+				case ReservedWord::FALSE:
+					return Value::of(newS<Boolean>(false));
+				case ReservedWord::TRUE:
+					return Value::of(newS<Boolean>(true));
+				case ReservedWord::NIL:
+					return Value::Nil();
+				case ReservedWord::NONE:
+					break;
+			}
+		} else {
+			throw SyntaxErrorException(_HERE_, fmt::format("Symbol name expected, reserved word '{}' found instead", *symbolName).c_str());
+		}
+	}
 	char ch = input->peek();
 	SPtr<Object> value = (ch == '=') ? nullptr : resolver->getVar(*symbolName, domain);
 	return Value::assignableOf(newS<ResolverAssignable>(resolver, symbolName, domain),

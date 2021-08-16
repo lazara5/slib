@@ -15,6 +15,8 @@ UPtr<Value> Lambda::evaluate(SPtr<Resolver> const& resolver) {
 }
 
 UPtr<Value> Lambda::readLiteral() {
+	using ReservedWord = ExpressionInputStream::ReservedWord;
+
 	SPtr<ExpressionInputStream> input = newS<ExpressionInputStream>(_text);
 
 	input->skipBlanks();
@@ -22,7 +24,10 @@ UPtr<Value> Lambda::readLiteral() {
 	char ch = input->peek();
 
 	if (ExpressionInputStream::isIdentifierStart(ch)) {
-		UPtr<String> symbolName = input->readName();
+		ReservedWord reservedWord;
+		UPtr<String> symbolName = input->readName(reservedWord);
+		if (reservedWord != ReservedWord::NONE)
+			throw SyntaxErrorException(_HERE_, fmt::format("Symbol name expected, reserved word '{}' found instead", *symbolName).c_str());
 		input->skipBlanks();
 		if (input->peek() == CharacterIterator::DONE)
 			return Value::of(std::move(symbolName), domain);

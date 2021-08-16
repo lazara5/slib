@@ -118,7 +118,6 @@ TEST(ConfigTests, BasicTests)
 
 	STRCMP_EQUAL("str123", config->getString("testName")->c_str());
 	CHECK_EQUAL(3, config->getLong("testLong1"));
-	CHECK_EQUAL(3, config->getLong("testLong1"));
 	CHECK_EQUAL(5, config->getLong("testObj.testLong2"));
 	CHECK_EQUAL(4.7, config->getDouble("testObj.testDouble1"));
 	CHECK_EQUAL(true, config->getBool("testObj.testBool1"));

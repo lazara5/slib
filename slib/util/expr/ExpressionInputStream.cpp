@@ -74,8 +74,8 @@ void ExpressionInputStream::skipBlanks() {
 					case CharacterIterator::DONE:
 						return;
 					case '\n':
-						// Single line comments do NOT swallow \n !
-						return;
+						state = BSSTATE::SCAN;
+						break;
 					default:
 						break;
 				}
@@ -86,30 +86,212 @@ void ExpressionInputStream::skipBlanks() {
 	}
 }
 
-UPtr<String> ExpressionInputStream::readName() {
-	skipBlanks();
-	char ch = peek();
-	if (!isIdentifierStart(ch))
-		throw SyntaxErrorException(_HERE_, fmt::format("Identifier start expected, got '{}'", ch).c_str());
-	StringBuilder str;
-	while ((ch != CharacterIterator::DONE) &&
-		   ((std::isalnum(ch) || ch == '_' || isSpecialNameChar(ch)))) {
-		str.add(readChar());
-		ch = peek();
-	}
-	return str.toString();
-}
+UPtr<String> ExpressionInputStream::readName(ReservedWord &reservedWord) {
+	enum class NSTATE {
+		SCAN, READ,
+		FALSE_F, FALSE_A, FALSE_L, FALSE_S, FALSE_E,
+		TRUE_T, TRUE_R, TRUE_U, TRUE_E,
+		NIL_N, NIL_I, NIL_L
+	};
 
-UPtr<String> ExpressionInputStream::readDottedNameRemainder() {
+	reservedWord = ReservedWord::NONE;
+
 	skipBlanks();
-	char ch = peek();
+
+	NSTATE state = NSTATE::SCAN;
 	StringBuilder str;
-	while ((ch != CharacterIterator::DONE) &&
-		   ((std::isalnum(ch) || (ch == '_') || ch == '.'))) {
-		str.add(readChar());
+
+	char ch = peek();
+	while (true) {
+		switch (state) {
+			case NSTATE::SCAN:
+				switch (ch) {
+					case '_':
+					case '$':
+					case '#':
+					case '@':
+					case '0' ... '9':
+					case 'a' ... 'e':
+					case 'g' ... 'm':
+					case 'o' ... 's':
+					case 'u' ... 'z':
+					case 'A' ... 'Z':
+						state = NSTATE::READ;
+						str.add(readChar());
+						break;
+					case 'f':
+						state = NSTATE::FALSE_F;
+						str.add(readChar());
+						break;
+					case 'n':
+						state = NSTATE::NIL_N;
+						str.add(readChar());
+						break;
+					case 't':
+						state = NSTATE::TRUE_T;
+						str.add(readChar());
+						break;
+					default:
+						throw SyntaxErrorException(_HERE_, fmt::format("Identifier start expected, got '{}'", ch).c_str());
+
+				}
+				break;
+			case NSTATE::READ:
+				switch (ch) {
+					case '_':
+					case '0' ... '9':
+					case 'a' ... 'z':
+					case 'A' ... 'Z':
+						str.add(readChar());
+						break;
+					default:
+						return str.toString();
+				}
+				break;
+			case NSTATE::FALSE_F:
+				switch (ch) {
+					case 'a':
+						state = NSTATE::FALSE_A;
+						str.add(readChar());
+						break;
+					default:
+						state = NSTATE::READ;
+						break;
+				}
+				break;
+			case NSTATE::FALSE_A:
+				switch (ch) {
+					case 'l':
+						state = NSTATE::FALSE_L;
+						str.add(readChar());
+						break;
+					default:
+						state = NSTATE::READ;
+						break;
+				}
+				break;
+			case NSTATE::FALSE_L:
+				switch (ch) {
+					case 's':
+						state = NSTATE::FALSE_S;
+						str.add(readChar());
+						break;
+					default:
+						state = NSTATE::READ;
+						break;
+				}
+				break;
+			case NSTATE::FALSE_S:
+				switch (ch) {
+					case 'e':
+						state = NSTATE::FALSE_E;
+						str.add(readChar());
+						break;
+					default:
+						state = NSTATE::READ;
+						break;
+				}
+				break;
+			case NSTATE::FALSE_E:
+				switch (ch) {
+					case '_':
+					case '0' ... '9':
+					case 'a' ... 'z':
+					case 'A' ... 'Z':
+						str.add(readChar());
+						state = NSTATE::READ;
+						break;
+					default:
+						reservedWord = ReservedWord::FALSE;
+						return str.toString();
+				}
+				break;
+			case NSTATE::TRUE_T:
+				switch (ch) {
+					case 'r':
+						state = NSTATE::TRUE_R;
+						str.add(readChar());
+						break;
+					default:
+						state = NSTATE::READ;
+						break;
+				}
+				break;
+			case NSTATE::TRUE_R:
+				switch (ch) {
+					case 'u':
+						state = NSTATE::TRUE_U;
+						str.add(readChar());
+						break;
+					default:
+						state = NSTATE::READ;
+						break;
+				}
+				break;
+			case NSTATE::TRUE_U:
+				switch (ch) {
+					case 'e':
+						state = NSTATE::TRUE_E;
+						str.add(readChar());
+						break;
+					default:
+						state = NSTATE::READ;
+						break;
+				}
+				break;
+			case NSTATE::TRUE_E:
+				switch (ch) {
+					case '_':
+					case '0' ... '9':
+					case 'a' ... 'z':
+					case 'A' ... 'Z':
+						str.add(readChar());
+						state = NSTATE::READ;
+						break;
+					default:
+						reservedWord = ReservedWord::TRUE;
+						return str.toString();
+				}
+				break;
+			case NSTATE::NIL_N:
+				switch (ch) {
+					case 'i':
+						state = NSTATE::NIL_I;
+						str.add(readChar());
+						break;
+					default:
+						state = NSTATE::READ;
+						break;
+				}
+				break;
+			case NSTATE::NIL_I:
+				switch (ch) {
+					case 'l':
+						state = NSTATE::NIL_L;
+						str.add(readChar());
+						break;
+					default:
+						state = NSTATE::READ;
+						break;
+				}
+				break;
+			case NSTATE::NIL_L:
+				switch (ch) {
+					case '_':
+					case '0' ... '9':
+					case 'a' ... 'z':
+					case 'A' ... 'Z':
+						str.add(readChar());
+						state = NSTATE::READ;
+						break;
+					default:
+						reservedWord = ReservedWord::NIL;
+						return str.toString();
+				}
+				break;
+		}
 		ch = peek();
 	}
-	return str.toString();
 }
 
 /** @throws SyntaxErrorException */
@@ -195,6 +377,11 @@ ValueDomain ExpressionInputStream::readDomain() {
 	if (ch == ':') {
 		domain = ValueDomain::LOCAL;
 		readChar();
+		ch = peek();
+		if (ch == ':') {
+			domain = ValueDomain::GLOBAL;
+			readChar();
+		}
 	}
 
 	return domain;

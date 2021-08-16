@@ -30,12 +30,12 @@ protected:
 	ptrdiff_t _offset;
 public:
 	CharBuffer(SPtr<BasicString> const& text, ptrdiff_t begin, ptrdiff_t end)
-	:StringCharacterIterator(text, begin, end, begin)
-	,_offset(begin) {}
+	: StringCharacterIterator(text, begin, end, begin)
+	, _offset(begin) {}
 
 	CharBuffer(SPtr<BasicString> const& text)
-	:StringCharacterIterator(text)
-	,_offset(0) {}
+	: StringCharacterIterator(text)
+	, _offset(0) {}
 
 	virtual ~CharBuffer() override;
 
@@ -80,71 +80,58 @@ public:
 class IllegalFormatException : public IllegalArgumentException {
 protected:
 	IllegalFormatException(const char *where, const char *className, const char *msg)
-	:IllegalArgumentException(where, className, msg) {}
+	: IllegalArgumentException(where, className, msg) {}
 };
 
 class DuplicateFormatFlagsException : public IllegalFormatException {
-private:
-	SPtr<String> _flags;
 public:
 	DuplicateFormatFlagsException(const char *where, UPtr<String> f)
-	:IllegalFormatException(where, "DuplicateFormatFlagsException", fmt::format("Flags = '{}'", *f).c_str())
-	,_flags(newS<String>(*f)) {}
+	: IllegalFormatException(where, "DuplicateFormatFlagsException", fmt::format("Flags = '{}'", *f).c_str()) {}
 };
 
 class UnknownFormatConversionException : public IllegalFormatException {
-private:
-	SPtr<String> _s;
 public:
 	UnknownFormatConversionException(const char *where, UPtr<String> s)
-	:IllegalFormatException(where, "UnknownFormatConversionException", fmt::format("Conversion = '{}'", *s).c_str())
-	,_s(newS<String>(*s)) {}
+	: IllegalFormatException(where, "UnknownFormatConversionException", fmt::format("Conversion = '{}'", *s).c_str()) {}
 };
 
 class MissingFormatArgumentException : public IllegalFormatException {
-private:
-	SPtr<String> _s;
 public:
 	MissingFormatArgumentException(const char *where, const char *s)
-	:IllegalFormatException(where, "MissingFormatArgumentException", fmt::format("Format specifier = '{}'", *s).c_str())
-	,_s(newS<String>(s)) {}
+	: IllegalFormatException(where, "MissingFormatArgumentException", fmt::format("Format specifier = '{}'", *s).c_str()) {}
 
 	MissingFormatArgumentException(const char *where, String const& s)
-	:IllegalFormatException(where, "MissingFormatArgumentException", fmt::format("Format specifier = '{}'", s).c_str())
-	,_s(newS<String>(s)) {}
+	: IllegalFormatException(where, "MissingFormatArgumentException", fmt::format("Format specifier = '{}'", s).c_str()) {}
 };
 
 class MissingFormatWidthException : public IllegalFormatException {
-private:
-	SPtr<String> _s;
 public:
 	MissingFormatWidthException(const char *where, const char *s)
-	:IllegalFormatException(where, "MissingFormatWidthException", s)
-	,_s(newS<String>(s)) {}
+	: IllegalFormatException(where, "MissingFormatWidthException", s) {}
 };
 
 class FormatFlagsConversionMismatchException : public IllegalFormatException {
 public:
 	FormatFlagsConversionMismatchException(const char *where, UPtr<String> f, char c)
-	:IllegalFormatException(where, "FormatFlagsConversionMismatchException", fmt::format("Conversion = {}, Flags = {}", c, *f).c_str()) {}
+	: IllegalFormatException(where, "FormatFlagsConversionMismatchException", fmt::format("Conversion = {}, Flags = {}", c, *f).c_str()) {}
 };
 
 class IllegalFormatCodePointException : public IllegalFormatException {
 public:
 	IllegalFormatCodePointException(const char *where, int32_t c)
-	:IllegalFormatException(where, "IllegalFormatCodePointException", fmt::format("Code point = {:#x}", c).c_str()) {}
+	: IllegalFormatException(where, "IllegalFormatCodePointException", fmt::format("Code point = {:#x}", c).c_str()) {}
 };
 
 class IllegalFormatConversionException : public IllegalFormatException {
 public:
 	IllegalFormatConversionException(const char *where, char c, Class const& arg)
-	:IllegalFormatException(where, "IllegalFormatConversionException", fmt::format("{} != {}", c, arg.getName()).c_str()) {}
+	: IllegalFormatException(where, "IllegalFormatConversionException", fmt::format("{} != {}", c, arg.getName()).c_str()) {}
 };
 
 class IllegalFormatPrecisionException : public IllegalFormatException {
 public:
 	IllegalFormatPrecisionException(const char *where, int32_t p)
-	:IllegalFormatException(where, "IllegalFormatPrecisionException", Integer::toString(p)->c_str()) {}
+	: IllegalFormatException(where, "IllegalFormatPrecisionException", Integer::toString(p)->c_str()) {}
 };
 
 class FormatToken {
@@ -183,12 +170,12 @@ private:
 	char _conversionType;
 public:
 	FormatToken()
-	:_argIndex(UNSET)
-	,_flags(0)
-	,_width(UNSET)
-	,_precision(UNSET)
-	,_strFlags(nullptr, FLAG_TYPE_COUNT)
-	,_conversionType(UNSET) {}
+	: _argIndex(UNSET)
+	, _flags(0)
+	, _width(UNSET)
+	, _precision(UNSET)
+	, _strFlags(nullptr, FLAG_TYPE_COUNT)
+	, _conversionType(UNSET) {}
 
 	bool isPrecisionSet() {
 		return _precision != UNSET;

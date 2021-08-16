@@ -38,43 +38,28 @@ public:
 class SyntaxErrorException : public EvaluationException {
 public:
 	SyntaxErrorException(const char *where, const char *msg)
-	:EvaluationException(where, "SyntaxErrorException", msg) {}
+	: EvaluationException(where, "SyntaxErrorException", msg) {}
 };
 
 class AssertException : public EvaluationException {
 public:
 	AssertException(const char *where, const char *msg)
-	:EvaluationException(where, "AssertException", msg) {}
-};
-
-class MissingSymbolException : public EvaluationException {
-private:
-	SPtr<String> _name;
-public:
-	MissingSymbolException(const char *where, SPtr<String> const& name)
-	:EvaluationException(where, "MissingSymbolException",
-						 fmt::format("Undefined symbol: '{}'", name->c_str()).c_str())
-	,_name(name) {}
-
-	SPtr<String> getSymbolName() const {
-		return _name;
-	}
+	: EvaluationException(where, "AssertException", msg) {}
 };
 
 class NilValueException : public EvaluationException {
 public:
 	NilValueException(const char *where)
-	:EvaluationException(where, "NilValueException", "Nil value") {}
+	: EvaluationException(where, "NilValueException", "Nil value") {}
 };
 
 class CastException : public EvaluationException {
 public:
 		CastException(const char *where, const char *msg)
-		:EvaluationException(where, "CastException", msg) {}
+		: EvaluationException(where, "CastException", msg) {}
 
 		CastException(const char *where, const char *msg, ClassCastException e)
-		:EvaluationException(where, "CastException", msg, e) {}
-
+		: EvaluationException(where, "CastException", msg, e) {}
 };
 
 } // namespace expr

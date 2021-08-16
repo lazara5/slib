@@ -104,8 +104,8 @@ public:
 	/** do NOT use directly, only public for make_shared */
 	Function(bool /* dontUse */, std::initializer_list<Class> argTypes, Evaluate evaluate,
 			 NewFunctionInstance newFunctionInstance,
-			 char peekOverride, char argSeparator, char argClose) 
-	: _peekOverride(peekOverride)
+			 char argSeparator, char argClose)
+	: _peekOverride(argClose == ')' ? '\0' : '(')
 	, _argSeparator(argSeparator)
 	, _argClose(argClose)
 	, _newFunctionInstance(newFunctionInstance)
@@ -127,12 +127,11 @@ public:
 	template <typename ...Args>
 	static SPtr<Function> impl(Evaluate evaluate,
 							   NewFunctionInstance newFunctionInstance = defaultNewFunctionInstance,
-							   char peekOverride = '\0',
 							   char argSeparator = ',',
 							   char argClose = ')') {
 		return newS<Function>(true, std::initializer_list<Class>({classOf<Args>::_class()...}), evaluate,
 							  newFunctionInstance,
-							  peekOverride, argSeparator, argClose);
+							  argSeparator, argClose);
 	}
 
 	virtual ~Function() override;
@@ -177,7 +176,11 @@ public:
 	void readArg(SPtr<ExpressionInputStream> const& input);
 
 	virtual UPtr<Value> evaluate() {
-		return _function->evaluate(_evalResolver, *this);
+		try {
+			return _function->evaluate(_evalResolver, *this);
+		} catch (NilValueException const&) {
+			return Value::Nil();
+		}
 	}
 };
 

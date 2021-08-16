@@ -50,7 +50,7 @@ TEST(ExprTests, BasicTests) {
 	STRCMP_EQUAL("0", strEval("1 + -1")->c_str());
 	STRCMP_EQUAL("-1", strEval("1 + -1 * 2")->c_str());
 	STRCMP_EQUAL("2.5", strEval("(7 - 2)/2")->c_str());
-	STRCMP_EQUAL("2.5", strEval("(7 - 2)/* some comment including a * *//2")->c_str());
+	STRCMP_EQUAL("2.5", strEval("//single line comment \r\n(7 - 2)/* some comment including a * *//2")->c_str());
 	STRCMP_EQUAL("5", strEval("math.ceil(2.3) + math.floor(2.5)")->c_str());
 	STRCMP_EQUAL("abcdef", strEval("'abc' + 'de' + 'f'")->c_str());
 }
@@ -99,11 +99,15 @@ TEST(ExprTests, ExtraTests) {
 	res2 = res1->toString();
 	STRCMP_EQUAL("[1, 2, 15, {a=b, c=[null, x], d=2, e=-1}]", res2->c_str());
 
+	res1 = ExpressionEvaluator::expressionValue("{a = b = 3, c = b + 1, d = {e = b + 2, var1 = 'k', f = ::var1}}"_SPTR, resolver);
+	res2 = res1->toString();
+	STRCMP_EQUAL("{b=3, a=3, c=4, d={e=5, var1=k, f=val1}}", res2->c_str());
+
 	SPtr<SystemInfo> systemInfo = newS<SystemInfo>();
 	SPtr<Map<String, Object>> vars = newS<HashMap<String, Object>>();
 	SPtr<ChainedResolver> resolver1 = ChainedResolver::newInstance();
 	(*resolver1).add("system"_SPTR, systemInfo)
-		.add(vars, ValueDomain::LOCAL);
+		.add(vars, ValueDomain::LOCAL, Resolver::Mode::WRITABLE);
 	res1 = ExpressionEvaluator::expressionValue("{hostname = system.hostname, ip=system.ip, :a = 1, b = a + 1}"_SPTR, resolver1);
 	res2 = res1->toString();
 	fmt::print("Expr: {}\n", *res2);

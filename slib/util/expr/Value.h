@@ -259,6 +259,10 @@ public:
 		return (isTrue(first->_value) ? std::move(first) : std::move(second));
 	}
 
+	static UPtr<Value> selectOr(UPtr<Value> first, UPtr<Value> second) {
+		return (first->isNil() ? std::move(second) : std::move(first));
+	}
+
 	/** @throws EvaluationException */
 	UPtr<Value> multiply(UPtr<Value> const& other) {
 		if (isNil() || (other->isNil()))

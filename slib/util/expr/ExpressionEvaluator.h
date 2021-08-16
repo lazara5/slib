@@ -40,8 +40,8 @@ private:
 
 		virtual SPtr<Object> getVar(const String &key, ValueDomain domain) const override;
 
-		virtual bool isReadOnly(ValueDomain domain) const override {
-			return _externalResolver->isReadOnly(domain);
+		virtual bool isWritable(ValueDomain domain) const override {
+			return _externalResolver->isWritable(domain);
 		}
 
 		virtual void setVar(SPtr<String> const& key, SPtr<Object> const& value, ValueDomain domain) override {

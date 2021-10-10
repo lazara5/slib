@@ -29,11 +29,11 @@ class CharBuffer : public StringCharacterIterator {
 protected:
 	ptrdiff_t _offset;
 public:
-	CharBuffer(SPtr<BasicString> const& text, ptrdiff_t begin, ptrdiff_t end)
+	CharBuffer(SPtr<IString> const& text, ptrdiff_t begin, ptrdiff_t end)
 	: StringCharacterIterator(text, begin, end, begin)
 	, _offset(begin) {}
 
-	CharBuffer(SPtr<BasicString> const& text)
+	CharBuffer(SPtr<IString> const& text)
 	: StringCharacterIterator(text)
 	, _offset(0) {}
 

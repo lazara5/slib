@@ -21,55 +21,78 @@ namespace slib {
 
 using namespace expr;
 
-const SPtr<Config::ConfigValue> ObjConfig::_nullValue = newS<ObjConfig::ConfigValue>();
-
 const UPtr<Map<Class, ObjConfig::NewConfigValue>> ObjConfig::_mapper
 	= newU<HashMap<Class, ObjConfig::NewConfigValue>, std::initializer_list<std::pair<SPtr<Class>, SPtr<ObjConfig::NewConfigValue>>>>({
 	{
 		newS<Class>(classOf<String>::_class()),
 		newS<Config::NewConfigValue>([](SPtr<Object> const& obj) {
-			return newS<ConfigValue>(Class::cast<String>(obj));
+			return newU<ConfigValue>(Class::cast<String>(obj));
 		})
 	},
 	{
 		newS<Class>(classOf<Long>::_class()),
 		newS<Config::NewConfigValue>([](SPtr<Object> const& obj) {
-			return newS<ConfigValue>(Class::cast<Long>(obj)->longValue());
+			return newU<ConfigValue>(Class::cast<Long>(obj)->longValue());
 		})
 	},
 	{
 		newS<Class>(classOf<Double>::_class()),
 		newS<Config::NewConfigValue>([](SPtr<Object> const& obj) {
-			return newS<ConfigValue>(Class::cast<Double>(obj)->doubleValue());
+			return newU<ConfigValue>(Class::cast<Double>(obj)->doubleValue());
 		})
 	},
 	{
 		newS<Class>(classOf<Boolean>::_class()),
 		newS<Config::NewConfigValue>([](SPtr<Object> const& obj) {
-			return newS<ConfigValue>(Class::cast<Boolean>(obj)->booleanValue());
+			return newU<ConfigValue>(Class::cast<Boolean>(obj)->booleanValue());
 		})
 	},
 	{
-		newS<Class>(classOf<Map<BasicString, Object>>::_class()),
+		newS<Class>(classOf<Map<IString, Object>>::_class()),
 		newS<Config::NewConfigValue>([](SPtr<Object> const& obj) {
-			return newS<ConfigValue>(Class::cast<Map<BasicString, Object>>(obj));
+			return newU<ConfigValue>(Class::cast<Map<IString, Object>>(obj));
 		})
 	},
 });
 
+const ConfigLoader::OptionTypeDesc ConfigLoader::_optionTypeDescTable[] = {
+	{"UNKNOWN"_UPTR,	[](){ return newU<ConfigLoader::UnknownConstraint>(); } },
+	{"STRING"_UPTR,		[](){ return newU<ConfigLoader::StringConstraint>(); } },
+	{"LONG"_UPTR,		[](){ return newU<ConfigLoader::LongConstraint>(); } },
+	{"DOUBLE"_UPTR},
+	{"BOOL"_UPTR},
+	{"ARRAY"_UPTR,		[](){ return newU<ConfigLoader::ArrayConstraint>(); } },
+	{"OBJ"_UPTR,		[](){ return newU<ConfigLoader::ObjectConstraint>(); } }
+};
+
+const size_t ConfigLoader::_optionTypeDescTableSize = sizeof(ConfigLoader::_optionTypeDescTable) / sizeof(OptionTypeDesc);
+
 ConfigLoader::ConfigResolver::ConfigResolver() {
 	char pathBuf[PATH_MAX] = "";
-	struct stat s;
+	struct stat st;
 
-	if (stat(PROCSELFEXE, &s) < 0)
+	if (stat(PROCSELFEXE, &st) < 0)
 		perror("stat " PROCSELFEXE);
 	else if (readlink(PROCSELFEXE, pathBuf, sizeof(pathBuf)) < 0) {
 		perror("readlink " PROCSELFEXE);
 		pathBuf[0] = '\0';
 	}
+
+	if (pathBuf[0] != '\0') {
+		char *r = strrchr(pathBuf, '/');
+		if (r)
+			*r = '\0';
+		_exeDir = newS<String>(pathBuf);
+	}
+
+	if (getcwd(pathBuf, sizeof(pathBuf)) != nullptr)
+		_cwd = newS<String>(pathBuf);
 }
 
 SPtr<Object> ConfigLoader::ConfigResolver::getVar(String const& key, ValueDomain domain) const {
+	if (domain == ValueDomain::LOCAL)
+		return nullptr;
+
 	if (StringView::equals(key, "_EXEDIR"_SV)) {
 		return _exeDir;
 	} else if (StringView::equals(key, "_CWD"_SV)) {
@@ -79,12 +102,85 @@ SPtr<Object> ConfigLoader::ConfigResolver::getVar(String const& key, ValueDomain
 	return nullptr;
 }
 
+void ConfigLoader::StringConstraint::validateValue(SPtr<Object> const& obj) {
+	if (!instanceof<String>(obj))
+		throw InitException(_HERE_, fmt::format("Invalid option type: expected String, got {}", obj->getClass().getName()).c_str());
+}
+
+void ConfigLoader::ConstraintNode::checkOrSetType(OptionType type) {
+	if (_constraint->_type == OptionType::UNKNOWN) {
+		switch(type) {
+			case OptionType::OBJ:
+				_constraint = newU<ObjectConstraint>();
+				_constraint->setDefault("{}");
+				break;
+			case OptionType::ARRAY:
+				_constraint = newU<ArrayConstraint>();
+				_constraint->setDefault("[]");
+				break;
+			default:
+				THROW(InitException, "Non-leaf option nodes can only be objects or arrays");
+		}
+	}
+
+	if (_constraint->_type != type)
+		THROW(InitException, "Option type mismatch");
+}
+
+void ConfigLoader::ConstraintNode::validateChildren(SPtr<Object> const& obj, SPtr<Resolver> const& resolver) {
+	if (_children->size() > 0) {
+		switch (_constraint->_type) {
+			case OptionType::OBJ: {
+				SPtr<Map<IString, Object>> objMap = Class::cast<Map<IString, Object>>(obj);
+				auto it = _children->constIterator();
+				while (it->hasNext()) {
+					auto &constraintEntry = it->next();
+					SPtr<IString> objKey = constraintEntry.getKey();
+					SPtr<ConstraintNode> constraintNode = constraintEntry.getValue();
+					SPtr<Object> member = objMap->get(*objKey);
+					SPtr<Object> validatedMember = constraintNode->validate(member, resolver);
+					if (validatedMember)
+						objMap->put(objKey, validatedMember);
+				}
+				break;
+			}
+			case OptionType::ARRAY: {
+				break;
+			}
+			default:
+				THROW(InitException, "Only objects and arrays can have child constraints");
+		}
+	}
+}
+
+SPtr<Object> ConfigLoader::ConstraintNode::validate(SPtr<Object> const& obj, SPtr<Resolver> const& resolver) {
+	if (obj) {
+		_constraint->validateValue(obj);
+		validateChildren(obj, resolver);
+		return nullptr;
+	} else {
+		if (!_constraint->_defaultExpr)
+			throw InitException(_HERE_, "Missing mandatory value");
+		try {
+			UPtr<Value> defaultValue = _constraint->_defaultExpr->evaluate(resolver);
+			SPtr<Object> value = defaultValue->getValue();
+			_constraint->validateValue(value);
+			validateChildren(value, resolver);
+			return value;
+		} catch (EvaluationException const& e) {
+			throw InitException(e.where(), fmt::format("Error evaluating default expression: {}", e.getMessage()).c_str());
+		}
+	}
+}
+
+
 ConfigLoader::ConfigLoader(SPtr<String> const& confFileName, SPtr<String> const& appName)
 : _confFileName(confFileName)
 , _appName(appName)
 , _vars(newS<HashMap<String, Object>>())
 , _quickResolver(expr::ChainedResolver::newInstance())
-, _resolver(expr::ChainedResolver::newInstance()) {
+, _resolver(expr::ChainedResolver::newInstance())
+, _rootConstraint(newS<ConstraintNode>(newU<ObjectConstraint>())) {
 	(*_quickResolver).add(newS<ConfigResolver>())
 	.add("env"_SPTR, newS<EnvResolver>());
 
@@ -99,21 +195,61 @@ ConfigLoader::ConfigLoader(SPtr<String> const& confFileName, SPtr<String> const&
 
 ConfigLoader& ConfigLoader::clearPaths() {
 	_searchPaths.clear();
+	_crtOption = nullptr;
 	return *this;
 }
 
 ConfigLoader& ConfigLoader::search(SPtr<String> const& path, SPtr<String> const& rootDir /* = nullptr */) {
 	_searchPaths.add(newS<StringPair>(path, rootDir));
+	_crtOption = nullptr;
 	return *this;
 }
 
 ConfigLoader& ConfigLoader::withResolver(SPtr<expr::Resolver> const& resolver) {
 	_resolver->add(resolver);
+	_crtOption = nullptr;
 	return *this;
 }
 
 ConfigLoader& ConfigLoader::withResolver(SPtr<String> const& name, SPtr<expr::Resolver> const& resolver) {
 	_resolver->add(name, resolver);
+	_crtOption = nullptr;
+	return *this;
+}
+
+void ConfigLoader::LongConstraint::validateValue(SPtr<Object> const& obj) {
+	if (!instanceof<Long>(obj))
+		throw InitException(_HERE_, fmt::format("Invalid option type: expected Long, got {}", obj->getClass().getName()).c_str());
+	int64_t val = Class::cast<Long>(obj)->longValue();
+	if ((val < _min) || (val > _max))
+		throw InitException(_HERE_, fmt::format("Value {} out of range [{} .. {}]", val, _min, _max).c_str());
+}
+
+void ConfigLoader::ObjectConstraint::validateValue(SPtr<Object> const& obj) {
+	if (!instanceof<Map<IString, Object>>(obj))
+		throw InitException(_HERE_, fmt::format("Invalid option type: expected Map<IString, Object>, got {}", obj->getClass().getName()).c_str());
+}
+
+void ConfigLoader::ArrayConstraint::validateValue(SPtr<Object> const& obj) {
+	if (!instanceof<ArrayList<Object>>(obj))
+		throw InitException(_HERE_, fmt::format("Invalid option type: expected ArrayList<Object>, got {}", obj->getClass().getName()).c_str());
+}
+
+void ConfigLoader::UnknownConstraint::validateValue(SPtr<Object> const& obj SLIB_UNUSED) {
+	THROW(InitException, "Invalid option type: <unknown>");
+}
+
+ConfigLoader& ConfigLoader::range(int64_t min, int64_t max) {
+	if (!_crtOption)
+		throw InitException(_HERE_, "Range can only be applied to an option");
+	_crtOption->_constraint->range(min, max);
+	return *this;
+}
+
+ConfigLoader& ConfigLoader::range(double min, double max) {
+	if (!_crtOption)
+		throw InitException(_HERE_, "Range can only be applied to an option");
+	_crtOption->_constraint->range(min, max);
 	return *this;
 }
 
@@ -159,9 +295,11 @@ SPtr<Config> ConfigLoader::load(bool quick) {
 			quick ? _quickResolver : _resolver);
 		if (!parsedConfig)
 			throw InitException(_HERE_, "Error parsing config");
-		if (!instanceof<Map<BasicString, Object>>(*parsedConfig))
+		if (!instanceof<Map<IString, Object>>(*parsedConfig))
 			throw InitException(_HERE_, fmt::format("Invalid config: expected Map<String, Object>, got {}", parsedConfig->getClass().getName()).c_str());
-		SPtr<Map<BasicString, Object>> configRoot = Class::cast<Map<BasicString, Object>>(parsedConfig);
+		SPtr<Map<IString, Object>> configRoot = Class::cast<Map<IString, Object>>(parsedConfig);
+
+		_rootConstraint->validate(configRoot, quick ? _quickResolver : _resolver);
 
 		UPtr<String> s = configRoot->toString();
 		fmt::print("Config: {}\n", *s);
@@ -225,7 +363,7 @@ void Config::openConfigFile(bool minimal) {
 		throw InitException(_HERE_, fmt::format("I/O error reading config file '{}': {}", *configFile, e.getMessage()).c_str());
 	}
 }
-	
+
 void Config::shutdown() {
 	Log::shutdown();
 }

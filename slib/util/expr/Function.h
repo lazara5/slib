@@ -173,7 +173,7 @@ public:
 	, _evalResolver(evalResolver)
 	, _argResolver(argResolver) {}
 
-	void readArg(SPtr<ExpressionInputStream> const& input);
+	void readArg(ExpressionInputStream& input);
 
 	virtual UPtr<Value> evaluate() {
 		try {
@@ -183,7 +183,6 @@ public:
 		}
 	}
 };
-
 
 } // namespace expr
 } // namespace slib

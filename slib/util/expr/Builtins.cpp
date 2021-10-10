@@ -14,11 +14,11 @@ namespace expr {
 
 class ObjResolver : public Resolver {
 private:
-	SPtr<Map<BasicString, Object>> _obj;
+	SPtr<Map<IString, Object>> _obj;
 	SPtr<Resolver> _parentResolver;
 public:
 	ObjResolver(SPtr<Resolver> const& parentResolver)
-	: _obj(newS<LinkedHashMap<BasicString, Object>>())
+	: _obj(newS<LinkedHashMap<IString, Object>>())
 	, _parentResolver(parentResolver) {}
 
 	virtual ~ObjResolver() {};
@@ -58,7 +58,7 @@ public:
 		}
 	}
 
-	SPtr<Map<BasicString, Object>> getObj() {
+	SPtr<Map<IString, Object>> getObj() {
 		return _obj;
 	}
 };
@@ -104,7 +104,7 @@ Builtins::Builtins()
 		',', ']'
 	)) {
 		// Math library
-		SPtr<Map<BasicString, Object>> math = newS<HashMap<BasicString, Object>>();
+		SPtr<Map<IString, Object>> math = newS<HashMap<IString, Object>>();
 		put("math"_SPTR, math);
 
 		math->put("ceil"_SPTR, Function::impl<Number>(
@@ -170,14 +170,14 @@ Builtins::Builtins()
 			}
 		));
 
-		put("if"_SPTR, Function::impl<Object, Lambda, Lambda>(
+		put("if"_SPTR, Function::impl<Object, Expression, Expression>(
 			[](SPtr<Resolver> const& resolver, ArgList const& args) {
 				bool val = Value::isTrue(args.getNullable(0));
 				if (val)
-					return (args.get<Lambda>(1))->evaluate(resolver);
+					return (args.get<Expression>(1))->evaluate(resolver);
 				else {
 					if (args.size() > 2)
-						return (args.get<Lambda>(2))->evaluate(resolver);
+						return (args.get<Expression>(2))->evaluate(resolver);
 					else
 						return Value::of(""_SPTR);
 				}
@@ -239,15 +239,15 @@ Builtins::Builtins()
 			}
 		};
 
-		put("for"_SPTR, Function::impl<Lambda, Lambda, Lambda, Lambda>(
+		put("for"_SPTR, Function::impl<Expression, Expression, Expression, Expression>(
 			[](SPtr<Resolver> const& resolver, ArgList const& args) {
 				size_t nArgs = args.size();
 				if (nArgs == 4) {
 					// classic "for"
-					SPtr<Lambda> loopInit = args.get<Lambda>(0);
-					SPtr<Lambda> loopCond = args.get<Lambda>(1);
-					SPtr<Lambda> loopUpdate = args.get<Lambda>(2);
-					SPtr<Lambda> loopEval = args.get<Lambda>(3);
+					SPtr<Expression> loopInit = args.get<Expression>(0);
+					SPtr<Expression> loopCond = args.get<Expression>(1);
+					SPtr<Expression> loopUpdate = args.get<Expression>(2);
+					SPtr<Expression> loopEval = args.get<Expression>(3);
 
 					SPtr<LoopResolver> loopResolver = newS<LoopResolver>(resolver);
 					loopInit->evaluate(loopResolver);
@@ -265,14 +265,14 @@ Builtins::Builtins()
 					return Value::of(loopResolver->getResult());
 				} else if (nArgs == 3) {
 					// generic "for"
-					SPtr<Lambda> loopVarLambda = args.get<Lambda>(0);
-					UPtr<Value> loopVar = loopVarLambda->readLiteral();
+					SPtr<Expression> loopVarExpr = args.get<Expression>(0);
+					UPtr<Value> loopVar = loopVarExpr->readLiteral();
 					SPtr<String> loopVarName = Class::cast<String>(loopVar->getValue());
-					UPtr<Value> iterableValue = args.get<Lambda>(1)->evaluate(resolver);
+					UPtr<Value> iterableValue = args.get<Expression>(1)->evaluate(resolver);
 					SPtr<Object> iterable = iterableValue ? iterableValue->getValue() : nullptr;
 
 					if (instanceof<ConstIterable<Object>>(iterable)) {
-						SPtr<Lambda> loopEval = args.get<Lambda>(2);
+						SPtr<Expression> loopEval = args.get<Expression>(2);
 
 						SPtr<LoopResolver> loopResolver = newS<LoopResolver>(resolver);
 
@@ -333,7 +333,8 @@ Builtins::Builtins()
 
 		put("#"_SPTR, Function::impl<String>(
 			[](SPtr<Resolver> const& resolver, ArgList const& args) {
-				return ExpressionEvaluator::expressionValue(newS<ExpressionInputStream>(args.get<String>(0)), resolver);
+				ExpressionInputStream iStream(args.get<String>(0));
+				return ExpressionEvaluator::expressionValue(iStream, resolver);
 			}
 		));
 	}

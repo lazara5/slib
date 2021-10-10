@@ -16,22 +16,25 @@ namespace expr {
 class EvaluationException : public Exception {
 protected:
 	EvaluationException(const char *where, const char *className, const char *msg)
-	:Exception(where, className, msg) {}
+	: Exception(where, className, msg) {}
 
 	EvaluationException(const char *where, const char *className, const char *msg, Exception const& cause)
-	:Exception(where, className, msg, cause) {}
+	: Exception(where, className, msg, cause) {}
 public:
 	EvaluationException(const char *where, const char *msg)
-	:EvaluationException(where, "EvaluationException", msg) {}
+	: EvaluationException(where, "EvaluationException", msg) {}
 
 	EvaluationException(const char *where, const char *msg, Exception const& cause)
-	:EvaluationException(where, "EvaluationException", msg, cause) {}
+	: EvaluationException(where, "EvaluationException", msg, cause) {}
+
+	EvaluationException(Exception const& cause)
+	: EvaluationException(cause.where(), cause.getMessage()) {}
 
 	EvaluationException(const char *where, const char *oper, Class const& op1)
-	:EvaluationException(where, "EvaluationException", fmt::format("Operator '{}' not applicable for '{}'", oper, op1.getName()).c_str()) {}
+	: EvaluationException(where, "EvaluationException", fmt::format("Operator '{}' not applicable for '{}'", oper, op1.getName()).c_str()) {}
 
 	EvaluationException(const char *where, const char *oper, Class const& op1, Class const& op2)
-	:EvaluationException(where, "EvaluationException", fmt::format("Operator '{}' not applicable for '{}' and '{}'",
+	: EvaluationException(where, "EvaluationException", fmt::format("Operator '{}' not applicable for '{}' and '{}'",
 																   oper, op1.getName(), op2.getName()).c_str()) {}
 };
 
@@ -55,11 +58,11 @@ public:
 
 class CastException : public EvaluationException {
 public:
-		CastException(const char *where, const char *msg)
-		: EvaluationException(where, "CastException", msg) {}
+	CastException(const char *where, const char *msg)
+	: EvaluationException(where, "CastException", msg) {}
 
-		CastException(const char *where, const char *msg, ClassCastException e)
-		: EvaluationException(where, "CastException", msg, e) {}
+	CastException(const char *where, const char *msg, ClassCastException e)
+	: EvaluationException(where, "CastException", msg, e) {}
 };
 
 } // namespace expr

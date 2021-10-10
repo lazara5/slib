@@ -349,8 +349,8 @@ public:
 	}
 
 	template <class S>
-	static UPtr<String> getPath(S const* fileName) {
-		ptrdiff_t lastSep = String::lastIndexOf(fileName, '/');
+	static UPtr<String> getPath(S const& fileName) {
+		ptrdiff_t lastSep = String::lastIndexOf(CPtr(fileName), '/');
 		if (lastSep < 0)
 			return newU<String>(fileName);
 		return String::substring(fileName, 0, (size_t)lastSep);

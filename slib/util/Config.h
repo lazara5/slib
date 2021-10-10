@@ -13,6 +13,7 @@
 #include "slib/collections/Properties.h"
 #include "slib/util/expr/Resolver.h"
 #include "slib/util/SystemInfo.h"
+#include "slib/util/expr/Expression.h"
 
 #include "fmt/format.h"
 
@@ -79,95 +80,65 @@ protected:
 		ConfigValue(double val) : _double(val), _type(ConfigValueType::DOUBLE) {}
 		ConfigValue(bool val) : _bool(val), _type(ConfigValueType::BOOL) {}
 		ConfigValue(SPtr<String> const& str) : _str(str), _type(ConfigValueType::STRING) {}
-		ConfigValue(SPtr<Map<BasicString, Object>> obj) : _obj(newS<ObjConfig>(obj)), _type(ConfigValueType::OBJ) {}
+		ConfigValue(SPtr<Map<IString, Object>> obj) : _obj(newS<ObjConfig>(obj)), _type(ConfigValueType::OBJ) {}
 	};
 protected:
-	typedef std::function<SPtr<ConfigValue>(SPtr<Object> const&)> NewConfigValue;
+	typedef std::function<UPtr<ConfigValue>(SPtr<Object> const&)> NewConfigValue;
 	static const UPtr<Map<Class, NewConfigValue>> _mapper;
-	static const SPtr<ConfigValue> _nullValue;
 
-	SPtr<Map<BasicString, Object>> _configRoot;
-
-	UPtr<Map<BasicString, ConfigValue>> _propCache;
+	SPtr<Map<IString, Object>> _configRoot;
 protected:
 	template <class S>
-	[[ noreturn ]] void throwConfigException(const char *where, S const* name, const char *msg) const {
-		_propCache->put(newS<String>(strData(name), strLen(name)),
-						newS<ConfigValue>(_HERE_, msg));
-		throw ConfigException(where, msg);
-	}
-
-	template <class S>
-	SPtr<ConfigValue> internalGetProperty(S const* name, std::initializer_list<int> indices) const {
-		BasicStringView nameRef(strData(name), strLen(name));
-		SPtr<ConfigValue> val = _propCache->get(nameRef);
-		if (val) {
-			switch (val->_type) {
-				case ConfigValueType::NUL:
-					return nullptr;
-				case ConfigValueType::EXCEPTION:
-					throw ConfigException(val->_where->c_str(), val->_str->c_str());
-				default:
-					return val;
-			}
-
-			return val;
-		}
-
+	UPtr<ConfigValue> internalGetProperty(S const* path, std::initializer_list<int> indices) const {
 		size_t pathLen = 0;
 		bool first = true;
 		SPtr<Object> obj = _configRoot;
 		auto crtIndex = indices.begin();
-		StringSplitIterator si(name, '.');
+		StringSplitIterator si(path, '.');
 		while (si.hasNext()) {
 			BasicStringView elem = si.next();
 
-			if (instanceof<Map<BasicString, Object>>(obj))
-				obj = (Class::cast<Map<BasicString, Object>>(obj))->get(elem);
+			if (instanceof<Map<IString, Object>>(obj))
+				obj = (Class::cast<Map<IString, Object>>(obj))->get(elem);
 			else if (instanceof<List<Object>>(obj)) {
 				try {
 					size_t index;
 					if ((elem.length() == 1) && (*elem.data() == '*')) {
 						if (crtIndex == indices.end())
-							throwConfigException(_HERE_, name, "Missing index");
+							throw ConfigException(_HERE_, "Missing index");
 						index = *crtIndex;
 						crtIndex++;
 					} else
 						index = ULong::parseULong(elem);
 					obj = (Class::cast<List<Object>>(obj))->get(index);
 				} catch (Exception const& e) {
-					throwConfigException(_HERE_, name,
-										 fmt::format("Caused by {} [{} ({})]",
-													 e.getName(), e.getMessage(), e.where()).c_str());
+					throw ConfigException(_HERE_, fmt::format("Caused by {} [{} ({})]",
+															  e.getName(), e.getMessage(), e.where()).c_str());
 				}
 			} else {
-				throwConfigException(_HERE_, name,
-									 fmt::format("{} is not an object or array",
-												 StringView(strData(name), pathLen)).c_str());
+				throw ConfigException(_HERE_, fmt::format("{} is not an object or array",
+														  StringView(strData(path), pathLen)).c_str());
 			}
 
-			if (!obj) {
-				_propCache->put(newS<String>(strData(name), strLen(name)), _nullValue);
+			if (!obj)
 				return nullptr;
-			}
+
 			pathLen += elem.length();
 			if (!first)
 				pathLen++;
 			first = false;
 			if (!si.hasNext()) {
 				// leaf: cache and return
-				SPtr<ConfigValue> val;
+				UPtr<ConfigValue> val;
 
 				SPtr<NewConfigValue> mapper = _mapper->get(obj->getClass());
 				if (mapper)
 					val = (*mapper)(obj);
 				else {
-					throwConfigException(_HERE_, name,
-										 fmt::format("Unsupported config value type: {}",
-													 obj->getClass().getName()).c_str());
+					throw ConfigException(_HERE_, fmt::format("Unsupported config value type: {}",
+															  obj->getClass().getName()).c_str());
 				}
 
-				_propCache->put(newS<String>(strData(name), strLen(name)), val);
 				return val;
 			}
 		}
@@ -184,13 +155,12 @@ protected:
 	}
 
 public:
-	ObjConfig(SPtr<Map<BasicString, Object>> const& configRoot)
-	: _configRoot(configRoot)
-	, _propCache(newU<HashMap<BasicString, ConfigValue>>()) {}
+	ObjConfig(SPtr<Map<IString, Object>> const& configRoot)
+	: _configRoot(configRoot) {}
 
 	virtual ~ObjConfig() {}
 
-	SPtr<Map<BasicString, Object>> getRoot() {
+	SPtr<Map<IString, Object>> getRoot() {
 		return _configRoot;
 	}
 
@@ -342,7 +312,7 @@ protected:
 	SPtr<String> _appName;
 	SPtr<String> _confDir;
 public:
-	Config(SPtr<Map<BasicString, Object>> const& configRoot,
+	Config(SPtr<Map<IString, Object>> const& configRoot,
 		   SPtr<String> const& appName,
 		   SPtr<String> const& confDir, SPtr<String> const& appDir)
 	: ObjConfig(configRoot)
@@ -353,7 +323,16 @@ public:
 	SPtr<String> getAppName() const { return _appName; }
 	SPtr<String> getAppDir() const { return _appDir; }
 	SPtr<String> getConfDir() const { return _confDir; }
+};
 
+enum class OptionType : uint8_t {
+	UNKNOWN,
+	STRING,
+	LONG,
+	DOUBLE,
+	BOOL,
+	ARRAY,
+	OBJ
 };
 
 class ConfigLoader {
@@ -396,6 +375,164 @@ protected:
 		}
 	};
 
+protected:
+	class Constraint {
+	public:
+		OptionType _type;
+		UPtr<expr::Expression> _defaultExpr;
+	protected:
+		Constraint(OptionType type)
+		: _type(type) {}
+	public:
+		virtual ~Constraint() {}
+
+		bool operator==(Constraint const& other) const {
+			return (this == &other);
+		}
+
+		template <class S>
+		void setDefault(S const& defaultExpr) {
+			_defaultExpr = newU<expr::Expression>(newS<String>(defaultExpr));
+		}
+
+		virtual void range(int64_t min, int64_t max) = 0;
+		virtual void range(double min, double max) = 0;
+
+		/** @throws InitException */
+		virtual void validateValue(SPtr<Object> const& obj) = 0;
+	};
+
+	class StringConstraint : public Constraint {
+	public:
+		StringConstraint()
+		: Constraint(OptionType::STRING) {}
+
+		virtual void range(int64_t, int64_t) override {
+			throw InitException(_HERE_, "Cannot apply range to string option");
+		}
+
+		virtual void range(double, double) override {
+			throw InitException(_HERE_, "Cannot apply range to string option");
+		}
+
+		virtual void validateValue(SPtr<Object> const& obj) override;
+	};
+
+	class LongConstraint : public Constraint {
+	protected:
+		int64_t _min;
+		int64_t _max;
+	public:
+		LongConstraint()
+		: Constraint(OptionType::LONG)
+		, _min(Long::MIN_VALUE)
+		, _max(Long::MAX_VALUE) {}
+
+		virtual void range(int64_t min, int64_t max) override {
+			_min = min;
+			_max = max;
+		}
+
+		virtual void range(double, double) override {
+			throw InitException(_HERE_, "Cannot apply double range to long option");
+		}
+
+		virtual void validateValue(SPtr<Object> const& obj) override;
+	};
+
+	class ObjectConstraint : public Constraint {
+	public:
+		ObjectConstraint()
+		: Constraint(OptionType::OBJ) {}
+
+		virtual void range(int64_t, int64_t) override {
+			throw InitException(_HERE_, "Cannot apply range to obj option");
+		}
+
+		virtual void range(double, double) override {
+			throw InitException(_HERE_, "Cannot apply range to obj option");
+		}
+
+		virtual void validateValue(SPtr<Object> const& obj) override;
+	};
+
+	class ArrayConstraint : public Constraint {
+	public:
+		ArrayConstraint()
+		: Constraint(OptionType::ARRAY) {}
+
+		virtual void range(int64_t, int64_t) override {
+			throw InitException(_HERE_, "Cannot apply range to array option");
+		}
+
+		virtual void range(double, double) override {
+			throw InitException(_HERE_, "Cannot apply range to array option");
+		}
+
+		virtual void validateValue(SPtr<Object> const& obj) override;
+	};
+
+	class UnknownConstraint : public Constraint {
+	public:
+		UnknownConstraint()
+		: Constraint(OptionType::UNKNOWN) {}
+
+		virtual void range(int64_t, int64_t) override {
+			THROW(InitException, "Cannot apply range to <unknown> option");
+		}
+
+		virtual void range(double, double) override {
+			THROW(InitException, "Cannot apply range to <unknown> option");
+		}
+
+		virtual void validateValue(SPtr<Object> const& obj) override;
+	};
+
+	typedef std::function<UPtr<Constraint>()> ConstraintConstructor;
+
+	class ConstraintNode {
+	public:
+		UPtr<Constraint> _constraint;
+		UPtr<Map<IString, ConstraintNode>> _children;
+	protected:
+		void validateChildren(const SPtr<Object> &obj, const SPtr<expr::Resolver> &resolver);
+	public:
+		ConstraintNode(UPtr<Constraint> constraint)
+		: _constraint(std::move(constraint))
+		, _children(newU<HashMap<IString, ConstraintNode>>()) {}
+
+		/** @throws InitException */
+		void checkOrSetType(OptionType type);
+
+		SPtr<Object> validate(SPtr<Object> const& obj, SPtr<expr::Resolver> const& resolver);
+
+	};
+
+	typedef struct _OptionTypeDesc {
+		UPtr<String> _name;
+		ConstraintConstructor _constructor;
+	} OptionTypeDesc;
+
+	static const OptionTypeDesc _optionTypeDescTable[];
+	static const size_t _optionTypeDescTableSize;
+
+	/*class ConstraintNode {
+	public:
+		SPtr<Constraint> _constraint;
+		UPtr<Map<IString, ConstraintNode>> _children;
+	public:
+		ConstraintNode(SPtr<Constraint> const& constraint)
+		: _constraint(constraint)
+		, _children(newU<HashMap<IString, ConstraintNode>>()) {}
+
+		bool operator==(ConstraintNode const& other) const {
+			return (this == &other);
+		}
+
+		// @throws InitException
+		void checkOrSetType(OptionType type);
+	};*/
+
 	SPtr<String> _confFileName;
 	SPtr<String> _appName;
 
@@ -403,8 +540,13 @@ protected:
 	SPtr<expr::ChainedResolver> _quickResolver;
 	SPtr<expr::ChainedResolver> _resolver;
 	LinkedList<StringPair> _searchPaths;
+
+	SPtr<ConstraintNode> _rootConstraint;
+	SPtr<ConstraintNode> _crtOption;
 protected:
 	SPtr<StringPair> searchConfigDir();
+
+	void validate();
 public:
 	ConfigLoader(SPtr<String> const& confFileName, SPtr<String> const& appName);
 
@@ -415,6 +557,52 @@ public:
 	ConfigLoader& withResolver(SPtr<expr::Resolver> const& resolver);
 
 	ConfigLoader& withResolver(SPtr<String> const& name, SPtr<expr::Resolver> const& resolver);
+
+	template <class S>
+	ConfigLoader& option(S const& path, OptionType optionType) {
+		_crtOption = nullptr;
+
+		StringSplitIterator si(path, '.');
+		SPtr<ConstraintNode> parent = _rootConstraint;
+		while (si.hasNext()) {
+			BasicStringView elem = si.next();
+
+			OptionType parentType = StringView::equals(elem, "[]") ? OptionType::ARRAY : OptionType::OBJ;
+			parent->checkOrSetType(parentType);
+
+			if (si.hasNext()) { // node
+				SPtr<ConstraintNode> oldParent = parent;
+				parent = oldParent->_children->get(elem);
+				if (!parent) {
+					parent = newS<ConstraintNode>(newU<UnknownConstraint>());
+					oldParent->_children->put(newS<String>(elem), parent);
+				}
+			} else { // leaf
+				_crtOption = newS<ConstraintNode>(_optionTypeDescTable[(size_t)optionType]._constructor());
+				if (parent->_children->containsKey(elem))
+					THROW(InitException, fmt::format("Attempted to redefine option '{}'", path).c_str());
+				parent->_children->put(newS<String>(elem), _crtOption);
+			}
+		}
+
+		return *this;
+	}
+
+	ConfigLoader& range(int64_t min, int64_t max);
+
+	ConfigLoader& range(int min, int max) {
+		return range((int64_t)min, (int64_t)max);
+	}
+
+	ConfigLoader& range(double min, double max);
+
+	template <class S>
+	ConfigLoader& defaultValue(S const& defaultExpr) {
+		if (!_crtOption)
+			THROW(InitException, "Default can only be applied to an option");
+		_crtOption->_constraint->setDefault(defaultExpr);
+		return *this;
+	}
 
 	/** @throws EvaluationException */
 	SPtr<Config> load(bool quick = false);

@@ -9,12 +9,14 @@
 #include "slib/lang/StringBuilder.h"
 #include "slib/util/expr/Exceptions.h"
 #include "slib/util/expr/Value.h"
-#include "slib/util/expr/Lambda.h"
+#include "slib/util/expr/Expression.h"
 
 #include <cctype>
 
 namespace slib {
 namespace expr {
+
+class Expression;
 
 class ExpressionInputStream {
 public:
@@ -29,8 +31,8 @@ private:
 
 	UPtr<String> readReal();
 public:
-	ExpressionInputStream(SPtr<BasicString> const& s)
-	:_iter(s) {
+	ExpressionInputStream(SPtr<IString> const& s)
+	: _iter(s) {
 		_currentChar = _iter.first();
 	}
 
@@ -75,7 +77,7 @@ public:
 	UPtr<Value> readString();
 
 	/** @throws SyntaxErrorException */
-	SPtr<Lambda> readArgLambda(char argSep, char argEnd);
+	SPtr<Expression> readArgExpression(char argSep, char argEnd);
 
 	/** @throws EvaluationException */
 	UPtr<Value> readNumber();

@@ -445,7 +445,7 @@ UPtr<String> ExpressionInputStream::readReal() {
 	return s.toString();
 }
 
-SPtr<Lambda> ExpressionInputStream::readArgLambda(char argSep, char argEnd) {
+SPtr<Expression> ExpressionInputStream::readArgExpression(char argSep, char argEnd) {
 	enum class LSMODE { SCAN, STRING, ESCAPE };
 
 	char delimiter = '\1';
@@ -521,7 +521,7 @@ SPtr<Lambda> ExpressionInputStream::readArgLambda(char argSep, char argEnd) {
 				break;
 		}
 	} while (!complete);
-	return newS<Lambda>(str.toString());
+	return newS<Expression>(str.toString());
 }
 
 } // namespace expr

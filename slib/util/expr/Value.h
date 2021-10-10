@@ -223,10 +223,10 @@ public:
 				return Value::of(v1->doubleValue() + v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "+", first->_value->getClass(), second->_value->getClass());
-		} else if (instanceof<BasicString>(first->_value)) {
-			BasicString *v1 = Class::castPtr<BasicString>(first->_value);
-			if (instanceof<BasicString>(second->_value)) {
-				BasicString *v2 = Class::castPtr<BasicString>(second->_value);
+		} else if (instanceof<IString>(first->_value)) {
+			IString *v1 = Class::castPtr<IString>(first->_value);
+			if (instanceof<IString>(second->_value)) {
+				IString *v2 = Class::castPtr<IString>(second->_value);
 				StringBuilder result(*v1);
 				result += *v2;
 				return Value::of(result.toString());
@@ -319,10 +319,10 @@ public:
 				return Value::of(v1->doubleValue() > v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, ">", _value->getClass(), other->_value->getClass());
-		} else if (instanceof<BasicString>(_value)) {
-			BasicString *v1 = Class::castPtr<BasicString>(_value);
-			if (instanceof<BasicString>(other->_value)) {
-				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
+		} else if (instanceof<IString>(_value)) {
+			IString *v1 = Class::castPtr<IString>(_value);
+			if (instanceof<IString>(other->_value)) {
+				IString *v2 = Class::castPtr<IString>(other->_value);
 				return Value::of(v1->compareTo(*v2) > 0);
 			} else
 				throw EvaluationException(_HERE_, ">", _value->getClass(), other->_value->getClass());
@@ -341,10 +341,10 @@ public:
 				return Value::of(v1->doubleValue() >= v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, ">=", _value->getClass(), other->_value->getClass());
-		} else if (instanceof<BasicString>(_value)) {
-			BasicString *v1 = Class::castPtr<BasicString>(_value);
-			if (instanceof<BasicString>(other->_value)) {
-				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
+		} else if (instanceof<IString>(_value)) {
+			IString *v1 = Class::castPtr<IString>(_value);
+			if (instanceof<IString>(other->_value)) {
+				IString *v2 = Class::castPtr<IString>(other->_value);
 				return Value::of(v1->compareTo(*v2) >= 0);
 			} else
 				throw EvaluationException(_HERE_, ">=", _value->getClass(), other->_value->getClass());
@@ -363,10 +363,10 @@ public:
 				return Value::of(v1->doubleValue() < v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "<", _value->getClass(), other->_value->getClass());
-		} else if (instanceof<BasicString>(_value)) {
-			BasicString *v1 = Class::castPtr<BasicString>(_value);
-			if (instanceof<BasicString>(other->_value)) {
-				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
+		} else if (instanceof<IString>(_value)) {
+			IString *v1 = Class::castPtr<IString>(_value);
+			if (instanceof<IString>(other->_value)) {
+				IString *v2 = Class::castPtr<IString>(other->_value);
 				return Value::of(v1->compareTo(*v2) < 0);
 			} else
 				throw EvaluationException(_HERE_, "<", _value->getClass(), other->_value->getClass());
@@ -385,10 +385,10 @@ public:
 				return Value::of(v1->doubleValue() <= v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "<=", _value->getClass(), other->_value->getClass());
-		} else if (instanceof<BasicString>(_value)) {
-			BasicString *v1 = Class::castPtr<BasicString>(_value);
-			if (instanceof<BasicString>(other->_value)) {
-				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
+		} else if (instanceof<IString>(_value)) {
+			IString *v1 = Class::castPtr<IString>(_value);
+			if (instanceof<IString>(other->_value)) {
+				IString *v2 = Class::castPtr<IString>(other->_value);
 				return Value::of(v1->compareTo(*v2) <= 0);
 			} else
 				throw EvaluationException(_HERE_, "<=", _value->getClass(), other->_value->getClass());
@@ -408,10 +408,10 @@ private:
 				return (v1->doubleValue() == v2->doubleValue());
 			} else
 				throw EvaluationException(_HERE_, "==", _value->getClass(), other->_value->getClass());
-		} else if (instanceof<BasicString>(_value)) {
-			BasicString *v1 = Class::castPtr<BasicString>(_value);
-			if (instanceof<BasicString>(other->_value)) {
-				BasicString *v2 = Class::castPtr<BasicString>(other->_value);
+		} else if (instanceof<IString>(_value)) {
+			IString *v1 = Class::castPtr<IString>(_value);
+			if (instanceof<IString>(other->_value)) {
+				IString *v2 = Class::castPtr<IString>(other->_value);
 				return v1->equals(*v2);
 			} else
 				throw EvaluationException(_HERE_, "==", _value->getClass(), other->_value->getClass());
@@ -444,9 +444,9 @@ public:
 	UPtr<Value> index(UPtr<Value> const& arg) {
 		if (isNil() || arg->isNil())
 			return Value::Nil();
-		if (instanceof<Map<BasicString, Object>>(_value)) {
+		if (instanceof<Map<IString, Object>>(_value)) {
 			return newU<Value>(
-				nullptr, (Class::castPtr<Map<BasicString, Object>>(_value))->get(*Class::castPtr<String>(arg->_value))
+				nullptr, (Class::castPtr<Map<IString, Object>>(_value))->get(*Class::castPtr<String>(arg->_value))
 			);
 		} else if (instanceof<Map<Object, Object>>(_value)) {
 			SPtr<Object> val = (Class::castPtr<Map<Object, Object>>(_value))->get(*(arg->_value));
@@ -486,8 +486,8 @@ public:
 		} else {
 			if (instanceof<Resolver>(_value))
 				return newU<Value>(nullptr, (Class::cast<Resolver>(_value))->getVar(*memberName, ValueDomain::DEFAULT), memberName);
-			else if (instanceof<Map<BasicString, Object>>(_value)) {
-				return newU<Value>(nullptr, (Class::cast<Map<BasicString, Object>>(_value))->get(*memberName), memberName);
+			else if (instanceof<Map<IString, Object>>(_value)) {
+				return newU<Value>(nullptr, (Class::cast<Map<IString, Object>>(_value))->get(*memberName), memberName);
 			} else
 				throw EvaluationException(_HERE_, ".", _value->getClass());
 		}

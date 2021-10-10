@@ -30,10 +30,10 @@ public:
 template <class E>
 class ArrayList;
 
-class String : public BasicString {
-friend class BasicString;
+class String : public IString {
+friend class IString;
 public:
-	TYPE_INFO(String, CLASS(String), INHERITS(BasicString));
+	TYPE_INFO(String, CLASS(String), INHERITS(IString));
 protected:
 	std::string _str;
 	mutable volatile int32_t _hash;
@@ -94,8 +94,8 @@ public:
 	: String(str.data(), str.length()) {}
 
 	template <class S>
-	String(S const* str)
-	: String(strData(str), strLen(str)) {}
+	String(S const& str)
+	: String(strData(CPtr(str)), strLen(CPtr(str))) {}
 
 	virtual ~String() override;
 
@@ -490,7 +490,7 @@ public:
 	/*static void simpleSplit(const std::string& str, List<std::string> &results, const char delim, int limit = 65535) {
 		const char *buffer = str.c_str();
 		size_t len = str.size();
-		
+
 		if (len == 0)
 			return;
 
@@ -585,7 +585,9 @@ inline UPtr<String> operator ""_UPTR(const char* str, size_t len) {
 /**
  * Immutable ASCII string with case-insensitive comparison and hash code
  */
-class ASCIICaseInsensitiveString : public BasicString {
+class ASCIICaseInsensitiveString : public IString {
+public:
+	TYPE_INFO(ASCIICaseInsensitiveString, CLASS(ASCIICaseInsensitiveString), INHERITS(IString));
 private:
 	static const unsigned char _toLower[];
 protected:
@@ -647,7 +649,7 @@ public:
 	 */
 	virtual bool equals(const ASCIICaseInsensitiveString& other) const;
 
-	virtual bool equals(const BasicString& other) const override;
+	virtual bool equals(const IString& other) const override;
 
 	/**
 	 * Compares this String to another String, ignoring case.
@@ -662,7 +664,7 @@ public:
 	 *
 	 * @see equals(const String&)
 	 */
-	bool equalsIgnoreCase(const BasicString& other) const;
+	bool equalsIgnoreCase(const IString& other) const;
 
 	/**
 	 * Returns a hash code for this string. The hash code for a String object is computed as

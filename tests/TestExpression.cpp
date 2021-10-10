@@ -81,7 +81,7 @@ TEST(ExprTests, ExtraTests) {
 
 	SPtr<Object> res1 = ExpressionEvaluator::expressionValue(newS<String>("{a = 3, b = 2 * (2 + 1), c = {d = '123', e = 1 + 2}}"), resolver);
 	UPtr<String> res2 = res1->toString();
-	CHECK((instanceof<Map<BasicString, Object>>(res1)));
+	CHECK((instanceof<Map<IString, Object>>(res1)));
 	STRCMP_EQUAL("{a=3, b=6, c={d=123, e=3}}", res2->c_str());
 
 	res2 = ExpressionEvaluator::expressionValue(newS<String>("{a = 3\r\n b = 2 * (2 + 1)\n c = {\nd = '123',\r\n e = 1 + 2}\n}"), resolver)->toString();

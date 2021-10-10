@@ -2,34 +2,34 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "slib/util/expr/Lambda.h"
+#include "slib/util/expr/Expression.h"
 #include "slib/util/expr/ExpressionEvaluator.h"
 
 namespace slib {
 namespace expr {
 
-Lambda::~Lambda() {}
+Expression::~Expression() {}
 
-UPtr<Value> Lambda::evaluate(SPtr<Resolver> const& resolver) {
-	return ExpressionEvaluator::expressionValue(newS<ExpressionInputStream>(_text), resolver);
+UPtr<Value> Expression::evaluate(SPtr<Resolver> const& resolver) {
+	_text->reset();
+	return ExpressionEvaluator::expressionValue(*_text, resolver);
 }
 
-UPtr<Value> Lambda::readLiteral() {
+UPtr<Value> Expression::readLiteral() {
 	using ReservedWord = ExpressionInputStream::ReservedWord;
 
-	SPtr<ExpressionInputStream> input = newS<ExpressionInputStream>(_text);
-
-	input->skipBlanks();
-	ValueDomain domain = input->readDomain();
-	char ch = input->peek();
+	_text->reset();
+	_text->skipBlanks();
+	ValueDomain domain = _text->readDomain();
+	char ch = _text->peek();
 
 	if (ExpressionInputStream::isIdentifierStart(ch)) {
 		ReservedWord reservedWord;
-		UPtr<String> symbolName = input->readName(reservedWord);
+		UPtr<String> symbolName = _text->readName(reservedWord);
 		if (reservedWord != ReservedWord::NONE)
 			throw SyntaxErrorException(_HERE_, fmt::format("Symbol name expected, reserved word '{}' found instead", *symbolName).c_str());
-		input->skipBlanks();
-		if (input->peek() == CharacterIterator::DONE)
+		_text->skipBlanks();
+		if (_text->peek() == CharacterIterator::DONE)
 			return Value::of(std::move(symbolName), domain);
 	}
 

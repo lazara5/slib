@@ -198,11 +198,11 @@ bool ASCIICaseInsensitiveString::equals(const ASCIICaseInsensitiveString& other)
 	return equalsIgnoreCase(other);
 }
 
-bool ASCIICaseInsensitiveString::equals(const BasicString& other) const {
+bool ASCIICaseInsensitiveString::equals(const IString& other) const {
 	return equalsIgnoreCase(other);
 }
 
-bool ASCIICaseInsensitiveString::equalsIgnoreCase(const BasicString& other) const {
+bool ASCIICaseInsensitiveString::equalsIgnoreCase(const IString& other) const {
 	const char *otherBuffer = other.data();
 	if (_buffer == nullptr)
 		return (otherBuffer == nullptr);

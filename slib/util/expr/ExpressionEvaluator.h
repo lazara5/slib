@@ -51,16 +51,16 @@ private:
 
 public:
 	/** @throws EvaluationException */
-	static UPtr<String> strExpressionValue(SPtr<BasicString> const& input, SPtr<Resolver> const& resolver);
+	static UPtr<String> strExpressionValue(SPtr<IString> const& input, SPtr<Resolver> const& resolver);
 
 	/** @throws EvaluationException */
-	static SPtr<Object> expressionValue(SPtr<BasicString> const& input, SPtr<Resolver> const& resolver);
+	static SPtr<Object> expressionValue(SPtr<IString> const& input, SPtr<Resolver> const& resolver);
 
 	/** @throws EvaluationException */
-	static UPtr<Value> expressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+	static UPtr<Value> expressionValue(ExpressionInputStream& input, SPtr<Resolver> const& resolver);
 
 	/** @throws EvaluationException */
-	static UPtr<Value> singleExpressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+	static UPtr<Value> singleExpressionValue(ExpressionInputStream& input, SPtr<Resolver> const& resolver);
 
 	/** @throws EvaluationException */
 	static UPtr<String> interpolate(String const& pattern, SPtr<Resolver> const& resolver, bool ignoreMissing);
@@ -69,7 +69,7 @@ public:
 	static SPtr<Object> smartInterpolate(String const& pattern, SPtr<Resolver> const& resolver, bool ignoreMissing);
 protected:
 	/** @throws EvaluationException */
-	static UPtr<String> strExpressionValue(SPtr<ExpressionInputStream> const& input, SPtr<Resolver> const& resolver);
+	static UPtr<String> strExpressionValue(ExpressionInputStream& input, SPtr<Resolver> const& resolver);
 };
 
 } // namespace expr

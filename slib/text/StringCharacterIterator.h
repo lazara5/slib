@@ -13,16 +13,16 @@ namespace slib {
 
 class StringCharacterIterator : public CharacterIterator {
 protected:
-	SPtr<BasicString> _text;
+	SPtr<IString> _text;
 	ptrdiff_t _pos;
 private:
 	const char *_buffer;
 	ptrdiff_t _begin;
 	ptrdiff_t _end;
 public:
-	StringCharacterIterator(SPtr<BasicString> const& text, ptrdiff_t begin, ptrdiff_t end, ptrdiff_t pos);
+	StringCharacterIterator(SPtr<IString> const& text, ptrdiff_t begin, ptrdiff_t end, ptrdiff_t pos);
 
-	StringCharacterIterator(SPtr<BasicString> const& text)
+	StringCharacterIterator(SPtr<IString> const& text)
 	:StringCharacterIterator(text, 0, (ssize_t)text->length(), 0) {}
 
 	virtual char first() override;

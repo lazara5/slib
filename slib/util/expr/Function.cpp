@@ -22,10 +22,11 @@ Class const& FunctionInstance::peekArg() {
 	return _function->getParamType(_args.size());
 }
 
-void FunctionInstance::readArg(SPtr<ExpressionInputStream> const& input) {
+void FunctionInstance::readArg(ExpressionInputStream& input) {
 	Class const& argClass = peekArg();
-	if (argClass == classOf<Lambda>::_class())
-		addArg(input->readArgLambda(_function->_argSeparator, _function->_argClose));
+
+	if (argClass == classOf<Expression>::_class())
+		addArg(input.readArgExpression(_function->_argSeparator, _function->_argClose));
 	else {
 		if (_function->_argSeparator == ',')
 			addArg(ExpressionEvaluator::singleExpressionValue(input, _argResolver)->getValue());
@@ -36,7 +37,7 @@ void FunctionInstance::readArg(SPtr<ExpressionInputStream> const& input) {
 
 SPtr<FunctionInstance> defaultNewFunctionInstance(SPtr<Function> const& function, SPtr<String> const& symbolName,
 												  SPtr<Resolver> const& resolver) {
-	return newU<FunctionInstance>(function, symbolName, resolver, resolver);
+	return newS<FunctionInstance>(function, symbolName, resolver, resolver);
 }
 
 } // namespace expr

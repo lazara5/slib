@@ -20,9 +20,9 @@ namespace slib {
  * Mutable string container (roughly equivalent with a Java <b>%String</b> + <b>%StringBuilder</b>, i.e. <b>NOT</b>
  * thread-safe when used in a mutable fashion !!!)
  */
-class StringBuilder : public BasicString {
+class StringBuilder : public IString {
 public:
-	TYPE_INFO(StringBuilder, CLASS(StringBuilder), INHERITS(BasicString));
+	TYPE_INFO(StringBuilder, CLASS(StringBuilder), INHERITS(IString));
 private:
 	//void build(const char *format, ...);
 protected:
@@ -48,7 +48,7 @@ public:
 	:StringBuilder(std::get<0>(t), std::get<1>(t), std::get<2>(t)) {}
 
 	StringBuilder(StringBuilder const& other);
-	StringBuilder(BasicString const& other);
+	StringBuilder(IString const& other);
 	StringBuilder(std::string const& other);
 
 	/** move constructor */
@@ -100,7 +100,7 @@ public:
 	// appenders
 	StringBuilder& add(const char *src, std::ptrdiff_t len = -1);
 	StringBuilder& add(Array<uint8_t> const& src);
-	StringBuilder& add(BasicString const& src);
+	StringBuilder& add(IString const& src);
 	StringBuilder& add(ASCIICaseInsensitiveString const& src);
 	StringBuilder& add(std::string const& src);
 

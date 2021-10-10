@@ -7,7 +7,7 @@
 
 namespace slib {
 
-int BasicString::compareTo(const BasicString &other) const {
+int IString::compareTo(const IString &other) const {
 	const char *buffer = data();
 	const char *otherBuffer = other.data();
 
@@ -24,11 +24,11 @@ int BasicString::compareTo(const BasicString &other) const {
 	return (len == otherLen) ? 0 : len - otherLen;
 }
 
-bool BasicString::equals(BasicString const& other) const {
+bool IString::equals(IString const& other) const {
 	return StringView::equals(this, other);
 }
 
-UPtr<String> BasicString::toUpperCase() const {
+UPtr<String> IString::toUpperCase() const {
 	const char *buffer = data();
 	if (!buffer)
 		return nullptr;
@@ -40,7 +40,7 @@ UPtr<String> BasicString::toUpperCase() const {
 	return res;
 }
 
-UPtr<String> BasicString::toLowerCase() const {
+UPtr<String> IString::toLowerCase() const {
 	const char *buffer = data();
 	if (!buffer)
 		return nullptr;

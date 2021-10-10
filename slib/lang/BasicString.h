@@ -10,39 +10,39 @@
 
 namespace slib {
 
-class BasicString: virtual public Object {
+class IString: virtual public Object {
 public:
-	TYPE_INFO(BasicString, CLASS(BasicString), INHERITS(Object));
+	TYPE_INFO(IString, CLASS(IString), INHERITS(Object));
 public:
 	virtual size_t length() const = 0;
 	virtual const char *data() const = 0;
 
-	virtual int compareTo(BasicString const& other) const;
+	virtual int compareTo(IString const& other) const;
 
-	bool operator==(BasicString const& other) const {
+	bool operator==(IString const& other) const {
 		return equals(other);
 	}
 
 	using Object::equals;
 
 	/**
-	 * Compares this BasicString to the specified BasicString object. Returns <i>true</i>
-	 * only if the argument is a BasicString object that contains the same sequence
-	 * of characters as this BasicString or if both this and the other BasicString
+	 * Compares this IString to the specified IString object. Returns <i>true</i>
+	 * only if the argument is a IString object that contains the same sequence
+	 * of characters as this IString or if both this and the other BasicString
 	 * object are <i>'NULL'</i> references.
 	 * @param other The BasicString object to compare this String against
 	 * @return <i>true</i> if the given object represents a String object
 	 *		equivalent to this String, <i>false</i> otherwise.
 	 */
-	virtual bool equals(BasicString const& other) const;
+	virtual bool equals(IString const& other) const;
 
 	UPtr<String> toUpperCase() const;
 	UPtr<String> toLowerCase() const;
 };
 
-class BasicStringView : public BasicString {
+class BasicStringView : public IString {
 public:
-	TYPE_INFO(BasicStringView, CLASS(BasicStringView), INHERITS(BasicString));
+	TYPE_INFO(BasicStringView, CLASS(BasicStringView), INHERITS(IString));
 protected:
 	const char *_str;	///< internal string
 	size_t _len;		///< string length
@@ -96,21 +96,21 @@ public:
 } // namespace slib
 
 template <>
-struct fmt::formatter<slib::BasicString> {
+struct fmt::formatter<slib::IString> {
 	const char *parse(format_parse_context& ctx) const {
 		return ctx.begin();
 	}
 
 	template <typename FormatContext>
-	format_context::iterator format(const slib::BasicString& sv, FormatContext& ctx) {
+	format_context::iterator format(const slib::IString& sv, FormatContext& ctx) {
 		return format_to(ctx.out(), "{:.{}}", sv.data(), sv.length());
 	}
 };
 
 namespace std {
 	// for using BasicString as key in unordered_map
-	template<> struct hash<slib::BasicString> {
-		std::size_t operator()(const slib::BasicString& s) const {
+	template<> struct hash<slib::IString> {
+		std::size_t operator()(const slib::IString& s) const {
 			return (size_t)s.hashCode();
 		}
 	};

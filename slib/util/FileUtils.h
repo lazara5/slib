@@ -29,7 +29,6 @@ private:
 	}
 
 public:
-
 	template <class S>
 	static mode_t parseModeSpec(S const* modeSpec) {
 		size_t modeLen = strLen(modeSpec);

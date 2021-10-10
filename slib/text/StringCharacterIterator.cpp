@@ -7,7 +7,7 @@
 
 namespace slib {
 
-StringCharacterIterator::StringCharacterIterator(SPtr<BasicString> const& text, ptrdiff_t begin, ptrdiff_t end, ptrdiff_t pos)
+StringCharacterIterator::StringCharacterIterator(SPtr<IString> const& text, ptrdiff_t begin, ptrdiff_t end, ptrdiff_t pos)
 :_text(text)
 ,_buffer(text->data()) {
 	if (!text)

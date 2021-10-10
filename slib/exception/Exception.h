@@ -11,8 +11,10 @@
 #define _TOSTRING_(x) _STRINGIFY_(x)
 #define _HERE_ __FILE__ ":" _TOSTRING_(__LINE__)
 
+#define THROW(EXCEPTION, ...) throw EXCEPTION(_HERE_, ##__VA_ARGS__)
+
 namespace slib {
-	
+
 /** Base class for all exceptions thrown by 'slib::' classes */
 class Exception {
 private:
@@ -25,25 +27,25 @@ protected:
 	, _errorMessage(msg)
 	, _className(className) {
 	}
-	
+
 	Exception(const char *where, const char *className, Exception const& e);
 
 	Exception(const char *where, const char *className, const char *msg, Exception const& e);
 public:
-	/** 
-	 * Constructs an Exception object with a given location and error message 
+	/**
+	 * Constructs an Exception object with a given location and error message
 	 * @param where exception location (should be passed using the <i><b>_HERE_</b></i> macro)
 	 * @param msg error message
 	 */
 	Exception(const char *where, const char *msg)
 	: Exception(where, "Exception", msg) {
 	}
-	
+
 	Exception(const char *where, const Exception& e)
 	: Exception(where, "Exception", e) {
 	}
-	
-	/** 
+
+	/**
 	 * Returns the class name for this Exception object
 	 * @return the exception class name
 	 */
@@ -51,7 +53,7 @@ public:
 		return _className.c_str();
 	}
 
-	/** 
+	/**
 	 * Returns the error message for this Exception object
 	 * @return the error message
 	 */
@@ -59,7 +61,7 @@ public:
 		return _errorMessage.c_str();
 	}
 
-	/** 
+	/**
 	 * Returns the location for this Exception object
 	 * @return the source code location
 	 */
@@ -67,7 +69,7 @@ public:
 		return _where.c_str();
 	}
 
-	/** 
+	/**
 	 * Returns a string representation of this Exception object
 	 * @return a string representation of this Exception object
 	 */
@@ -113,44 +115,44 @@ public:
  */
 class ConcurrentModificationException : public Exception {
 public:
-	ConcurrentModificationException(const char *where, const char *msg) 
+	ConcurrentModificationException(const char *where, const char *msg)
 	:Exception(where, "ConcurrentModificationException", msg) {}
 
-	ConcurrentModificationException(const char *where) 
+	ConcurrentModificationException(const char *where)
 	:Exception(where, "ConcurrentModificationException", "") {}
 };
 
 class InitException : public Exception {
 public:
-	InitException(const char *where, const char *msg) 
+	InitException(const char *where, const char *msg)
 	:Exception(where, "InitException", msg) {}
-	
-	InitException(const char *where, const Exception& e) 
+
+	InitException(const char *where, const Exception& e)
 	:Exception(where, "InitException", e) {}
 
-	InitException(const char *where) 
+	InitException(const char *where)
 	:Exception(where, "InitException", "") {}
 };
 
 class NoSuchElementException : public Exception {
 public:
-	NoSuchElementException(const char *where, const char *msg) 
+	NoSuchElementException(const char *where, const char *msg)
 	:Exception(where, "NoSuchElementException", msg) {}
 
-	NoSuchElementException(const char *where) 
+	NoSuchElementException(const char *where)
 	:Exception(where, "NoSuchElementException", "") {}
 };
 
 /**
- * Thrown to indicate that an index of some sort (such as to an array, to a string or to a vector) 
+ * Thrown to indicate that an index of some sort (such as to an array, to a string or to a vector)
  * is out of range. Applications can subclass this class to indicate similar exceptions.
  */
 class IndexOutOfBoundsException : public Exception {
 public:
-	IndexOutOfBoundsException(const char *where, const char *msg) 
+	IndexOutOfBoundsException(const char *where, const char *msg)
 	:Exception(where, "IndexOutOfBoundsException", msg) {}
 
-	IndexOutOfBoundsException(const char *where) 
+	IndexOutOfBoundsException(const char *where)
 	:Exception(where, "IndexOutOfBoundsException", "") {}
 };
 

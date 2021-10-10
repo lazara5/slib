@@ -18,7 +18,7 @@ TEST(TypeSystem, InstanceOf) {
 	CHECK_FALSE(instanceof<String>(i1));
 	CHECK(StringView::equals(i1.getClass().getName(), "Integer"));
 
-	CHECK(instanceof<BasicString>(s1));
+	CHECK(instanceof<IString>(s1));
 	CHECK(instanceof<String>(s1));
 	CHECK_FALSE(instanceof<Number>(s1));
 

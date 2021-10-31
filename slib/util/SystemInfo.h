@@ -5,11 +5,11 @@
 #ifndef H_SLIB_UTIL_SYSTEMINFO_H
 #define H_SLIB_UTIL_SYSTEMINFO_H
 
-#include "slib/util/PropertySource.h"
+#include "slib/util/expr/Resolver.h"
 
 namespace slib {
 
-class SystemInfo : public PropertySource {
+class SystemInfo : public expr::LazyResolver {
 private:
 	/** hostname */
 	SPtr<String> _hostname;

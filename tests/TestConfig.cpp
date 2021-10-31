@@ -50,7 +50,10 @@ TEST_GROUP(ConfigTests) {
 			.option("testObj.testLong2", OptionType::LONG).range(1, 10)
 			.option("testObj.testLong3", OptionType::LONG)
 			.option("testObj.testLong4", OptionType::LONG).range(6, 8).defaultValue("7")
-			.option("testObj.testObj2.testLong4", OptionType::LONG);
+			.option("testObj.testObj2.testLong4", OptionType::LONG)
+			.option("testObj.testArray2.[]", OptionType::LONG)
+			.option("testObj.testArray3.[].name", OptionType::STRING)
+			.option("testObj.testArray3.[].type", OptionType::LONG);
 		config = configLoader.load();
 		//config = newU<TestConfig>(*FileUtils::buildPath(FileUtils::getPath(test_argv[0]), "data/test.conf"), "SlibTest");
 		//config = newU<TestConfig>("test.conf", "SlibTest");
@@ -128,7 +131,7 @@ TEST(ConfigTests, BasicTests)
 	CHECK_EQUAL(5, config->getLong("testObj.testLong2"));
 	CHECK_EQUAL(4.7, config->getDouble("testObj.testDouble1"));
 	CHECK_EQUAL(true, config->getBool("testObj.testBool1"));
-	CHECK_EQUAL(6, config->getLong("testObj.testArray.*.b", {0}));
+	CHECK_EQUAL(6, config->getLong("testObj.testArray.[].b", {0}));
 	CHECK_EQUAL(7, config->getLong("testObj.testLong4"));
 	CHECK_THROWS(MissingValueException, config->getLong("missing"));
 	CHECK_THROWS(MissingValueException, config->getLong("missing"));

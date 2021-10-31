@@ -6,7 +6,6 @@
 #define H_SLIB_UTIL_STRINGUTILS_H
 
 #include "slib/exception/Exception.h"
-#include "slib/util/PropertySource.h"
 #include "slib/collections/Map.h"
 #include "slib/lang/StringBuilder.h"
 #include "slib/util/TemplateUtils.h"

@@ -4,6 +4,7 @@
 
 #include "slib/util/StringUtils.h"
 #include "slib/lang/String.h"
+#include "slib/exception/ValueException.h"
 
 namespace slib {
 

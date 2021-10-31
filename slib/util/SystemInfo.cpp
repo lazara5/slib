@@ -10,10 +10,10 @@ extern slib::Log logger;
 namespace slib {
 
 SystemInfo::SystemInfo() {
-	provideProperty("hostname",	static_cast<GetProperty>(&SystemInfo::getHostname));
-	provideProperty("ip", 		static_cast<GetProperty>(&SystemInfo::getIp));
-	provideProperty("ipv4", 	static_cast<GetProperty>(&SystemInfo::getIpV4));
-	provideProperty("ipv6", 	static_cast<GetProperty>(&SystemInfo::getIpV6));
+	provideVar("hostname",	static_cast<GetVar>(&SystemInfo::getHostname));
+	provideVar("ip",		static_cast<GetVar>(&SystemInfo::getIp));
+	provideVar("ipv4",		static_cast<GetVar>(&SystemInfo::getIpV4));
+	provideVar("ipv6",		static_cast<GetVar>(&SystemInfo::getIpV6));
 }
 
 static int getIPAddrs(SPtr<String>& ip, SPtr<String>& ipv4, SPtr<String>& ipv6) {

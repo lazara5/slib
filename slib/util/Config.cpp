@@ -21,8 +21,8 @@ namespace slib {
 
 using namespace expr;
 
-const UPtr<Map<Class, ObjConfig::NewConfigValue>> ObjConfig::_mapper
-	= newU<HashMap<Class, ObjConfig::NewConfigValue>, std::initializer_list<std::pair<SPtr<Class>, SPtr<ObjConfig::NewConfigValue>>>>({
+const UPtr<Map<Class, ConfigObj::NewConfigValue>> ConfigObj::_mapper
+	= newU<HashMap<Class, ConfigObj::NewConfigValue>, std::initializer_list<std::pair<SPtr<Class>, SPtr<ConfigObj::NewConfigValue>>>>({
 	{
 		newS<Class>(classOf<String>::_class()),
 		newS<Config::NewConfigValue>([](SPtr<Object> const& obj) {
@@ -51,6 +51,12 @@ const UPtr<Map<Class, ObjConfig::NewConfigValue>> ObjConfig::_mapper
 		newS<Class>(classOf<Map<IString, Object>>::_class()),
 		newS<Config::NewConfigValue>([](SPtr<Object> const& obj) {
 			return newU<ConfigValue>(Class::cast<Map<IString, Object>>(obj));
+		})
+	},
+	{
+		newS<Class>(classOf<ArrayList<Object>>::_class()),
+		newS<Config::NewConfigValue>([](SPtr<Object> const& obj) {
+			return newU<ConfigValue>(Class::cast<ArrayList<Object>>(obj));
 		})
 	},
 });
@@ -145,6 +151,13 @@ void ConfigLoader::ConstraintNode::validateChildren(SPtr<Object> const& obj, SPt
 				break;
 			}
 			case OptionType::ARRAY: {
+				SPtr<ArrayList<Object>> objArray = Class::cast<ArrayList<Object>>(obj);
+				SPtr<ConstraintNode> constraintNode = _children->get("[]"_IS);
+				auto it = objArray->constIterator();
+				while (it->hasNext()) {
+					SPtr<Object> item = it->next();
+					constraintNode->validate(item, resolver);
+				}
 				break;
 			}
 			default:
@@ -219,7 +232,7 @@ ConfigLoader& ConfigLoader::withResolver(SPtr<String> const& name, SPtr<expr::Re
 
 void ConfigLoader::LongConstraint::validateValue(SPtr<Object> const& obj) {
 	if (!instanceof<Long>(obj))
-		throw InitException(_HERE_, fmt::format("Invalid option type: expected Long, got {}", obj->getClass().getName()).c_str());
+		THROW(InitException, fmt::format("Invalid option type: expected Long, got {}", obj->getClass().getName()).c_str());
 	int64_t val = Class::cast<Long>(obj)->longValue();
 	if ((val < _min) || (val > _max))
 		throw InitException(_HERE_, fmt::format("Value {} out of range [{} .. {}]", val, _min, _max).c_str());
@@ -366,10 +379,6 @@ void Config::openConfigFile(bool minimal) {
 
 void Config::shutdown() {
 	Log::shutdown();
-}
-
-void Config::registerPropertySource(String const& name, SPtr<PropertySource> const& src) {
-	_cfgProc.registerSource(name, src);
 }
 
 void Config::registerPropertySink(String const& name, ConfigProcessor::PropertySink const& sink) {

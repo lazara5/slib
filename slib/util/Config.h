@@ -54,11 +54,10 @@ enum struct ConfigValueType {
 	BOOL,
 	STRING,
 	OBJ,
-	EXCEPTION,
-	NUL
+	ARRAY
 };
 
-class ObjConfig {
+class ConfigObj {
 protected:
 	struct ConfigValue {
 		union {
@@ -66,27 +65,22 @@ protected:
 			double _double;
 			bool _bool;
 		};
-		SPtr<String> _where;
 		SPtr<String> _str;
-		SPtr<ObjConfig> _obj;
+		SPtr<ConfigObj> _obj;
 		ConfigValueType _type;
 
-		ConfigValue(): _long(0), _str(nullptr), _type(ConfigValueType::NUL) {}
-		ConfigValue(const char *where, const char *msg)
-		: _where(newS<String>(where))
-		, _str(newS<String>(msg))
-		, _type(ConfigValueType::EXCEPTION) {}
 		ConfigValue(int64_t val) : _long(val), _type(ConfigValueType::LONG) {}
 		ConfigValue(double val) : _double(val), _type(ConfigValueType::DOUBLE) {}
 		ConfigValue(bool val) : _bool(val), _type(ConfigValueType::BOOL) {}
 		ConfigValue(SPtr<String> const& str) : _str(str), _type(ConfigValueType::STRING) {}
-		ConfigValue(SPtr<Map<IString, Object>> obj) : _obj(newS<ObjConfig>(obj)), _type(ConfigValueType::OBJ) {}
+		ConfigValue(SPtr<Map<IString, Object>> obj) : _obj(newS<ConfigObj>(obj)), _type(ConfigValueType::OBJ) {}
+		ConfigValue(SPtr<ArrayList<Object>> obj) : _obj(newS<ConfigObj>(obj)), _type(ConfigValueType::ARRAY) {}
 	};
 protected:
 	typedef std::function<UPtr<ConfigValue>(SPtr<Object> const&)> NewConfigValue;
 	static const UPtr<Map<Class, NewConfigValue>> _mapper;
 
-	SPtr<Map<IString, Object>> _configRoot;
+	SPtr<Object> _configRoot;
 protected:
 	template <class S>
 	UPtr<ConfigValue> internalGetProperty(S const* path, std::initializer_list<int> indices) const {
@@ -103,7 +97,7 @@ protected:
 			else if (instanceof<List<Object>>(obj)) {
 				try {
 					size_t index;
-					if ((elem.length() == 1) && (*elem.data() == '*')) {
+					if ((elem.length() == 2) && (elem.data()[0] == '[') && (elem.data()[1] == ']')) {
 						if (crtIndex == indices.end())
 							throw ConfigException(_HERE_, "Missing index");
 						index = *crtIndex;
@@ -112,12 +106,12 @@ protected:
 						index = ULong::parseULong(elem);
 					obj = (Class::cast<List<Object>>(obj))->get(index);
 				} catch (Exception const& e) {
-					throw ConfigException(_HERE_, fmt::format("Caused by {} [{} ({})]",
-															  e.getName(), e.getMessage(), e.where()).c_str());
+					THROW(ConfigException, fmt::format("Caused by {} [{} ({})]",
+													   e.getName(), e.getMessage(), e.where()).c_str());
 				}
 			} else {
-				throw ConfigException(_HERE_, fmt::format("{} is not an object or array",
-														  StringView(strData(path), pathLen)).c_str());
+				THROW(ConfigException, fmt::format("{} is not an object or array",
+												   StringView(strData(path), pathLen)).c_str());
 			}
 
 			if (!obj)
@@ -155,12 +149,15 @@ protected:
 	}
 
 public:
-	ObjConfig(SPtr<Map<IString, Object>> const& configRoot)
+	ConfigObj(SPtr<Map<IString, Object>> const& configRoot)
 	: _configRoot(configRoot) {}
 
-	virtual ~ObjConfig() {}
+	ConfigObj(SPtr<ArrayList<Object>> const& configRoot)
+	: _configRoot(configRoot) {}
 
-	SPtr<Map<IString, Object>> getRoot() {
+	virtual ~ConfigObj() {}
+
+	SPtr<Object> getRoot() {
 		return _configRoot;
 	}
 
@@ -168,11 +165,11 @@ public:
 	SPtr<String> getString(S const* name, std::initializer_list<int> indices = {}) const {
 		SPtr<ConfigValue> val = internalGetProperty(name, indices);
 		if (!val)
-			throw MissingValueException(_HERE_, name);
+			THROW(MissingValueException, name);
 		else if (val->_type == ConfigValueType::STRING)
 			return val->_str;
 		else
-			throw ConfigException(_HERE_, "Type mismatch");
+			THROW(ConfigException, "Type mismatch");
 	}
 
 	template <class S>
@@ -189,7 +186,7 @@ public:
 						   SPtr<String> const& defaultValue) const {
 		try {
 			return getString(name, indices);
-		}  catch (MissingValueException const&) {
+		} catch (MissingValueException const&) {
 			return defaultValue;
 		}
 	}
@@ -198,14 +195,14 @@ public:
 	double getDouble(S const* name, std::initializer_list<int> indices = {}) {
 		SPtr<ConfigValue> val = internalGetProperty(name, indices);
 		if (!val)
-			throw MissingValueException(_HERE_, name);
+			THROW(MissingValueException, name);
 		switch (val->_type) {
 			case ConfigValueType::DOUBLE:
 				return val->_double;
 			case ConfigValueType::LONG:
 				return (double)val->_long;
 			default:
-				throw ConfigException(_HERE_, "Type mismatch");
+				THROW(ConfigException, "Type mismatch");
 		}
 	}
 
@@ -213,7 +210,7 @@ public:
 	double getDouble(S const* name, double defaultValue) const {
 		try {
 			return getDouble(name);
-		}  catch (MissingValueException const&) {
+		} catch (MissingValueException const&) {
 			return defaultValue;
 		}
 	}
@@ -237,7 +234,7 @@ public:
 			case ConfigValueType::BOOL:
 				return val->_bool;
 			default:
-				throw ConfigException(_HERE_, "Type mismatch");
+				THROW(ConfigException, "Type mismatch");
 		}
 	}
 
@@ -245,7 +242,7 @@ public:
 	bool getBool(S const* name, bool defaultValue) const {
 		try {
 			return getBool(name);
-		}  catch (MissingValueException const&) {
+		} catch (MissingValueException const&) {
 			return defaultValue;
 		}
 	}
@@ -255,7 +252,7 @@ public:
 				 bool defaultValue) const {
 		try {
 			return getBool(name, indices);
-		}  catch (MissingValueException const&) {
+		} catch (MissingValueException const&) {
 			return defaultValue;
 		}
 	}
@@ -293,10 +290,10 @@ public:
 	}
 
 	template <class S>
-	SPtr<ObjConfig> getObj(S const* name,  std::initializer_list<int> indices = {}) {
+	SPtr<ConfigObj> getObj(S const* name,  std::initializer_list<int> indices = {}) {
 		SPtr<ConfigValue> val = internalGetProperty(name, indices);
 		if (!val)
-			throw MissingValueException(_HERE_, name);
+			THROW(MissingValueException, name);
 		switch (val->_type) {
 			case ConfigValueType::OBJ:
 				return val->_obj;
@@ -306,7 +303,7 @@ public:
 	}
 };
 
-class Config : public ObjConfig {
+class Config : public ConfigObj {
 protected:
 	SPtr<String> _appDir;
 	SPtr<String> _appName;
@@ -315,7 +312,7 @@ public:
 	Config(SPtr<Map<IString, Object>> const& configRoot,
 		   SPtr<String> const& appName,
 		   SPtr<String> const& confDir, SPtr<String> const& appDir)
-	: ObjConfig(configRoot)
+	: ConfigObj(configRoot)
 	, _appDir(appDir)
 	, _appName(appName)
 	, _confDir(confDir) {}
@@ -505,7 +502,6 @@ protected:
 		void checkOrSetType(OptionType type);
 
 		SPtr<Object> validate(SPtr<Object> const& obj, SPtr<expr::Resolver> const& resolver);
-
 	};
 
 	typedef struct _OptionTypeDesc {

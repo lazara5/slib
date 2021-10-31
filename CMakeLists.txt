@@ -38,7 +38,6 @@ set(SLIB_SOURCES
 	slib/util/Log.cpp
 	slib/util/PidFile.cpp
 	slib/util/ProcessUtils.cpp
-	slib/util/PropertySource.cpp
 	slib/util/Random.cpp
 	slib/util/StringUtils.cpp
 	slib/util/System.cpp

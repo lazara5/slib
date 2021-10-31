@@ -33,7 +33,7 @@ UPtr<Value> Expression::readLiteral() {
 			return Value::of(std::move(symbolName), domain);
 	}
 
-	throw SyntaxErrorException(_HERE_, "Literal expected");
+	THROW(SyntaxErrorException, "Literal expected");
 }
 
 } // namespace expr

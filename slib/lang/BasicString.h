@@ -93,6 +93,10 @@ public:
 	}
 };
 
+inline BasicStringView operator ""_IS(const char* str, size_t len) noexcept {
+	return BasicStringView(str, len);
+}
+
 } // namespace slib
 
 template <>

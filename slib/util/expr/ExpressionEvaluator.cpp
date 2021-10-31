@@ -340,7 +340,7 @@ static UPtr<Value> logicalTermValue(ExpressionInputStream& input, SPtr<Resolver>
 				val = Value::selectOr(std::move(val), std::move(nextVal));
 				break;
 			default:
-				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
+				THROW(SyntaxErrorException, fmt::format("Unknown operator '{}'", (char)op).c_str());
 		}
 
 		input.skipBlanks();
@@ -371,7 +371,7 @@ static UPtr<Value> eqTermValue(ExpressionInputStream& input, SPtr<Resolver> cons
 				input.readChar();
 				op = OP_NEQ;
 			} else
-				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '~{}'", input.peek()).c_str());
+				THROW(SyntaxErrorException, fmt::format("Unknown operator '~{}'", input.peek()).c_str());
 		}
 
 		input.skipBlanks();
@@ -384,7 +384,7 @@ static UPtr<Value> eqTermValue(ExpressionInputStream& input, SPtr<Resolver> cons
 				val = val->neq(nextVal);
 				break;
 			default:
-				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
+				THROW(SyntaxErrorException, fmt::format("Unknown operator '{}'", (char)op).c_str());
 		}
 
 		input.skipBlanks();
@@ -428,7 +428,7 @@ static UPtr<Value> relTermValue(ExpressionInputStream& input, SPtr<Resolver> con
 				val = val->gte(nextVal);
 				break;
 			default:
-				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
+				THROW(SyntaxErrorException, fmt::format("Unknown operator '{}'", (char)op).c_str());
 		}
 
 		input.skipBlanks();
@@ -455,7 +455,7 @@ static UPtr<Value> addTermValue(ExpressionInputStream& input, SPtr<Resolver> con
 				val = val->subtract(nextVal);
 				break;
 			default:
-				throw SyntaxErrorException(_HERE_, fmt::format("Unknown operator '{}'", (char)op).c_str());
+				THROW(SyntaxErrorException, fmt::format("Unknown operator '{}'", (char)op).c_str());
 		}
 
 		input.skipBlanks();
@@ -563,7 +563,7 @@ static UPtr<Value> factorValue(ExpressionInputStream& input, SPtr<Resolver> cons
 					UPtr<Value> arg = ExpressionEvaluator::expressionValue(input, resolver);
 					input.skipBlanks();
 					if (input.peek() != ']')
-						throw SyntaxErrorException(_HERE_, "Missing right bracket after array argument");
+						THROW(SyntaxErrorException, "Missing right bracket after array argument");
 					input.readChar();
 					val = val->index(arg);
 				}

@@ -174,8 +174,11 @@ public:
 };
 
 class LazyResolver : public Resolver {
+protected:
+	typedef SPtr<Object> (LazyResolver::*GetVar)() const;
 private:
 	bool _initialized;
+	HashMap<String, GetVar> _vars;
 public:
 	LazyResolver()
 	: _initialized(false) {}
@@ -191,12 +194,18 @@ public:
 		}
 	}
 
-	virtual SPtr<Object> provideVar(String const& name) const = 0;
-
 	virtual SPtr<Object> getVar(String const& name, ValueDomain domain SLIB_UNUSED) const override final {
 		if (!_initialized)
 			const_cast<LazyResolver *>(this)->init();
-		return provideVar(name);
+		GetVar *getter = _vars.getPtr(name);
+		if (!getter)
+			return nullptr;
+		return (this->**getter)();
+	}
+
+protected:
+	void provideVar(String const& name, GetVar var) {
+		_vars.put(newS<String>(name), newS<GetVar>(var));
 	}
 };
 

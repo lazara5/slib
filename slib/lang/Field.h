@@ -7,8 +7,10 @@
 
 #include "slib/lang/StringView.h"
 #include "slib/lang/String.h"
+#include "slib/lang/Numeric.h"
 #include "slib/util/TemplateUtils.h"
 #include "slib/exception/IllegalArgumentException.h"
+#include "slib/third-party/variant-lite/variant.hpp"
 
 namespace slib {
 
@@ -24,6 +26,77 @@ enum class InnerRefType {
 	INSTANCE,
 	SPTR
 };
+
+typedef enum {
+	NONE = 0,
+	VOID =		1 << 0,
+	NUMBER =	1 << 1,
+	_INT64 =	1 << 2,
+	_LONG =		1 << 3,
+	INT64 = NUMBER | _INT64,
+	LONG = NUMBER | _LONG,
+	_DOUBLE =	1 << 4,
+	DOUBLE = NUMBER | _DOUBLE
+} FieldValType;
+
+struct FieldValue {
+	FieldValType _type;
+	nonstd::variant<void *, int64_t, Long, double, Double> _val;
+public:
+	FieldValue()
+	: _type(FieldValType::NONE) {}
+};
+
+int64_t _fieldGetLong(FieldValue const& val);
+
+template <class S>
+void *_fieldBox(void *src, FieldValue &dst, Class const& dstType) {
+	Class const& srcType = classOf<S>::_class();
+
+	if (dstType.isAssignableFrom(srcType)) {
+		if (hasTypeInfo<S> {}) {
+			TypedClass *tVal = (TypedClass *)src;
+			void *castVal = tVal->__classCast(dstType.getTypeId());
+			if (castVal) {
+				dst._type = FieldValType::VOID;
+				dst._val = castVal;
+				return castVal;
+			}
+		}
+		THROW(IllegalArgumentException);
+	} else {
+		FieldValue fieldValue;
+
+		if (classOf<Number>::_class().isAssignableFrom(srcType)) {
+			if (classOf<Long>::_class().isAssignableFrom(srcType)) {
+				fieldValue._type = FieldValType::INT64;
+				fieldValue._val = (static_cast<Long *>(src))->longValue();
+			}
+		} else if (srcType.isPrimitive()) {
+			if (classOf<int64_t>::_class().isAssignableFrom(srcType)) {
+				fieldValue._type = FieldValType::INT64;
+				fieldValue._val = *(static_cast<int64_t *>(src));
+			}
+		}
+
+		if ((fieldValue._type & FieldValType::NUMBER) != 0) {
+			if (classOf<Number>::_class().isAssignableFrom(dstType)) {
+				if (classOf<Long>::_class().isAssignableFrom(dstType)) {
+					dst._type = FieldValType::LONG;
+					dst._val = Long(_fieldGetLong(fieldValue));
+					return &dst._val;
+				}
+			} else if (dstType.isPrimitive()) {
+				if (classOf<int64_t>::_class().isAssignableFrom(dstType)) {
+					dst._type = FieldValType::INT64;
+					dst._val = _fieldGetLong(fieldValue);
+					return &dst._val;
+				}
+			}
+			THROW(IllegalArgumentException);
+		}
+	}
+}
 
 } // namespace internal
 
@@ -50,8 +123,8 @@ protected:
 		bool sameType = true;
 		Class const& valueClass = classOf<T>::_class();
 		if (valueClass != _fieldType) {
-			if (!_fieldType.isAssignableFrom(valueClass))
-				throw IllegalArgumentException(_HERE_);
+			/*if (!_fieldType.isAssignableFrom(valueClass))
+				throw IllegalArgumentException(_HERE_);*/
 			sameType = false;
 		}
 
@@ -62,32 +135,39 @@ protected:
 			else {
 				SPtr<T> *pSVal = (SPtr<T> *)valueRef;
 				T *pVal = pSVal->get();
-				if (hasTypeInfo<T> {}) {
+				/*if (hasTypeInfo<T> {}) {
 					TypedClass *tVal = (TypedClass *)pVal;
-					void *castVal = tVal->_classCast(_fieldType.getTypeId());
+					void *castVal = tVal->__classCast(_fieldType.getTypeId());
 					if (castVal) {
 						SPtr<void> castSPtr(*pSVal, castVal);
 						set(&instance, &castSPtr, internal::InnerRefType::SPTR);
 					} else
-						throw IllegalArgumentException(_HERE_);
+						THROW(IllegalArgumentException);
 				} else
-					throw IllegalArgumentException(_HERE_);
+					throw IllegalArgumentException(_HERE_);*/
+				internal::FieldValue tmpVal;
+				void *castVal = internal::_fieldBox<T>(pVal, tmpVal, _fieldType);
+				SPtr<void> castSPtr(*pSVal, castVal);
+				set(&instance, &castSPtr, internal::InnerRefType::SPTR);
 			}
 		} else {
 			if (valueRefType == internal::RefType::UPTR) {
 				UPtr<T> *pUVal = (UPtr<T> *)valueRef;
 				valueRef = pUVal->get();
 			}
+			internal::FieldValue tmpVal;
 			if (!sameType) {
-				if (hasTypeInfo<T> {}) {
+				/*if (hasTypeInfo<T> {}) {
 					TypedClass *tVal = (TypedClass *)valueRef;
-					void *castVal = tVal->_classCast(_fieldType.getTypeId());
+					void *castVal = tVal->__classCast(_fieldType.getTypeId());
 					if (castVal)
 						valueRef = castVal;
 					else
 						throw IllegalArgumentException(_HERE_);
 				} else
-					throw IllegalArgumentException(_HERE_);
+					throw IllegalArgumentException(_HERE_);*/
+				void *castVal = internal::_fieldBox<T>(valueRef, tmpVal, _fieldType);
+				valueRef = castVal;
 			}
 			set(&instance, valueRef, internal::InnerRefType::INSTANCE);
 		}

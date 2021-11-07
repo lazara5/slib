@@ -1,23 +1,23 @@
 {
 	"className": "ConfigObject",
 	"def": {
-		"a": "uint64",
-		"b": "string",
+		"a": {"_type": "int64"},
+		"b": {"_type": "string"},
 		"c": {
-			"d": "bool",
+			"d": {"_type": "bool"},
 			"e": {
-				"f": "string",
-				"g": "string"
+				"f": {"_type": "string"},
+				"g": {"_type": "string"}
 			},
-			"h": "uint64",
+			"h": {"_type": "int64"},
 			"i": {
-				"f": "string",
-				"g": "string"
+				"f": {"_type": "string"},
+				"g": {"_type": "string"}
 			}
 		},
 		"j": {
-			"f": "string",
-			"g": "string"
+			"f": {"_type": "string"},
+			"g": {"_type": "string"}
 		}
 	}
 }

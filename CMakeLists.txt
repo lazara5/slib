@@ -22,6 +22,8 @@ set(SLIB_SOURCES
 	slib/lang/String.cpp
 	slib/lang/StringBuilder.cpp
 	slib/lang/StringView.cpp
+	slib/lang/Reflection.cpp
+	slib/lang/Field.cpp
 	slib/collections/Properties.cpp
 	slib/concurrent/Semaphore.cpp
 	slib/concurrent/Thread.cpp

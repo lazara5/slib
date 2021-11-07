@@ -34,41 +34,47 @@ UPtr<String> genClass(StringBuilder &body, Context &ctx, Value const& obj, Strin
 		Value const& value = i->value;
 
 		if (value.IsObject()) {
-			StringBuilder className(ctx._objName);
-			className.add('_').add(ctx._classIdx);
-			ctx._classIdx++;
+			if (value.HasMember("_type")) {
+				// leaf node
+				Value const& typeDesc = value["_type"];
+				assert(typeDesc.IsString());
+				String typeName = typeDesc.GetString();
 
-			StringBuilder newClass;
-			SPtr<String> localClassSig = genClass(newClass, ctx, value, className);
-			SPtr<String> existingClassName = ctx._registry.get(*localClassSig);
-			if (existingClassName)
-				className = *existingClassName;
-			else {
-				body.add(newClass);
-				ctx._registry.put(localClassSig, className.toString());
-			}
+				UPtr<String> type;
 
-			members.add(name);
-			classSig.addFmt("<%s:%s>", name->c_str(), className.c_str());
-			classDef.addFmtLine("\t%s %s;", className.c_str(), name->c_str());
-		} else if (value.IsString()) {
-			String typeDesc = value.GetString();
-			UPtr<String> type;
+				if (typeName.equals("int64"_SV)) {
+					type = "int64_t"_UPTR;
+					ctx._need_stdint_h = true;
+				} else if (typeName.equals("bool"_SV)) {
+					type = "bool"_UPTR;
+				} else if (typeName.equals("string"_SV)) {
+					type = "slib::String"_UPTR;
+					ctx._need_slib_string_h = true;
+				}
 
-			if (typeDesc.equals("uint64"_SV)) {
-				type = "uint64_t"_UPTR;
-				ctx._need_stdint_h = true;
-			} else if (typeDesc.equals("bool"_SV)) {
-				type = "bool"_UPTR;
-			} else if (typeDesc.equals("string"_SV)) {
-				type = "slib::String"_UPTR;
-				ctx._need_slib_string_h = true;
-			}
+				if (type) {
+					members.add(name);
+					classSig.addFmt("<%s:%s>", name->c_str(), typeName.c_str());
+					classDef.addFmtLine("\t%s %s;", type->c_str(), name->c_str());
+				}
+			} else {
+				StringBuilder className(ctx._objName);
+				className.add('_').add(ctx._classIdx);
+				ctx._classIdx++;
 
-			if (type) {
+				StringBuilder newClass;
+				SPtr<String> localClassSig = genClass(newClass, ctx, value, className);
+				SPtr<String> existingClassName = ctx._registry.get(*localClassSig);
+				if (existingClassName)
+					className = *existingClassName;
+				else {
+					body.add(newClass);
+					ctx._registry.put(localClassSig, className.toString());
+				}
+
 				members.add(name);
-				classSig.addFmt("<%s:%s>", name->c_str(), typeDesc.c_str());
-				classDef.addFmtLine("\t%s %s;", type->c_str(), name->c_str());
+				classSig.addFmt("<%s:%s>", name->c_str(), className.c_str());
+				classDef.addFmtLine("\t%s %s;", className.c_str(), name->c_str());
 			}
 		}
 	}

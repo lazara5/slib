@@ -3,8 +3,6 @@
 #include "slib/util/Config.h"
 #include "slib/util/SystemInfo.h"
 #include "slib/util/FilenameUtils.h"
-#include "slib/lang/Field.h"
-#include "slib/lang/Reflection.h"
 
 #include "Global.h"
 #include "ConfigObject.h"
@@ -64,66 +62,7 @@ TEST_GROUP(ConfigTests) {
 	}
 };
 
-class X {
-public:
-	int64_t i;
-	SPtr<String> str;
-	SPtr<Object> obj;
-	UPtr<String> ustr;
-public:
-	/*static void _registerReflection(ReflectionInfo &ri) {
-		ri.registerField("i"_SV, &X::i);
-	}
-
-	static ClassReflectionInfo *_getReflectionInfo() {
-		static ReflectionInfo ri(&_registerReflection);
-		return &ri;
-	}*/
-
-	/*template<typename T>
-	static void _registerReflection(ReflectionInfo &ri) {
-		ri.registerField("i"_SV, &T::i);
-	}
-
-	static ClassReflectionInfo *_getReflectionInfo() {
-		static ReflectionInfo ri(&_registerReflection<X>);
-		return &ri;
-	}*/
-
-	/*REFLECT(CLASS(X),
-		FIELD(i),
-		FIELD(str)
-	);*/
-
-	REFLECT(X) {
-		FIELD(i);
-		FIELD(str);
-	}
-};
-
-template <typename F>
-SPtr<Field> setDeclaredField(StringView const& name, F field) {
-	return newS<SpecificField<F>>(name, field);
-}
-
-TEST(ConfigTests, BasicTests)
-{
-	auto a = hasReflectionInfo<X> {};
-	auto b = hasReflectionInfo<Object> {};
-	auto c = hasTypeInfo<String> {};
-	X x;
-	SPtr<Field> f = setDeclaredField("field"_SV, &X::i);
-	f->set(x, (int64_t)10);
-	int64_t i = f->get<int64_t>(x);
-	//int64_t j = f1->get<int32_t>(x);
-	f = setDeclaredField("field"_SV, &X::str);
-	f->set(x, "xxx"_SPTR);
-	f = setDeclaredField("obj"_SV, &X::obj);
-	f->set(x, "xxx"_SPTR);
-	f = setDeclaredField("ustr"_SV, &X::ustr);
-	f->set(x, String("yyy"));
-	Class cls = classOf<X>::_class();
-
+TEST(ConfigTests, BasicTests) {
 	fmt::print("config: {}\n", *config->getRoot()->toString());
 
 	STRCMP_EQUAL("str123", config->getString("testName")->c_str());

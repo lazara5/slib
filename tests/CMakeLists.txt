@@ -33,6 +33,7 @@ set(TESTS_SOURCES
 	TestLinkedList.cpp
 	TestTypeSystem.cpp
 	TestNumeric.cpp
+	TestReflection.cpp
 )
 
 configure_file(data/test.conf ${CMAKE_CURRENT_BINARY_DIR}/data/test.conf COPYONLY)

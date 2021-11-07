@@ -32,5 +32,5 @@ TEST(TypeSystem, InstanceOf) {
 	HashMap<std::string, uint64_t> hm1;
 	CHECK((instanceof<Map<std::string, uint64_t>>(hm1)));
 
-	CHECK(StringView::equals(classOf<int64_t>::_class().getName(), "int64_t"));
+	CHECK(StringView::equals(classOf<int64_t>::_class().getName(), "long"));
 }

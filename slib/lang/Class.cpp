@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "slib/lang/Class.h"
+#include "slib/lang/Reflection.h"
 
 #include "fmt/format.h"
 
@@ -21,5 +22,29 @@ int32_t uintptrTHash<4>(size_t h) {
 
 ClassCastException::ClassCastException(const char *where, const StringView &c1, const StringView &c2)
 :Exception(where, "ClassCastException", fmt::format("Cannot cast from {} to {}", c1, c2).c_str()) {}
+
+UPtr<Array<Field>> Class::getDeclaredFields() {
+	if (_reflectionInfo) {
+		ReflectionInfo *reflectionInfo = _reflectionInfo();
+		return reflectionInfo->getFields();
+	}
+
+	return newU<Array<Field>>(0);
+}
+
+SPtr<Field> Class::getDeclaredField(StringView const& name) {
+	SPtr<Field> field;
+
+	if (_reflectionInfo) {
+		ReflectionInfo *reflectionInfo = _reflectionInfo();
+		field = reflectionInfo->getField(name);
+	}
+
+	if (field) {
+		return field;
+	}
+
+	THROW(NoSuchFieldException, fmt::format("{}", name).c_str());
+}
 
 } // namespace slib

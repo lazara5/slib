@@ -11,7 +11,7 @@
 
 namespace slib {
 
-class ReflectionInfo : public ClassReflectionInfo {
+class ReflectionInfo {
 private:
 	UPtr<Map<StringView, Field>> _fields;
 public:
@@ -26,6 +26,17 @@ public:
 	void registerField(StringView const& name, F field) {
 		_fields->put(newS<StringView>(name), newS<SpecificField<F>>(name, field));
 	}
+
+	UPtr<Array<Field>> getFields();
+
+	SPtr<Field> getField(StringView const& name);
+};
+
+class NoSuchFieldException : public Exception {
+public:
+	NoSuchFieldException(const char *where, const char *msg)
+	:Exception(where, "NoSuchFieldException", msg) {
+	}
 };
 
 } // namespace slib
@@ -35,7 +46,7 @@ public:
 
 #define REFLECT(clazz) \
 static void _registerReflection(slib::ReflectionInfo &ri); \
-static slib::ClassReflectionInfo *_getReflectionInfo() { \
+static slib::ReflectionInfo *_getReflectionInfo() { \
 	static slib::ReflectionInfo ri(&_registerReflection<clazz>); \
 	return &ri; \
 } \

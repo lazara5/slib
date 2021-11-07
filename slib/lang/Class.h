@@ -9,6 +9,7 @@
 #include "slib/lang/StringView.h"
 #include "slib/util/TemplateUtils.h"
 #include "slib/util/MacroUtils.h"
+#include "slib/lang/Array.h"
 
 #include "slib/third-party/mpml/mpml.h"
 
@@ -32,7 +33,7 @@ template <typename T, typename = void>
 struct hasTypeInfo : std::false_type{};
 
 template <typename T>
-struct hasTypeInfo<T, decltype((void)T::_className, void())> : std::true_type {};
+struct hasTypeInfo<T, decltype((void)T::__className, void())> : std::true_type {};
 
 template<typename ...TS>
 using typelist = qcstudio::mpml::typelist<TS...>;
@@ -45,12 +46,12 @@ struct inherits;
 
 template <typename C>
 struct inherits<C> {
-	typedef typename cat<typelist<C>, typename C::_classInherits>::type types;
+	typedef typename cat<typelist<C>, typename C::__classInherits>::type types;
 };
 
 template <typename C, typename ... Cs>
 struct inherits<C, Cs... > {
-	typedef typename cat<typelist<C>, typename C::_classInherits, typename inherits<Cs...>::types>::type types;
+	typedef typename cat<typelist<C>, typename C::__classInherits, typename inherits<Cs...>::types>::type types;
 };
 
 template <typename ... T>
@@ -58,12 +59,12 @@ struct hierarchy;
 
 template <typename C>
 struct hierarchy<C> {
-	typedef typename cat<typelist<C>, typename C::_classInherits>::type types;
+	typedef typename cat<typelist<C>, typename C::__classInherits>::type types;
 };
 
 template <typename C, typename ... Cs>
 struct hierarchy<C, Cs... > {
-	typedef typename cat<typelist<C>, typename C::_classInherits, typename hierarchy<Cs...>::types>::type types;
+	typedef typename cat<typelist<C>, typename C::__classInherits, typename hierarchy<Cs...>::types>::type types;
 };
 
 //Template class that holds the declaration of the id.
@@ -123,6 +124,11 @@ constexpr StaticArray<TypeData, 1> _typeDesc(std::false_type) {
 }
 
 template <typename C>
+constexpr StaticArray<TypeData, 1> _primitiveTypeDesc() {
+	return StaticArray<TypeData, 1> {{{_typeId<C>()}}};
+}
+
+template <typename C>
 constexpr StaticArray<TypeData, _typeDescSize<C>(hasTypeInfo<C>{})> _typeDesc(std::true_type) {
 	using ch = get_ancestors_t<C, typename hierarchy<C>::types>;
 	return _typelistIterator<C, get_ancestors_t<C, ch>>::exec();
@@ -137,11 +143,9 @@ int32_t uintptrTHash<8>(size_t h);
 template<>
 int32_t uintptrTHash<4>(size_t h);
 
-class ClassReflectionInfo {
+class ReflectionInfo;
 
-};
-
-typedef ClassReflectionInfo *(*GetReflectionInfo)(void);
+typedef ReflectionInfo *(*GetReflectionInfo)(void);
 
 class Field;
 
@@ -151,19 +155,24 @@ protected:
 	const size_t _hDepth;						///< Class hierarchy depth
 	const TypeData *_typeStack;					///< Class hierarchy
 	const GetReflectionInfo _reflectionInfo;	///< Reflection info
+	bool _primitive;
+protected:
+	SPtr<Field> getDeclaredField(StringView const& name);
 public:
 	constexpr Class(StringView const& name, size_t hDepth,
-					const TypeData* typeStack, const GetReflectionInfo reflectionInfo)
+					const TypeData* typeStack, const GetReflectionInfo reflectionInfo, bool primitive)
 	: _name(name)
 	, _hDepth(hDepth)
 	, _typeStack(typeStack)
-	, _reflectionInfo(reflectionInfo) {}
+	, _reflectionInfo(reflectionInfo)
+	, _primitive(primitive) {}
 
 	constexpr Class(Class const& clazz)
 	: _name(clazz._name)
 	, _hDepth(clazz._hDepth)
 	, _typeStack(clazz._typeStack)
-	, _reflectionInfo(clazz._reflectionInfo) {}
+	, _reflectionInfo(clazz._reflectionInfo)
+	, _primitive(clazz._primitive) {}
 
 	Class& operator=(Class const&) = delete;
 
@@ -188,6 +197,10 @@ public:
 
 	constexpr TypeId getTypeId() const {
 		return _typeStack[_hDepth - 1].typeId;
+	}
+
+	constexpr bool isPrimitive() const {
+		return _primitive;
 	}
 
 	bool isAssignableFrom(Class const& cls) const {
@@ -227,9 +240,12 @@ public:
 		return cast<D>(from.get());
 	}
 
+	UPtr<Array<Field>> getDeclaredFields();
+
 	template <class S>
 	SPtr<Field> getDeclaredField(S const& name) {
-		return nullptr;
+		StringView fieldName(strData(CPtr(name)), strLen(CPtr(name)));
+		return getDeclaredField(fieldName);
 	}
 };
 
@@ -240,13 +256,14 @@ constexpr StringView _className(std::false_type) {
 
 template <typename T>
 constexpr StringView _className(std::true_type) {
-	return T::_className;
+	return T::__className;
 }
 
-template <>
+/*template <>
 constexpr StringView _className<int64_t>(std::false_type) {
 	return "int64_t"_SV;
 }
+*/
 
 template <typename T, typename = void>
 struct hasReflectionInfo : std::false_type{};
@@ -269,10 +286,26 @@ struct classOf {
 	static Class const& _class() {
 		static constexpr auto _typeData {_typeDesc<T>(hasTypeInfo<T>{})};
 		static constexpr GetReflectionInfo _reflectionInfo = _getReflectionInfo<T>(hasReflectionInfo<T>{});
-		static constexpr Class _class{_className<T>(hasTypeInfo<T>{}), _typeDescSize<T>(hasTypeInfo<T>{}), _typeData.data(), _reflectionInfo};
+		static constexpr Class _class{_className<T>(hasTypeInfo<T>{}),
+									  _typeDescSize<T>(hasTypeInfo<T>{}), _typeData.data(), _reflectionInfo, false};
 		return _class;
 	}
 };
+
+#define PRIMITIVECLASSOF(TYPE, NAME) \
+template <> \
+struct classOf<TYPE> { \
+	static Class const& _class() { \
+		static constexpr auto _typeData {_primitiveTypeDesc<TYPE>()}; \
+		static constexpr Class _class{NAME ## _SV, 1, _typeData.data(), nullptr, true}; \
+		return _class; \
+	} \
+}
+
+PRIMITIVECLASSOF(int64_t, "long");
+PRIMITIVECLASSOF(uint64_t, "ulong");
+PRIMITIVECLASSOF(int32_t, "int");
+PRIMITIVECLASSOF(uint32_t, "uint");
 
 /*template <class D, class V>
 D const* Class::constCast(V const* from) {
@@ -297,7 +330,7 @@ D const* Class::constCast(V const* from) {
 template <class D, class S>
 D const* constCastImpl(S const* from, std::true_type) {
 	if (from != nullptr) {
-		void const* res = const_cast<void const*>(const_cast<S *>(from)->_classCast(_typeId<D>()));
+		void const* res = const_cast<void const*>(const_cast<S *>(from)->__classCast(_typeId<D>()));
 		if (res)
 			return (D const*) res;
 
@@ -367,7 +400,7 @@ T* Class::cast(V *from) {
 template <class D, class S>
 D* Class::cast(S *from) {
 	if (from != nullptr) {
-		void *res = from->_classCast(_typeId<D>());
+		void *res = from->__classCast(_typeId<D>());
 		if (res)
 			return (D*) res;
 
@@ -382,35 +415,35 @@ public:
 	virtual ~TypedClass() {}
 
 	virtual Class const& getClass() const = 0;
-	virtual void *_classCast(TypeId typeId) = 0;
+	virtual void *__classCast(TypeId typeId) = 0;
 };
 
 #define CLASS(...) (__VA_ARGS__)
 #define INHERITS(...) (__VA_ARGS__)
 #define UNPAREN(...) __VA_ARGS__
 
-#define DO_CHECK(X, I) if ((ptr = UNPAREN X::_classCast(typeId))) return ptr;
+#define DO_CHECK(X, I) if ((ptr = UNPAREN X::__classCast(typeId))) return ptr;
 #define DO_LIST(X, I) UNPAREN X COMMA_IF(I)
 
 #define BASE_TYPE_INFO(NAME, TYPE) \
-	static constexpr StringView _className { #NAME ## _SV}; \
-	typedef typelist<> _classInherits; \
+	static constexpr StringView __className { #NAME ## _SV}; \
+	typedef typelist<> __classInherits; \
 	virtual Class const& getClass() const override { \
 		return classOf<UNPAREN TYPE>::_class(); \
 	} \
-	virtual void *_classCast(TypeId typeId) override { \
+	virtual void *__classCast(TypeId typeId) override { \
 		if (typeId == _typeId<UNPAREN TYPE>()) \
 			return this; \
 		return nullptr; \
 	}
 
 #define TYPE_INFO(NAME, TYPE, ...) \
-	static constexpr StringView _className { #NAME ## _SV }; \
-	typedef typename inherits<FOR_EACH(DO_LIST, __VA_ARGS__)>::types _classInherits; \
+	static constexpr StringView __className { #NAME ## _SV }; \
+	typedef typename inherits<FOR_EACH(DO_LIST, __VA_ARGS__)>::types __classInherits; \
 	virtual Class const& getClass() const override { \
 		return classOf<UNPAREN TYPE>::_class(); \
 	} \
-	virtual void *_classCast(TypeId typeId) override { \
+	virtual void *__classCast(TypeId typeId) override { \
 		if (typeId == _typeId<UNPAREN TYPE>()) return this; \
 		void *ptr; \
 		FOR_EACH(DO_CHECK, __VA_ARGS__) \

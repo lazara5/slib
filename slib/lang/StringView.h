@@ -46,6 +46,17 @@ public:
 		return ((count ? fnv1a_32(str, count - 1) : 2166136261u) ^ str[count]) * 16777619u;
 	}
 
+	static uint32_t fnv1a_32_nr(const char *str, size_t count) {
+		uint32_t hash = 2166136261u;
+
+		for (size_t i = 0; i < count; i++) {
+				hash = hash ^ str[i];
+				hash = hash * 16777619u;
+		}
+
+		return hash;
+	}
+
 	template <class S1, class S2>
 	static bool equals(S1 const& str, S2 const& other) {
 		const char *buffer = strData(CPtr(str));
@@ -73,12 +84,12 @@ public:
 	inline StringView(const char *str) noexcept
 	: _str(str)
 	, _len(strlen(str))
-	, _hash(fnv1a_32(str, _len)) {}
+	, _hash(fnv1a_32_nr(str, _len)) {}
 
 	inline constexpr StringView(const char *str, size_t len) noexcept
 	: _str(str)
 	, _len(len)
-	, _hash(fnv1a_32(str, len)) {}
+	, _hash(__builtin_constant_p(str) ? fnv1a_32(str, len) : fnv1a_32_nr(str, len)) {}
 
 	inline constexpr StringView(StringView const& other) noexcept
 	: _str(other._str)

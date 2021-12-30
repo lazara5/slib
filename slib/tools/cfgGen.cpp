@@ -28,6 +28,9 @@ UPtr<String> genClass(StringBuilder &body, Context &ctx, Value const& obj, Strin
 	LinkedList<String> members;
 
 	classDef.addFmtLine("struct %s {", objName.c_str());
+	// may contain UPtr, let's not cause issues for reflection setter
+	classDef.addFmtLine("\t%s& operator =(%s const&) = delete;", objName.c_str(), objName.c_str());
+	classDef.addLine("");
 
 	for (Value::ConstMemberIterator i = obj.MemberBegin(); i != obj.MemberEnd(); ++i) {
 		SPtr<String> name = newS<String>(i->name.GetString());
@@ -48,7 +51,7 @@ UPtr<String> genClass(StringBuilder &body, Context &ctx, Value const& obj, Strin
 				} else if (typeName.equals("bool"_SV)) {
 					type = "bool"_UPTR;
 				} else if (typeName.equals("string"_SV)) {
-					type = "slib::String"_UPTR;
+					type = "slib::UPtr<slib::String>"_UPTR;
 					ctx._need_slib_string_h = true;
 				}
 

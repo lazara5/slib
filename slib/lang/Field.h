@@ -10,6 +10,7 @@
 #include "slib/lang/Numeric.h"
 #include "slib/util/TemplateUtils.h"
 #include "slib/exception/IllegalArgumentException.h"
+#include "slib/exception/IllegalAccessException.h"
 #include "slib/third-party/variant-lite/variant.hpp"
 
 namespace slib {
@@ -31,72 +32,25 @@ typedef enum {
 	NONE = 0,
 	VOID =		1 << 0,
 	NUMBER =	1 << 1,
-	_INT64 =	1 << 2,
+	_P_INT64 =	1 << 2,
 	_LONG =		1 << 3,
-	INT64 = NUMBER | _INT64,
-	LONG = NUMBER | _LONG,
-	_DOUBLE =	1 << 4,
-	DOUBLE = NUMBER | _DOUBLE
+	P_INT64 =	NUMBER | _P_INT64,
+	LONG =		NUMBER | _LONG,
+	_P_DOUBLE =	1 << 4,
+	_DOUBLE =	1 << 5,
+	P_DOUBLE =	NUMBER | _P_DOUBLE,
+	DOUBLE =	NUMBER | _DOUBLE,
+	P_BOOL =	1 << 6,
+	BOOLEAN =	1 << 7
 } FieldValType;
 
 struct FieldValue {
 	FieldValType _type;
-	nonstd::variant<void *, int64_t, Long, double, Double> _val;
+	nonstd::variant<void *, int64_t, Long, double, Double, bool, Boolean> _val;
 public:
 	FieldValue()
 	: _type(FieldValType::NONE) {}
 };
-
-int64_t _fieldGetLong(FieldValue const& val);
-
-template <class S>
-void *_fieldBox(void *src, FieldValue &dst, Class const& dstType) {
-	Class const& srcType = classOf<S>::_class();
-
-	if (dstType.isAssignableFrom(srcType)) {
-		if (hasTypeInfo<S> {}) {
-			TypedClass *tVal = (TypedClass *)src;
-			void *castVal = tVal->__classCast(dstType.getTypeId());
-			if (castVal) {
-				dst._type = FieldValType::VOID;
-				dst._val = castVal;
-				return castVal;
-			}
-		}
-		THROW(IllegalArgumentException);
-	} else {
-		FieldValue fieldValue;
-
-		if (classOf<Number>::_class().isAssignableFrom(srcType)) {
-			if (classOf<Long>::_class().isAssignableFrom(srcType)) {
-				fieldValue._type = FieldValType::INT64;
-				fieldValue._val = (static_cast<Long *>(src))->longValue();
-			}
-		} else if (srcType.isPrimitive()) {
-			if (classOf<int64_t>::_class().isAssignableFrom(srcType)) {
-				fieldValue._type = FieldValType::INT64;
-				fieldValue._val = *(static_cast<int64_t *>(src));
-			}
-		}
-
-		if ((fieldValue._type & FieldValType::NUMBER) != 0) {
-			if (classOf<Number>::_class().isAssignableFrom(dstType)) {
-				if (classOf<Long>::_class().isAssignableFrom(dstType)) {
-					dst._type = FieldValType::LONG;
-					dst._val = Long(_fieldGetLong(fieldValue));
-					return &dst._val;
-				}
-			} else if (dstType.isPrimitive()) {
-				if (classOf<int64_t>::_class().isAssignableFrom(dstType)) {
-					dst._type = FieldValType::INT64;
-					dst._val = _fieldGetLong(fieldValue);
-					return &dst._val;
-				}
-			}
-			THROW(IllegalArgumentException);
-		}
-	}
-}
 
 } // namespace internal
 
@@ -105,6 +59,32 @@ protected:
 	const StringView _name;	///< Field name
 	const Class _fieldType;	///< Field type
 	const Class _classType;	///< Class type
+protected:
+	static void *autoBox(void *src, Class const& srcType, internal::FieldValue &dst, Class const& dstType);
+
+	template <class T>
+	static Class const& valueClass(void *valueRef, internal::RefType valueRefType) {
+		Class const& clazz = classOf<T>::_class();
+		if (clazz.isAssignableFrom(classOf<Object>::_class())) {
+			switch (valueRefType) {
+				case internal::RefType::SPTR: {
+					SPtr<Object> *pSVal = (SPtr<Object> *)valueRef;
+					return (*pSVal)->getClass();
+				}
+				case internal::RefType::UPTR: {
+					UPtr<Object> *pUVal = (UPtr<Object> *)valueRef;
+					return (*pUVal)->getClass();
+				}
+				case internal::RefType::INSTANCE: {
+					Object *pVal = (Object *)valueRef;
+					return pVal->getClass();
+				}
+			}
+		} else
+			return clazz;
+
+		return classOf<Void>::_class();
+	}
 protected:
 	virtual void *getAddr(void *instance) = 0;
 
@@ -115,40 +95,25 @@ protected:
 	, _fieldType(fieldType)
 	, _classType(classType) {}
 
-	template <typename T, typename C>
-	void set(C& instance, void *valueRef, internal::RefType valueRefType) {
-		if (classOf<C>::_class() != _classType)
+	template <typename T>
+	void set(ObjRef const& instance, void *valueRef, internal::RefType valueRefType) {
+		if (instance._class != _classType)
 			throw IllegalArgumentException(_HERE_);
 
-		bool sameType = true;
-		Class const& valueClass = classOf<T>::_class();
-		if (valueClass != _fieldType) {
-			/*if (!_fieldType.isAssignableFrom(valueClass))
-				throw IllegalArgumentException(_HERE_);*/
-			sameType = false;
-		}
+		Class const& valueClass = Field::valueClass<T>(valueRef, valueRefType);
+		bool sameType = (valueClass == _fieldType);
 
 		if (valueRefType == internal::RefType::SPTR) {
 			// we want to keep a SPtr for possible copy
 			if (sameType)
-				set(&instance, valueRef, internal::InnerRefType::SPTR);
+				set(instance._ref, valueRef, internal::InnerRefType::SPTR);
 			else {
 				SPtr<T> *pSVal = (SPtr<T> *)valueRef;
 				T *pVal = pSVal->get();
-				/*if (hasTypeInfo<T> {}) {
-					TypedClass *tVal = (TypedClass *)pVal;
-					void *castVal = tVal->__classCast(_fieldType.getTypeId());
-					if (castVal) {
-						SPtr<void> castSPtr(*pSVal, castVal);
-						set(&instance, &castSPtr, internal::InnerRefType::SPTR);
-					} else
-						THROW(IllegalArgumentException);
-				} else
-					throw IllegalArgumentException(_HERE_);*/
 				internal::FieldValue tmpVal;
-				void *castVal = internal::_fieldBox<T>(pVal, tmpVal, _fieldType);
+				void *castVal = autoBox(pVal, valueClass, tmpVal, _fieldType);
 				SPtr<void> castSPtr(*pSVal, castVal);
-				set(&instance, &castSPtr, internal::InnerRefType::SPTR);
+				set(instance._ref, &castSPtr, internal::InnerRefType::SPTR);
 			}
 		} else {
 			if (valueRefType == internal::RefType::UPTR) {
@@ -157,19 +122,10 @@ protected:
 			}
 			internal::FieldValue tmpVal;
 			if (!sameType) {
-				/*if (hasTypeInfo<T> {}) {
-					TypedClass *tVal = (TypedClass *)valueRef;
-					void *castVal = tVal->__classCast(_fieldType.getTypeId());
-					if (castVal)
-						valueRef = castVal;
-					else
-						throw IllegalArgumentException(_HERE_);
-				} else
-					throw IllegalArgumentException(_HERE_);*/
-				void *castVal = internal::_fieldBox<T>(valueRef, tmpVal, _fieldType);
+				void *castVal = autoBox(valueRef, valueClass, tmpVal, _fieldType);
 				valueRef = castVal;
 			}
-			set(&instance, valueRef, internal::InnerRefType::INSTANCE);
+			set(instance._ref, valueRef, internal::InnerRefType::INSTANCE);
 		}
 	}
 public:
@@ -185,23 +141,76 @@ public:
 
 	template<typename T, typename C>
 	T& get(C& instance) {
-		if (classOf<T>::_class() != _fieldType)
-			throw IllegalArgumentException(_HERE_);
-		return *(static_cast<T*>(getAddr(&instance)));
+		void *fieldAddr = getAddr(&instance);
+
+		if (classOf<T>::_class() == _fieldType)
+			return *(static_cast<T*>(fieldAddr));
+
+		/*if (hasTypeInfo<S> {}) {
+			TypedClass *tVal = (TypedClass *)src;
+			void *castVal = tVal->__classCast(dstType.getTypeId());
+		}*/
+
+		THROW(IllegalArgumentException);
+	}
+
+	template <typename C>
+	ObjRef getRef(C& instance) {
+		return ObjRef(getAddr(&instance), _fieldType);
+	}
+
+	ObjRef getRef(ObjRef instance) {
+		return ObjRef(getAddr(instance._ref), _fieldType);
 	}
 
 	template<typename T, typename C> void set(C& instance, T const& value) {
-		set<T>(instance, (void*)&value, internal::RefType::INSTANCE);
+		set<T>(ObjRef(&instance, classOf<C>::_class()), (void*)&value, internal::RefType::INSTANCE);
 	}
 
 	template<typename T, typename C> void set(C& instance, SPtr<T> const& value) {
-		set<T>(instance, (void *)&value, internal::RefType::SPTR);
+		set<T>(ObjRef(&instance, classOf<C>::_class()), (void *)&value, internal::RefType::SPTR);
 	}
 
 	template<typename T, typename C> void set(C& instance, UPtr<T> const& value) {
+		set<T>(ObjRef(&instance, classOf<C>()), (void *)&value, internal::RefType::UPTR);
+	}
+
+	template<typename T> void set(ObjRef const& instance, T const& value) {
+		set<T>(instance, (void*)&value, internal::RefType::INSTANCE);
+	}
+
+	template<typename T> void set(ObjRef const& instance, SPtr<T> const& value) {
+		set<T>(instance, (void *)&value, internal::RefType::SPTR);
+	}
+
+	template<typename T> void set(ObjRef const& instance, UPtr<T> const& value) {
 		set<T>(instance, (void *)&value, internal::RefType::UPTR);
 	}
 };
+
+namespace internal {
+
+template<typename T, typename C>
+void setFieldInstance(void *fieldAddr, void *valueRef, std::true_type) {
+	*(static_cast<T *>(fieldAddr)) = *((T *)valueRef);
+}
+
+template<typename T, typename C>
+void setFieldInstance(void *, void *, std::false_type) {
+	THROW(IllegalAccessException);
+}
+
+template<typename T, typename C>
+void setFieldUPtr(void *fieldAddr, void *valueRef, std::true_type) {
+	UPtr<T> *pup = static_cast<UPtr<T> *>(fieldAddr);
+	*(*pup) = *((T *)valueRef);
+}
+
+template<typename T, typename C>
+void setFieldUPtr(void *fieldAddr, void *valueRef, std::false_type) {
+	UPtr<T> *pup = static_cast<UPtr<T> *>(fieldAddr);
+	*pup = newU<T>(*((T *)valueRef));
+}
 
 template<typename F>
 class SpecificField;
@@ -215,9 +224,19 @@ protected:;
 		return &(static_cast<C*>(instance)->*_field);
 	}
 
-	virtual void set(void *instance, void *valueRef, internal::InnerRefType valueRefType SLIB_UNUSED) override {
+	virtual void set(void *instance, void *valueRef, internal::InnerRefType valueRefType) override {
 		void *fieldAddr =  &(static_cast<C *>(instance)->*_field);
-		*(static_cast<T *>(fieldAddr)) = *((T *)valueRef);
+		//*(static_cast<T *>(fieldAddr)) = *((T *)valueRef);
+		switch (valueRefType) {
+			case internal::InnerRefType::INSTANCE:
+				internal::setFieldInstance<T, C>(fieldAddr, valueRef, std::is_assignable<T&, T>{});
+				break;
+			case internal::InnerRefType::SPTR: {
+				SPtr<T> *ref = (SPtr<T> *)valueRef;
+				internal::setFieldInstance<T, C>(fieldAddr, ref->get(), std::is_assignable<T&, T>{});
+				break;
+			}
+		}
 	}
 public:
 	SpecificField(StringView const& name, T (C::* field))
@@ -264,8 +283,17 @@ protected:;
 
 	virtual void set(void *instance, void *valueRef, internal::InnerRefType valueRefType SLIB_UNUSED) override {
 		void *fieldAddr =  &(static_cast<C *>(instance)->*_field);
-		UPtr<T> *pup = (static_cast<UPtr<T> *>(fieldAddr));
-		*pup = newU<T>(*(T *)valueRef);
+
+		switch (valueRefType) {
+			case internal::InnerRefType::INSTANCE:
+				internal::setFieldUPtr<T, C>(fieldAddr, valueRef, std::is_assignable<T&, T>{});
+				break;
+			case internal::InnerRefType::SPTR: {
+				SPtr<T> *ref = (SPtr<T> *)valueRef;
+				internal::setFieldUPtr<T, C>(fieldAddr, ref->get(), std::is_assignable<T&, T>{});
+				break;
+			}
+		}
 	}
 public:
 	SpecificField(StringView const& name, UPtr<T> (C::* field))
@@ -273,7 +301,8 @@ public:
 	, _field(field) {}
 };
 
+} // namespace internal
+
 } // namespace slib
 
 #endif // H_SLIB_FIELD_H
-

@@ -77,3 +77,14 @@ TEST(ConfigTests, BasicTests) {
 
 	fmt::print("hostname: {}", *config->getString("hostname"));
 }
+
+TEST(ConfigTests, MapObjTest) {
+	auto a = std::is_assignable<ConfigObject_2&, ConfigObject_2>::value;
+	SPtr<String> path = FilenameUtils::concat(FilenameUtils::getPath(test_argv[0]), "data/testObj.conf");
+	ConfigLoader configLoader(path, "SlibObjTest"_SPTR);
+	SPtr<Config> cfg = configLoader.load();
+	fmt::print("config: {}\n", *cfg->getRoot()->toString());
+	SPtr<Object> cfgRoot = cfg->getRoot();
+	SPtr<ConfigObject> cfgObj = configLoader.toObject<ConfigObject>(cfg);
+	cfgRoot = cfg->getRoot();
+}

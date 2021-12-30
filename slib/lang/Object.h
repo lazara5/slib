@@ -36,6 +36,8 @@ public:
 	bool operator ==(Object const& other) const {
 		return equals(other);
 	}
+
+	Object& operator =(Object const&) = delete;
 };
 
 template <class T>

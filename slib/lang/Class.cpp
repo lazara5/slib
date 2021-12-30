@@ -32,7 +32,7 @@ UPtr<Array<Field>> Class::getDeclaredFields() {
 	return newU<Array<Field>>(0);
 }
 
-SPtr<Field> Class::getDeclaredField(StringView const& name) {
+SPtr<Field> Class::_getDeclaredField(StringView const& name) const {
 	SPtr<Field> field;
 
 	if (_reflectionInfo) {

@@ -130,6 +130,14 @@ using enableIf = typename std::enable_if<Condition::value, detail::enabler>::typ
 
 // ---------------
 
+constexpr bool toBool(std::true_type) {
+	return true;
+}
+
+constexpr bool toBool(std::false_type) {
+	return false;
+}
+
 } // namespace slib
 
 #endif // H_SLIB_UTIL_TEMPLATEUTILS_H

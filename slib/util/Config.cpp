@@ -10,6 +10,7 @@
 #include "slib/collections/ArrayList.h"
 #include "slib/io/FileInputStream.h"
 #include "slib/util/expr/ExpressionEvaluator.h"
+#include "slib/lang/Reflection.h"
 
 #include <iostream>
 #include <fstream>
@@ -65,8 +66,8 @@ const ConfigLoader::OptionTypeDesc ConfigLoader::_optionTypeDescTable[] = {
 	{"UNKNOWN"_UPTR,	[](){ return newU<ConfigLoader::UnknownConstraint>(); } },
 	{"STRING"_UPTR,		[](){ return newU<ConfigLoader::StringConstraint>(); } },
 	{"LONG"_UPTR,		[](){ return newU<ConfigLoader::LongConstraint>(); } },
-	{"DOUBLE"_UPTR},
-	{"BOOL"_UPTR},
+	{"DOUBLE"_UPTR,		[](){ return newU<ConfigLoader::DoubleConstraint>(); } },
+	{"BOOL"_UPTR,		[](){ return newU<ConfigLoader::BoolConstraint>(); } },
 	{"ARRAY"_UPTR,		[](){ return newU<ConfigLoader::ArrayConstraint>(); } },
 	{"OBJ"_UPTR,		[](){ return newU<ConfigLoader::ObjectConstraint>(); } }
 };
@@ -238,6 +239,19 @@ void ConfigLoader::LongConstraint::validateValue(SPtr<Object> const& obj) {
 		throw InitException(_HERE_, fmt::format("Value {} out of range [{} .. {}]", val, _min, _max).c_str());
 }
 
+void ConfigLoader::DoubleConstraint::validateValue(SPtr<Object> const& obj) {
+	if (!instanceof<Double>(obj))
+		THROW(InitException, fmt::format("Invalid option type: expected Double, got {}", obj->getClass().getName()).c_str());
+	double val = Class::cast<Double>(obj)->doubleValue();
+	if ((val < _min) || (val > _max))
+		throw InitException(_HERE_, fmt::format("Value {} out of range [{} .. {}]", val, _min, _max).c_str());
+}
+
+void ConfigLoader::BoolConstraint::validateValue(SPtr<Object> const& obj) {
+	if (!instanceof<Boolean>(obj))
+		THROW(InitException, fmt::format("Invalid option type: expected Boolean, got {}", obj->getClass().getName()).c_str());
+}
+
 void ConfigLoader::ObjectConstraint::validateValue(SPtr<Object> const& obj) {
 	if (!instanceof<Map<IString, Object>>(obj))
 		throw InitException(_HERE_, fmt::format("Invalid option type: expected Map<IString, Object>, got {}", obj->getClass().getName()).c_str());
@@ -284,6 +298,32 @@ SPtr<ConfigLoader::StringPair> ConfigLoader::searchConfigDir() {
 	}
 
 	return nullptr;
+}
+
+void ConfigLoader::map(SPtr<Object> cfgObj, Field *field, ObjRef const& obj) {
+	if (instanceof<Map<IString, Object>>(cfgObj)) {
+		auto map = Class::cast<Map<IString, Object>>(cfgObj.get());
+		auto i = map->constIterator();
+		while (i->hasNext()) {
+			auto const& e = i->next();
+			IString const* name = e.getKeyPtr();
+			try {
+				SPtr<Field> objField = obj._class.getDeclaredField(name);
+				SPtr<Object> fieldValue = e.getValue();
+				//if (fieldValue->getClass().isAssignableFrom(classOf<Map<IString, Object>>::_class())) {
+				if (classOf<Map<IString, Object>>::_class().isAssignableFrom(fieldValue->getClass())) {
+					ObjRef const& fieldObj = objField->getRef(obj);
+					this->map(fieldValue, objField.get(), fieldObj);
+				} else
+					this->map(fieldValue, objField.get(), obj);
+			} catch (NoSuchFieldException const&) {
+			}
+		}
+	} else {
+		if (!field)
+			THROW(IllegalArgumentException);
+		field->set(obj, cfgObj);
+	}
 }
 
 SPtr<Config> ConfigLoader::load(bool quick) {

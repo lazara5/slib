@@ -5,6 +5,7 @@
 #ifndef H_SLIB_REFLECTION_H
 #define H_SLIB_REFLECTION_H
 
+#include "slib/lang/Class.h"
 #include "slib/collections/HashMap.h"
 #include "slib/lang/Field.h"
 #include "slib/lang/StringView.h"
@@ -24,7 +25,7 @@ public:
 
 	template <typename F>
 	void registerField(StringView const& name, F field) {
-		_fields->put(newS<StringView>(name), newS<SpecificField<F>>(name, field));
+		_fields->put(newS<StringView>(name), newS<internal::SpecificField<F>>(name, field));
 	}
 
 	UPtr<Array<Field>> getFields();
@@ -45,13 +46,13 @@ public:
 #define SV(str) STRSV(str)
 
 #define REFLECT(clazz) \
-static void _registerReflection(slib::ReflectionInfo &ri); \
-static slib::ReflectionInfo *_getReflectionInfo() { \
-	static slib::ReflectionInfo ri(&_registerReflection<clazz>); \
+static void __registerReflection(slib::ReflectionInfo &ri); \
+static slib::ReflectionInfo *__getReflectionInfo() { \
+	static slib::ReflectionInfo ri(&__registerReflection<clazz>); \
 	return &ri; \
 } \
 template<typename T> \
-static void _registerReflection(slib::ReflectionInfo &ri)
+static void __registerReflection(slib::ReflectionInfo &ri)
 
 #define FIELD(name) { using namespace slib; ri.registerField(SV(name), &T::name); }
 

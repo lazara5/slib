@@ -37,6 +37,7 @@ set(TESTS_SOURCES
 )
 
 configure_file(data/test.conf ${CMAKE_CURRENT_BINARY_DIR}/data/test.conf COPYONLY)
+configure_file(data/testObj.conf ${CMAKE_CURRENT_BINARY_DIR}/data/testObj.conf COPYONLY)
 
 include_directories(${CPPUTEST_INCLUDE_DIRS})
 link_directories(${CPPUTEST_LIBRARIES})

@@ -6,7 +6,6 @@
 #define H_SLIB_UTIL_CONFIG_H
 
 #include "slib/lang/String.h"
-//#include "slib/util/Log.h"
 #include "slib/util/StringUtils.h"
 #include "slib/lang/Numeric.h"
 #include "slib/collections/LinkedList.h"
@@ -437,6 +436,45 @@ protected:
 		virtual void validateValue(SPtr<Object> const& obj) override;
 	};
 
+	class DoubleConstraint : public Constraint {
+	protected:
+		double _min;
+		double _max;
+	public:
+		DoubleConstraint()
+		: Constraint(OptionType::DOUBLE)
+		, _min(Double::MIN_VALUE)
+		, _max(Double::MAX_VALUE) {}
+
+		virtual void range(int64_t min, int64_t max) override {
+			_min = min;
+			_max = max;
+		}
+
+		virtual void range(double min, double max) override {
+			_min = min;
+			_max = max;
+		}
+
+		virtual void validateValue(SPtr<Object> const& obj) override;
+	};
+
+	class BoolConstraint : public Constraint {
+	public:
+		BoolConstraint()
+		: Constraint(OptionType::BOOL) {}
+
+		virtual void range(int64_t, int64_t) override {
+			throw InitException(_HERE_, "Cannot apply range to bool option");
+		}
+
+		virtual void range(double, double) override {
+			throw InitException(_HERE_, "Cannot apply range to bool option");
+		}
+
+		virtual void validateValue(SPtr<Object> const& obj) override;
+	};
+
 	class ObjectConstraint : public Constraint {
 	public:
 		ObjectConstraint()
@@ -543,6 +581,8 @@ protected:
 	SPtr<StringPair> searchConfigDir();
 
 	void validate();
+
+	void map(SPtr<Object> cfgObj, Field *field, ObjRef const& obj);
 public:
 	ConfigLoader(SPtr<String> const& confFileName, SPtr<String> const& appName);
 
@@ -602,6 +642,13 @@ public:
 
 	/** @throws EvaluationException */
 	SPtr<Config> load(bool quick = false);
+
+	template <class T>
+	SPtr<T> toObject(SPtr<Config> cfg) {
+		SPtr<T> obj = newS<T>();
+		map(cfg->getRoot(), nullptr, ObjRef(obj.get(), classOf<T>::_class()));
+		return obj;
+	}
 };
 
 } // namespace slib

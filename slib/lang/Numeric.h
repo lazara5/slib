@@ -69,7 +69,7 @@ public:
 	 */
 	virtual int32_t hashCode() const override {
 		return (int32_t)((uint64_t)_value ^ (((uint64_t)_value) >> 32));
-	} 
+	}
 
 	Long& operator =(const Long& other) {
 		_value = other._value;
@@ -618,6 +618,9 @@ public:
 	TYPE_INFO(Double, CLASS(Double), INHERITS(Number));
 private:
 	double _value;
+public:
+	static constexpr double MIN_VALUE = DBL_MIN;
+	static constexpr double MAX_VALUE = DBL_MAX;
 protected:
 	static uint64_t doubleToLongBits(double value) {
 		if (std::isnan(value))
@@ -731,7 +734,7 @@ public:
 	}
 
 	using Object::equals;
-	
+
 	bool equals(const Boolean& other) const {
 		return (_value == other._value);
 	}

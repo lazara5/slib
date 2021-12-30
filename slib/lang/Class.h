@@ -34,6 +34,7 @@ struct hasTypeInfo : std::false_type{};
 
 template <typename T>
 struct hasTypeInfo<T, decltype((void)T::__className, void())> : std::true_type {};
+//struct hasTypeInfo<T, decltype((void)T::__classCast, void())> : std::true_type {};
 
 template<typename ...TS>
 using typelist = qcstudio::mpml::typelist<TS...>;
@@ -148,6 +149,7 @@ class ReflectionInfo;
 typedef ReflectionInfo *(*GetReflectionInfo)(void);
 
 class Field;
+class NoSuchFieldException;
 
 class Class {
 protected:
@@ -156,23 +158,28 @@ protected:
 	const TypeData *_typeStack;					///< Class hierarchy
 	const GetReflectionInfo _reflectionInfo;	///< Reflection info
 	bool _primitive;
+public:
+	bool _hasTypeInfo;
 protected:
-	SPtr<Field> getDeclaredField(StringView const& name);
+	SPtr<Field> _getDeclaredField(StringView const& name) const;
 public:
 	constexpr Class(StringView const& name, size_t hDepth,
-					const TypeData* typeStack, const GetReflectionInfo reflectionInfo, bool primitive)
+					const TypeData* typeStack, const GetReflectionInfo reflectionInfo,
+					bool primitive, bool hasTypeInfo)
 	: _name(name)
 	, _hDepth(hDepth)
 	, _typeStack(typeStack)
 	, _reflectionInfo(reflectionInfo)
-	, _primitive(primitive) {}
+	, _primitive(primitive)
+	, _hasTypeInfo(hasTypeInfo) {}
 
 	constexpr Class(Class const& clazz)
 	: _name(clazz._name)
 	, _hDepth(clazz._hDepth)
 	, _typeStack(clazz._typeStack)
 	, _reflectionInfo(clazz._reflectionInfo)
-	, _primitive(clazz._primitive) {}
+	, _primitive(clazz._primitive)
+	, _hasTypeInfo(clazz._hasTypeInfo) {}
 
 	Class& operator=(Class const&) = delete;
 
@@ -243,11 +250,12 @@ public:
 	UPtr<Array<Field>> getDeclaredFields();
 
 	template <class S>
-	SPtr<Field> getDeclaredField(S const& name) {
+	SPtr<Field> getDeclaredField(S const& name) const {
 		StringView fieldName(strData(CPtr(name)), strLen(CPtr(name)));
-		return getDeclaredField(fieldName);
+		return _getDeclaredField(fieldName);
 	}
 };
+
 
 template <typename T>
 constexpr StringView _className(std::false_type) {
@@ -269,7 +277,7 @@ template <typename T, typename = void>
 struct hasReflectionInfo : std::false_type{};
 
 template <typename T>
-struct hasReflectionInfo<T, decltype(T::_getReflectionInfo(), void())> : std::true_type {};
+struct hasReflectionInfo<T, decltype(T::__getReflectionInfo(), void())> : std::true_type {};
 
 template <typename T>
 constexpr GetReflectionInfo _getReflectionInfo(std::false_type) {
@@ -278,7 +286,7 @@ constexpr GetReflectionInfo _getReflectionInfo(std::false_type) {
 
 template <typename T>
 constexpr GetReflectionInfo _getReflectionInfo(std::true_type) {
-	return T::_getReflectionInfo;
+	return T::__getReflectionInfo;
 }
 
 template <typename T>
@@ -287,7 +295,8 @@ struct classOf {
 		static constexpr auto _typeData {_typeDesc<T>(hasTypeInfo<T>{})};
 		static constexpr GetReflectionInfo _reflectionInfo = _getReflectionInfo<T>(hasReflectionInfo<T>{});
 		static constexpr Class _class{_className<T>(hasTypeInfo<T>{}),
-									  _typeDescSize<T>(hasTypeInfo<T>{}), _typeData.data(), _reflectionInfo, false};
+									  _typeDescSize<T>(hasTypeInfo<T>{}), _typeData.data(), _reflectionInfo,
+									  false, toBool(hasTypeInfo<T>{})};
 		return _class;
 	}
 };
@@ -297,7 +306,7 @@ template <> \
 struct classOf<TYPE> { \
 	static Class const& _class() { \
 		static constexpr auto _typeData {_primitiveTypeDesc<TYPE>()}; \
-		static constexpr Class _class{NAME ## _SV, 1, _typeData.data(), nullptr, true}; \
+		static constexpr Class _class{NAME ## _SV, 1, _typeData.data(), nullptr, true, false}; \
 		return _class; \
 	} \
 }
@@ -306,6 +315,7 @@ PRIMITIVECLASSOF(int64_t, "long");
 PRIMITIVECLASSOF(uint64_t, "ulong");
 PRIMITIVECLASSOF(int32_t, "int");
 PRIMITIVECLASSOF(uint32_t, "uint");
+PRIMITIVECLASSOF(bool, "boolean");
 
 /*template <class D, class V>
 D const* Class::constCast(V const* from) {
@@ -454,6 +464,16 @@ class Void : virtual public TypedClass {
 public:
 	BASE_TYPE_INFO(Void, CLASS(Void));
 };
+
+struct ObjRef {
+	void *_ref;
+	Class const& _class;
+
+	ObjRef(void *ref, Class const& objClass)
+	: _ref(ref)
+	, _class(objClass) {}
+};
+
 
 } // namespace slib
 

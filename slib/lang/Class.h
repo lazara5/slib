@@ -6,10 +6,10 @@
 #define H_SLIB_CLASS_H
 
 #include "slib/exception/NullPointerException.h"
+#include "slib/exception/IllegalStateException.h"
 #include "slib/lang/StringView.h"
 #include "slib/util/TemplateUtils.h"
 #include "slib/util/MacroUtils.h"
-#include "slib/lang/Array.h"
 
 #include "slib/third-party/mpml/mpml.h"
 
@@ -149,7 +149,13 @@ class ReflectionInfo;
 typedef ReflectionInfo *(*GetReflectionInfo)(void);
 
 class Field;
-class NoSuchFieldException;
+
+template <class T, bool p>
+class Array;
+
+class Class;
+
+typedef Class const& (*GetClassRef)();
 
 class Class {
 protected:
@@ -157,7 +163,9 @@ protected:
 	const size_t _hDepth;						///< Class hierarchy depth
 	const TypeData *_typeStack;					///< Class hierarchy
 	const GetReflectionInfo _reflectionInfo;	///< Reflection info
-	bool _primitive;
+	bool _isPrimitive;
+	bool _isArray;
+	GetClassRef _getArrayComponentClass;
 public:
 	bool _hasTypeInfo;
 protected:
@@ -165,12 +173,14 @@ protected:
 public:
 	constexpr Class(StringView const& name, size_t hDepth,
 					const TypeData* typeStack, const GetReflectionInfo reflectionInfo,
-					bool primitive, bool hasTypeInfo)
+					bool isPrimitive, bool isArray, GetClassRef getArrayComponentClass, bool hasTypeInfo)
 	: _name(name)
 	, _hDepth(hDepth)
 	, _typeStack(typeStack)
 	, _reflectionInfo(reflectionInfo)
-	, _primitive(primitive)
+	, _isPrimitive(isPrimitive)
+	, _isArray(isArray)
+	, _getArrayComponentClass(getArrayComponentClass)
 	, _hasTypeInfo(hasTypeInfo) {}
 
 	constexpr Class(Class const& clazz)
@@ -178,7 +188,9 @@ public:
 	, _hDepth(clazz._hDepth)
 	, _typeStack(clazz._typeStack)
 	, _reflectionInfo(clazz._reflectionInfo)
-	, _primitive(clazz._primitive)
+	, _isPrimitive(clazz._isPrimitive)
+	, _isArray(clazz._isArray)
+	, _getArrayComponentClass(clazz._getArrayComponentClass)
 	, _hasTypeInfo(clazz._hasTypeInfo) {}
 
 	Class& operator=(Class const&) = delete;
@@ -207,7 +219,15 @@ public:
 	}
 
 	constexpr bool isPrimitive() const {
-		return _primitive;
+		return _isPrimitive;
+	}
+
+	constexpr bool isArray() const {
+		return _isArray;
+	}
+
+	constexpr Class const& getComponentClass() const {
+		return _getArrayComponentClass();
 	}
 
 	bool isAssignableFrom(Class const& cls) const {
@@ -247,7 +267,7 @@ public:
 		return cast<D>(from.get());
 	}
 
-	UPtr<Array<Field>> getDeclaredFields();
+	UPtr<Array<Field, false>> getDeclaredFields();
 
 	template <class S>
 	SPtr<Field> getDeclaredField(S const& name) const {
@@ -291,12 +311,34 @@ constexpr GetReflectionInfo _getReflectionInfo(std::true_type) {
 
 template <typename T>
 struct classOf {
+	static Class const& getArrayComponentClass() {
+		THROW(IllegalStateException, "Not an array");
+	}
+
 	static Class const& _class() {
 		static constexpr auto _typeData {_typeDesc<T>(hasTypeInfo<T>{})};
 		static constexpr GetReflectionInfo _reflectionInfo = _getReflectionInfo<T>(hasReflectionInfo<T>{});
 		static constexpr Class _class{_className<T>(hasTypeInfo<T>{}),
 									  _typeDescSize<T>(hasTypeInfo<T>{}), _typeData.data(), _reflectionInfo,
-									  false, toBool(hasTypeInfo<T>{})};
+									  false, false, &getArrayComponentClass, toBool(hasTypeInfo<T>{})};
+
+		return _class;
+	}
+};
+
+template <typename E, bool p>
+struct classOf<Array<E, p>> {
+	static Class const& getArrayComponentClass() {
+		return classOf<E>::_class();
+	}
+
+	static Class const& _class() {
+		static constexpr auto _typeData {_typeDesc<Array<E, p>>(hasTypeInfo<Array<E, p>>{})};
+		static constexpr GetReflectionInfo _reflectionInfo = _getReflectionInfo<Array<E, p>>(hasReflectionInfo<Array<E, p>>{});
+		static constexpr Class _class{_className<Array<E, p>>(hasTypeInfo<Array<E, p>>{}),
+									  _typeDescSize<Array<E, p>>(hasTypeInfo<Array<E, p>>{}), _typeData.data(), _reflectionInfo,
+									  false, true, &getArrayComponentClass, toBool(hasTypeInfo<Array<E, p>>{})};
+
 		return _class;
 	}
 };
@@ -304,9 +346,12 @@ struct classOf {
 #define PRIMITIVECLASSOF(TYPE, NAME) \
 template <> \
 struct classOf<TYPE> { \
+	static Class const& getArrayComponentClass() { \
+		THROW(IllegalStateException, "Not an array"); \
+	} \
 	static Class const& _class() { \
 		static constexpr auto _typeData {_primitiveTypeDesc<TYPE>()}; \
-		static constexpr Class _class{NAME ## _SV, 1, _typeData.data(), nullptr, true, false}; \
+		static constexpr Class _class{NAME ## _SV, 1, _typeData.data(), nullptr, true, false, &getArrayComponentClass, false}; \
 		return _class; \
 	} \
 }
@@ -414,7 +459,7 @@ D* Class::cast(S *from) {
 		if (res)
 			return (D*) res;
 
-		throw ClassCastException(_HERE_, classOf<S>::_class().getName(), classOf<D>::_class().getName());
+		THROW(ClassCastException, classOf<S>::_class().getName(), classOf<D>::_class().getName());
 	}
 
 	return nullptr;

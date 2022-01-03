@@ -5,6 +5,7 @@
 #ifndef H_SLIB_LANG_ARRAY_H
 #define H_SLIB_LANG_ARRAY_H
 
+#include "slib/lang/Object.h"
 #include <slib/util/TemplateUtils.h>
 
 #include <type_traits>
@@ -16,11 +17,13 @@ template <class T, bool p = std::is_arithmetic<T>::value>
 class Array;
 
 template <class T>
-class Array<T, true> {
+class Array<T, true> : virtual public Object {
+public:
+	TYPE_INFO(Array, CLASS(Array<T, true>), INHERITS(Object));
 private:
 	std::vector<T> _data;
 public:
-	Array(size_t n)
+	Array(size_t n = 0)
 	: _data(n) {}
 
 	size_t length() const {
@@ -45,11 +48,13 @@ public:
 };
 
 template <class T>
-class Array<T, false> {
+class Array<T, false> : virtual public Object {
+public:
+	TYPE_INFO(Array, CLASS(Array<T, false>), INHERITS(Object));
 private:
 	std::vector<SPtr<T>> _data;
 public:
-	Array(size_t n)
+	Array(size_t n = 0)
 	: _data(n) {}
 
 	size_t length() const {

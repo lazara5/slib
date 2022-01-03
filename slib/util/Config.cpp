@@ -310,7 +310,6 @@ void ConfigLoader::map(SPtr<Object> cfgObj, Field *field, ObjRef const& obj) {
 			try {
 				SPtr<Field> objField = obj._class.getDeclaredField(name);
 				SPtr<Object> fieldValue = e.getValue();
-				//if (fieldValue->getClass().isAssignableFrom(classOf<Map<IString, Object>>::_class())) {
 				if (classOf<Map<IString, Object>>::_class().isAssignableFrom(fieldValue->getClass())) {
 					ObjRef const& fieldObj = objField->getRef(obj);
 					this->map(fieldValue, objField.get(), fieldObj);
@@ -326,18 +325,8 @@ void ConfigLoader::map(SPtr<Object> cfgObj, Field *field, ObjRef const& obj) {
 	}
 }
 
-SPtr<Config> ConfigLoader::load(bool quick) {
+SPtr<Map<IString, Object>> ConfigLoader::internalLoad(UPtr<Array<uint8_t>> const& contents, bool quick) {
 	try {
-		SPtr<StringPair> conf = searchConfigDir();
-		if (!conf)
-			throw InitException(_HERE_, fmt::format("Could not locate config file '{}'", *_confFileName).c_str());
-
-		SPtr<String> confDir(std::move(conf->_first));
-		SPtr<String> appDir(std::move(conf->_second));
-
-		UPtr<String> fileName = FilenameUtils::concat(confDir, _confFileName);
-
-		UPtr<Array<uint8_t>> contents = FileUtils::readAllBytes(fileName);
 		StringBuilder configContents("{");
 		configContents.add(*contents)
 			.add('}');
@@ -357,9 +346,32 @@ SPtr<Config> ConfigLoader::load(bool quick) {
 		UPtr<String> s = configRoot->toString();
 		fmt::print("Config: {}\n", *s);
 
-		return newS<Config>(configRoot, _appName, confDir, appDir);
+		return configRoot;
 	} catch (EvaluationException const& e) {
-		throw InitException(_HERE_, e);
+		THROW(InitException, e);
+	}
+}
+
+SPtr<Config> ConfigLoader::load(bool quick) {
+	try {
+		SPtr<StringPair> conf = searchConfigDir();
+		if (!conf)
+			throw InitException(_HERE_, fmt::format("Could not locate config file '{}'", *_confFileName).c_str());
+
+		SPtr<String> confDir(std::move(conf->_first));
+		SPtr<String> appDir(std::move(conf->_second));
+
+		UPtr<String> fileName = FilenameUtils::concat(confDir, _confFileName);
+
+		UPtr<Array<uint8_t>> contents = FileUtils::readAllBytes(fileName);
+
+		SPtr<Map<IString, Object>> configRoot = internalLoad(contents, quick);
+		_rootConstraint->validate(configRoot, quick ? _quickResolver : _resolver);
+
+		UPtr<String> s = configRoot->toString();
+		fmt::print("Config: {}\n", *s);
+
+		return newS<Config>(configRoot, _appName, confDir, appDir);
 	} catch (IOException const& e) {
 		throw InitException(_HERE_, e);
 	}

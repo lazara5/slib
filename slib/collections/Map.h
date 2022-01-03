@@ -29,7 +29,7 @@ public:
  * each key can map to at most one value.
  *
  * <p>Note: Mutable objects <b> should NOT </b> be used as map keys. The behavior
- * of a map is not specified if the value of an object is changed in a manner that 
+ * of a map is not specified if the value of an object is changed in a manner that
  * affects \c equals comparisons while the object is a key in the map.
  *
  * @see HashMap
@@ -39,7 +39,7 @@ template <class K, class V,
 		  class Pred = std::equal_to<K>>
 class Map : virtual public Object, public ValueProvider<K, V> {
 public:
-	TYPE_INFO(Map, CLASS(Map<K, V, Pred>), CLASS(Object), CLASS(ValueProvider<K, V>));
+	TYPE_INFO(Map, CLASS(Map<K, V, Pred>), INHERITS(Object), INHERITS(ValueProvider<K, V>));
 public:
 	class Entry {
 	public:

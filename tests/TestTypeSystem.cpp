@@ -2,6 +2,7 @@
 
 #include "slib/lang/Numeric.h"
 #include "slib/collections/LinkedHashMap.h"
+#include "slib/lang/Array.h"
 
 using namespace slib;
 
@@ -12,6 +13,8 @@ TEST(TypeSystem, InstanceOf) {
 	Integer i1(3);
 	String s1("str");
 	LinkedHashMap<String, Object> lhm1;
+	Array<String> as;
+	Array<int> ai;
 
 	CHECK(instanceof<Number>(i1));
 	CHECK(instanceof<Integer>(i1));
@@ -33,4 +36,11 @@ TEST(TypeSystem, InstanceOf) {
 	CHECK((instanceof<Map<std::string, uint64_t>>(hm1)));
 
 	CHECK(StringView::equals(classOf<int64_t>::_class().getName(), "long"));
+
+	Class const& asc = as.getClass();
+	Class const& ascc = asc.getComponentClass();
+	CHECK(asc.isArray());
+	Class const& aic = ai.getClass();
+	Class const& aicc = aic.getComponentClass();
+	CHECK(aic.isArray());
 }

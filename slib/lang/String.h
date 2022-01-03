@@ -8,6 +8,7 @@
 #include "slib/lang/BasicString.h"
 #include "slib/exception/Exception.h"
 #include "slib/util/TemplateUtils.h"
+#include "slib/lang/Array.h"
 
 #include "fmt/format.h"
 
@@ -538,8 +539,6 @@ public:
 		} while (nextDelim != nullptr);
 	}*/
 
-
-
 	static UPtr<ArrayList<String>> simpleSplit(const char *buffer, size_t len, const char delim, int limit = 65535);
 
 	template <class S>
@@ -571,6 +570,12 @@ public:
 
 	virtual UPtr<String> toString() const override {
 		return newU<String>(_str);
+	}
+
+	UPtr<Array<uint8_t>> getBytes() const {
+		UPtr<Array<uint8_t>> data = newU<Array<uint8_t>>(_str.length());
+		memcpy(data->data(), _str.c_str(), _str.length());
+		return data;
 	}
 };
 

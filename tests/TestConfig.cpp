@@ -88,3 +88,19 @@ TEST(ConfigTests, MapObjTest) {
 	SPtr<ConfigObject> cfgObj = configLoader.toObject<ConfigObject>(cfg);
 	cfgRoot = cfg->getRoot();
 }
+
+struct TestConfig {
+	String str;
+
+	REFLECT(TestConfig) {
+		FIELD(str);
+	}
+};
+
+TEST(ConfigTests, MapObjTest1) {
+	const char *cfgString = "str = 'xxx'";
+	ConfigLoader configLoader(nullptr, "SlibObjTest"_SPTR);
+	SPtr<Config> cfg = configLoader.load(cfgString);
+	//SPtr<TestConfig> cfgObj = configLoader.toObject<TestConfig>(cfg);
+
+}

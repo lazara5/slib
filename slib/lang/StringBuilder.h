@@ -16,7 +16,7 @@
 
 namespace slib {
 
-/**xxx
+/**
  * Mutable string container (roughly equivalent with a Java <b>%String</b> + <b>%StringBuilder</b>, i.e. <b>NOT</b>
  * thread-safe when used in a mutable fashion !!!)
  */
@@ -117,7 +117,7 @@ public:
 
 	StringBuilder& add(char c) {
 		_hash = 0;
-		if (_len + 1 >= _size) 
+		if (_len + 1 >= _size)
 			grow(_len + 2);
 		_buffer[_len] = (unsigned char)c;
 		_len++;
@@ -142,7 +142,7 @@ public:
 	void push_back(char c) {
 		add(c);
 	}
-	
+
 	StringBuilder& addFmt(const char *format, ...)
 		__attribute__((format (printf, 2, 3)));
 	StringBuilder& addFmtVL(const char *format, va_list ap)
@@ -214,9 +214,9 @@ public:
 	// for Java compatibility
 
 	/**
-	 * Compares this String to the specified String object. Returns <i>true</i> 
-	 * only if the argument is a String object that contains the same sequence 
-	 * of characters as this String or if both this and the other String 
+	 * Compares this String to the specified String object. Returns <i>true</i>
+	 * only if the argument is a String object that contains the same sequence
+	 * of characters as this String or if both this and the other String
 	 * object are <i>'NULL'</i> references.
 	 * @param other The String object to compare this String against
 	 * @return <i>true</i> if the given object represents a String object
@@ -226,13 +226,13 @@ public:
 
 	/**
 	 * Compares this String to another String, ignoring case.
-	 * Two strings are considered equal ignoring case if they are of the same length and 
-	 * corresponding characters in the two strings are equal ignoring case. 
+	 * Two strings are considered equal ignoring case if they are of the same length and
+	 * corresponding characters in the two strings are equal ignoring case.
 	 * Uses stricmp() internally.
 	 *
 	 * @param other The String to compare this String to
 	 *
-	 * @return  <i><b>true</b></i> if the argument represents an equivalent String ignoring case; 
+	 * @return  <i><b>true</b></i> if the argument represents an equivalent String ignoring case;
 	 *		<i><b>false</b></i> otherwise.
 	 *
 	 * @see equals(const String&)
@@ -251,7 +251,7 @@ public:
 	char charAt(size_t pos) const;
 
 	/**
-	 * Returns the offset in this String of the first occurrence of the specified character. 
+	 * Returns the offset in this String of the first occurrence of the specified character.
 	 *
 	 * @param ch a character
 	 * @return the index of the first occurrence of the character in the
@@ -268,7 +268,7 @@ public:
 	 * @param ch  a character.
 	 * @param fromIndex  the index to start the search from.
 	 * @return the index of the first occurrence of the character in the
-	 *		character sequence represented by this String that is >= to 
+	 *		character sequence represented by this String that is >= to
 	 *		<i>fromIndex</i> or <i><b>-1</b></i> if the character does not occur.
 	 */
 	std::ptrdiff_t indexOf(char ch, size_t fromIndex) const;
@@ -285,18 +285,18 @@ public:
 
 	/**
 	 * Returns the offset in this String of the first occurrence of the
-	 * specified substring, starting at the specified index. 
+	 * specified substring, starting at the specified index.
 	 *
 	 * @param sub a string.
-	 * @return if the string argument appears as a substring within this String, starting at 
-	 *		the specified offset, then the index of the first character of the first occurence 
+	 * @return if the string argument appears as a substring within this String, starting at
+	 *		the specified offset, then the index of the first character of the first occurence
 	 *		is returned; if it does not, then <i><b>-1</b></i> is returned.
 	 */
 	std::ptrdiff_t indexOf(StringBuilder const& sub, size_t fromIndex) const;
 
 	/**
 	 * Returns the index within this string of the last occurrence of
-	 * the specified character. The String is searched backwards 
+	 * the specified character. The String is searched backwards
 	 * starting with the last character.
 	 * @param ch  a character.
 	 * @return the index of the last occurrence of the character in the
@@ -310,9 +310,9 @@ public:
 	 * the specified character, searching backward starting from the
 	 * specified index.
 	 *
-	 * @param ch  a character 
-	 * @param fromIndex  the index to start the search from. If <i>fromIndex</i> 
-	 *			is greater than or equal to the length of this String, this entire 
+	 * @param ch  a character
+	 * @param fromIndex  the index to start the search from. If <i>fromIndex</i>
+	 *			is greater than or equal to the length of this String, this entire
 	 *			String may be searched. If it is negative, <i><b>-1</b></i> is returned.
 	 * @return the index of the last occurrence of the character in the
 	 *			character sequence represented by this object that is less
@@ -322,8 +322,8 @@ public:
 	std::ptrdiff_t lastIndexOf(char ch, std::ptrdiff_t fromIndex) const;
 
 	/**
-	 * Returns the index within this string of the rightmost occurrence of the 
-	 * specified substring. The rightmost empty string "" is considered to occur at the 
+	 * Returns the index within this string of the rightmost occurrence of the
+	 * specified substring. The rightmost empty string "" is considered to occur at the
 	 * index value <i>this->length()</i>.
 	 * The returned index is the largest value <i>k</i> such that:
 	 * this->startsWith(str, <i>k</i>) is <i>true</i>.
@@ -336,37 +336,37 @@ public:
 	std::ptrdiff_t lastIndexOf(StringBuilder const& sub) const;
 
 	/**
-     * Tests if this string starts with the specified prefix.
-     * @param prefix the prefix.
-     * @return  <i><b>true</b></i> if the character represented by the
-     *		argument is a prefix of the character sequence represented by
-     *      this string; <i><b>false</b></i> otherwise.
-     */
+	 * Tests if this string starts with the specified prefix.
+	 * @param prefix the prefix.
+	 * @return  <i><b>true</b></i> if the character represented by the
+	 *		argument is a prefix of the character sequence represented by
+	 *      this string; <i><b>false</b></i> otherwise.
+	 */
 	bool startsWith(char prefix) const;
 
 	/**
-     * Tests if this string starts with the specified prefix.
-     * @param prefix the prefix.
-     * @return  <i><b>true</b></i> if the character sequence represented by the
-     *		argument is a prefix of the character sequence represented by
-     *      this string; <i><b>false</b></i> otherwise.
-     *      Note also that <i><b>true</b></i> will be returned if the argument is an empty string.
-     */
+	 * Tests if this string starts with the specified prefix.
+	 * @param prefix the prefix.
+	 * @return  <i><b>true</b></i> if the character sequence represented by the
+	 *		argument is a prefix of the character sequence represented by
+	 *      this string; <i><b>false</b></i> otherwise.
+	 *      Note also that <i><b>true</b></i> will be returned if the argument is an empty string.
+	 */
 	bool startsWith(StringBuilder const& prefix) const;
 
 	/**
-     * Tests if the substring of this string beginning at the
-     * specified index starts with the specified prefix.
-     * @param prefix  the prefix.
-     * @param offset  where to begin looking in this string.
-     * @return  <i><b>true</b></i> if the character sequence represented by the
-     *		argument is a prefix of the substring of this object starting
-     *      at index <i>offset</i>; <i><b>false</b></i> otherwise.
-     *      The result is <i><b>false</b></i> if <i>offset</i> is
-     *      negative or greater than the length of this String object; otherwise 
+	 * Tests if the substring of this string beginning at the
+	 * specified index starts with the specified prefix.
+	 * @param prefix  the prefix.
+	 * @param offset  where to begin looking in this string.
+	 * @return  <i><b>true</b></i> if the character sequence represented by the
+	 *		argument is a prefix of the substring of this object starting
+	 *      at index <i>offset</i>; <i><b>false</b></i> otherwise.
+	 *      The result is <i><b>false</b></i> if <i>offset</i> is
+	 *      negative or greater than the length of this String object; otherwise
 	 *		the result is the same as the result of the expression
-     *      <i>this->substring(offset).startsWith(prefix)</i>
-     */
+	 *      <i>this->substring(offset).startsWith(prefix)</i>
+	 */
 	bool startsWith(StringBuilder const& prefix, std::ptrdiff_t offset) const;
 
 	/**
@@ -392,7 +392,7 @@ public:
 	/**
 	 * Returns a new String that is a substring of this String. The
 	 * substring begins with the character at the specified index and
-	 * extends to the end of this string. 
+	 * extends to the end of this string.
 	 *
 	 * @param beginIndex  the beginning index, inclusive.
 	 * @return the specified substring.
@@ -403,19 +403,19 @@ public:
 	StringBuilder substring(size_t beginIndex) const;
 
 	/**
-     * Returns a new string that is a substring of this string. The
-     * substring begins at the specified <code>beginIndex</code> and
-     * extends to the character at index <code>endIndex - 1</code>.
-     * Thus the length of the substring is <code>endIndex-beginIndex</code>.
-     *
-     * @param beginIndex  the beginning index, inclusive.
-     * @param endIndex  the ending index, exclusive.
-     * @return the specified substring.
-     * @throws IndexOutOfBoundsException  if the <code>beginIndex</code> is negative, or
-     *             <code>endIndex</code> is larger than the length of
-     *             this <code>String</code> object, or <code>beginIndex</code> is larger than
-     *             <code>endIndex</code>.
-     */
+	 * Returns a new string that is a substring of this string. The
+	 * substring begins at the specified <code>beginIndex</code> and
+	 * extends to the character at index <code>endIndex - 1</code>.
+	 * Thus the length of the substring is <code>endIndex-beginIndex</code>.
+	 *
+	 * @param beginIndex  the beginning index, inclusive.
+	 * @param endIndex  the ending index, exclusive.
+	 * @return the specified substring.
+	 * @throws IndexOutOfBoundsException  if the <code>beginIndex</code> is negative, or
+	 *             <code>endIndex</code> is larger than the length of
+	 *             this <code>String</code> object, or <code>beginIndex</code> is larger than
+	 *             <code>endIndex</code>.
+	 */
 	StringBuilder substring(size_t beginIndex, size_t endIndex) const;
 
 	/**
@@ -434,7 +434,7 @@ public:
 	 */
 	virtual int32_t hashCode() const override;
 
-	/** 
+	/**
 	 * Creates a <i>'NULL'</i> reference to a StringBuilder.
 	 * @return a <i>'NULL'</i> reference to a StringBuilder.
 	 */
@@ -468,8 +468,8 @@ public:
 	 * Get C string (null-terminated)
 	 * @return pointer to C string
 	 */
-	char *str() { 
-		return (char*)_buffer; 
+	char *str() {
+		return (char*)_buffer;
 	}
 
 	// for compatibility with RapidJSON streams

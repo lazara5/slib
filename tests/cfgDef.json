@@ -18,6 +18,14 @@
 		"j": {
 			"f": {"_type": "string"},
 			"g": {"_type": "string"}
-		}
+		},
+		"k": [
+			{
+				"l": {"_type": "string"}
+			}
+		],
+		"m": [
+			{"_type": "int64"}
+		]
 	}
 }

@@ -583,6 +583,8 @@ protected:
 	void validate();
 
 	void map(SPtr<Object> cfgObj, Field *field, ObjRef const& obj);
+
+	SPtr<Map<IString, Object> > internalLoad(UPtr<Array<uint8_t>> const& contents, bool quick);
 public:
 	ConfigLoader(SPtr<String> const& confFileName, SPtr<String> const& appName);
 
@@ -642,6 +644,21 @@ public:
 
 	/** @throws EvaluationException */
 	SPtr<Config> load(bool quick = false);
+
+	/** @throws EvaluationException */
+	template <class S>
+	SPtr<Config> load(S const& contents, bool quick = false) {
+		String strContents(contents);
+		UPtr<Array<uint8_t>> contentBytes = strContents.getBytes();
+
+		SPtr<Map<IString, Object>> configRoot = internalLoad(contentBytes, quick);
+		_rootConstraint->validate(configRoot, quick ? _quickResolver : _resolver);
+
+		UPtr<String> s = configRoot->toString();
+		fmt::print("Config: {}\n", *s);
+
+		return newS<Config>(configRoot, _appName, nullptr, nullptr);
+	}
 
 	template <class T>
 	SPtr<T> toObject(SPtr<Config> cfg) {

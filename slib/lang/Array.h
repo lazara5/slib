@@ -13,20 +13,32 @@
 
 namespace slib {
 
+namespace reflect {
+	struct Array;
+}
+
+class IArray : virtual public Object {
+friend struct reflect::Array;
+public:
+	TYPE_INFO(IArray, CLASS(IArray), INHERITS(Object));
+public:
+	virtual size_t length() const = 0;
+};
+
 template <class T, bool p = std::is_arithmetic<T>::value>
 class Array;
 
 template <class T>
-class Array<T, true> : virtual public Object {
+class Array<T, true> : public IArray {
 public:
-	TYPE_INFO(Array, CLASS(Array<T, true>), INHERITS(Object));
+	TYPE_INFO(Array, CLASS(Array<T, true>), INHERITS(IArray));
 private:
 	std::vector<T> _data;
 public:
 	Array(size_t n = 0)
 	: _data(n) {}
 
-	size_t length() const {
+	virtual size_t length() const override {
 		return _data.size();
 	}
 
@@ -48,7 +60,7 @@ public:
 };
 
 template <class T>
-class Array<T, false> : virtual public Object {
+class Array<T, false> : public IArray {
 public:
 	TYPE_INFO(Array, CLASS(Array<T, false>), INHERITS(Object));
 private:
@@ -57,7 +69,7 @@ public:
 	Array(size_t n = 0)
 	: _data(n) {}
 
-	size_t length() const {
+	virtual size_t length() const override {
 		return _data.size();
 	}
 

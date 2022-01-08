@@ -43,6 +43,14 @@ struct Y {
 	}
 };
 
+class NDC {
+public:
+	int m;
+public:
+	NDC(int v)
+	: m(v) {}
+};
+
 TEST(ReflectionTests, BasicTests)
 {
 	auto a = hasReflectionInfo<X> {};
@@ -71,7 +79,7 @@ TEST(ReflectionTests, BasicTests)
 	UPtr<Array<Field>> fields = cls.getDeclaredFields();
 
 	SPtr<Y> y = newS<Y>();
-	ObjRef const& yref = ObjRef(y.get(), classOf<Y>::_class());
+	ObjRef const& yref = ObjRef(y.get(), RefType::INSTANCE, classOf<Y>::_class());
 	Class ycls = classOf<Y>::_class();
 	f = ycls.getDeclaredField("z");
 	ObjRef const& ref = f->getRef(yref);
@@ -79,4 +87,9 @@ TEST(ReflectionTests, BasicTests)
 	SPtr<Field> f1 = zcls.getDeclaredField("m1");
 	f1->set(ref, (int64_t)42);
 	f = ycls.getDeclaredField("z");
+
+	Class sc = classOf<String>::_class();
+	ObjRef ni = sc.newInstance();
+	Class sc1 = classOf<NDC>::_class();
+	CHECK_THROWS(InstantiationException, sc1.newInstance());
 }

@@ -20,4 +20,15 @@ SPtr<Field> ReflectionInfo::getField(StringView const& name) {
 	return _fields->get(name);
 }
 
+namespace reflect {
+
+ObjRef Array::getRef(ObjRef const& array, size_t index) {
+	if (!array._ref)
+		THROW(NullPointerException);
+	if (!array._class.isArray())
+		THROW(IllegalArgumentException);
 }
+
+} // namespace reflect
+
+} // namespace slib

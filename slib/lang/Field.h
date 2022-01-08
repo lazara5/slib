@@ -17,12 +17,6 @@ namespace slib {
 
 namespace internal {
 
-enum class RefType {
-	INSTANCE,
-	SPTR,
-	UPTR
-};
-
 enum class InnerRefType {
 	INSTANCE,
 	SPTR
@@ -63,19 +57,19 @@ protected:
 	static void *autoBox(void *src, Class const& srcType, internal::FieldValue &dst, Class const& dstType);
 
 	template <class T>
-	static Class const& valueClass(void *valueRef, internal::RefType valueRefType) {
+	static Class const& valueClass(void *valueRef, RefType valueRefType) {
 		Class const& clazz = classOf<T>::_class();
 		if (clazz.isAssignableFrom(classOf<Object>::_class())) {
 			switch (valueRefType) {
-				case internal::RefType::SPTR: {
+				case RefType::SPTR: {
 					SPtr<Object> *pSVal = (SPtr<Object> *)valueRef;
 					return (*pSVal)->getClass();
 				}
-				case internal::RefType::UPTR: {
+				case RefType::UPTR: {
 					UPtr<Object> *pUVal = (UPtr<Object> *)valueRef;
 					return (*pUVal)->getClass();
 				}
-				case internal::RefType::INSTANCE: {
+				case RefType::INSTANCE: {
 					Object *pVal = (Object *)valueRef;
 					return pVal->getClass();
 				}
@@ -87,6 +81,7 @@ protected:
 	}
 protected:
 	virtual void *getAddr(void *instance) = 0;
+	virtual RefType getRefType() = 0;
 
 	virtual void set(void *instance, void *valueRef, internal::InnerRefType valueRefType) = 0;
 
@@ -96,14 +91,14 @@ protected:
 	, _classType(classType) {}
 
 	template <typename T>
-	void set(ObjRef const& instance, void *valueRef, internal::RefType valueRefType) {
+	void set(ObjRef const& instance, void *valueRef, RefType valueRefType) {
 		if (instance._class != _classType)
 			throw IllegalArgumentException(_HERE_);
 
 		Class const& valueClass = Field::valueClass<T>(valueRef, valueRefType);
 		bool sameType = (valueClass == _fieldType);
 
-		if (valueRefType == internal::RefType::SPTR) {
+		if (valueRefType == RefType::SPTR) {
 			// we want to keep a SPtr for possible copy
 			if (sameType)
 				set(instance._ref, valueRef, internal::InnerRefType::SPTR);
@@ -116,7 +111,7 @@ protected:
 				set(instance._ref, &castSPtr, internal::InnerRefType::SPTR);
 			}
 		} else {
-			if (valueRefType == internal::RefType::UPTR) {
+			if (valueRefType == RefType::UPTR) {
 				UPtr<T> *pUVal = (UPtr<T> *)valueRef;
 				valueRef = pUVal->get();
 			}
@@ -135,7 +130,7 @@ public:
 		return _name;
 	}
 
-	Class const& getGenericType() const {
+	Class const& getType() const {
 		return _fieldType;
 	}
 
@@ -159,32 +154,32 @@ public:
 		return ObjRef(getAddr(&instance), _fieldType);
 	}
 
-	ObjRef getRef(ObjRef instance) {
-		return ObjRef(getAddr(instance._ref), _fieldType);
+	ObjRef getRef(ObjRef const& instance) {
+		return ObjRef(getAddr(instance._ref), getRefType(), _fieldType);
 	}
 
 	template<typename T, typename C> void set(C& instance, T const& value) {
-		set<T>(ObjRef(&instance, classOf<C>::_class()), (void*)&value, internal::RefType::INSTANCE);
+		set<T>(ObjRef(&instance, RefType::INSTANCE, classOf<C>::_class()), (void*)&value, RefType::INSTANCE);
 	}
 
 	template<typename T, typename C> void set(C& instance, SPtr<T> const& value) {
-		set<T>(ObjRef(&instance, classOf<C>::_class()), (void *)&value, internal::RefType::SPTR);
+		set<T>(ObjRef(&instance, RefType::INSTANCE, classOf<C>::_class()), (void *)&value, RefType::SPTR);
 	}
 
 	template<typename T, typename C> void set(C& instance, UPtr<T> const& value) {
-		set<T>(ObjRef(&instance, classOf<C>()), (void *)&value, internal::RefType::UPTR);
+		set<T>(ObjRef(&instance, RefType::INSTANCE, classOf<C>()), (void *)&value, RefType::UPTR);
 	}
 
 	template<typename T> void set(ObjRef const& instance, T const& value) {
-		set<T>(instance, (void*)&value, internal::RefType::INSTANCE);
+		set<T>(instance, (void*)&value, RefType::INSTANCE);
 	}
 
 	template<typename T> void set(ObjRef const& instance, SPtr<T> const& value) {
-		set<T>(instance, (void *)&value, internal::RefType::SPTR);
+		set<T>(instance, (void *)&value, RefType::SPTR);
 	}
 
 	template<typename T> void set(ObjRef const& instance, UPtr<T> const& value) {
-		set<T>(instance, (void *)&value, internal::RefType::UPTR);
+		set<T>(instance, (void *)&value, RefType::UPTR);
 	}
 };
 
@@ -224,9 +219,12 @@ protected:;
 		return &(static_cast<C*>(instance)->*_field);
 	}
 
+	virtual RefType getRefType() override {
+		return RefType::INSTANCE;
+	}
+
 	virtual void set(void *instance, void *valueRef, internal::InnerRefType valueRefType) override {
 		void *fieldAddr =  &(static_cast<C *>(instance)->*_field);
-		//*(static_cast<T *>(fieldAddr)) = *((T *)valueRef);
 		switch (valueRefType) {
 			case internal::InnerRefType::INSTANCE:
 				internal::setFieldInstance<T, C>(fieldAddr, valueRef, std::is_assignable<T&, T>{});
@@ -251,6 +249,10 @@ private:
 protected:;
 	virtual void *getAddr(void *instance) override {
 		return &(static_cast<C*>(instance)->*_field);
+	}
+
+	virtual RefType getRefType() override {
+		return RefType::SPTR;
 	}
 
 	virtual void set(void *instance, void *valueRef, internal::InnerRefType valueRefType) override {
@@ -279,6 +281,10 @@ private:
 protected:;
 	virtual void *getAddr(void *instance) override {
 		return &(static_cast<C*>(instance)->*_field);
+	}
+
+	virtual RefType getRefType() override {
+		return RefType::UPTR;
 	}
 
 	virtual void set(void *instance, void *valueRef, internal::InnerRefType valueRefType SLIB_UNUSED) override {

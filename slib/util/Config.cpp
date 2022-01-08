@@ -311,13 +311,20 @@ void ConfigLoader::map(SPtr<Object> cfgObj, Field *field, ObjRef const& obj) {
 				SPtr<Field> objField = obj._class.getDeclaredField(name);
 				SPtr<Object> fieldValue = e.getValue();
 				if (classOf<Map<IString, Object>>::_class().isAssignableFrom(fieldValue->getClass())) {
-					ObjRef const& fieldObj = objField->getRef(obj);
+					ObjRef fieldObj = objField->getRef(obj);
 					this->map(fieldValue, objField.get(), fieldObj);
 				} else
 					this->map(fieldValue, objField.get(), obj);
 			} catch (NoSuchFieldException const&) {
 			}
 		}
+	} else if (instanceof<ArrayList<Object>>(cfgObj)) {
+		Class const& fieldType = field->getType();
+		if (fieldType.isArray()) {
+			auto array = Class::cast<ArrayList<Object>>(cfgObj.get());
+			auto i = array->constIterator();
+		} else
+			THROW(IllegalArgumentException, "Object field is not an array");
 	} else {
 		if (!field)
 			THROW(IllegalArgumentException);

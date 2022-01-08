@@ -56,4 +56,16 @@ static void __registerReflection(slib::ReflectionInfo &ri)
 
 #define FIELD(name) { using namespace slib; ri.registerField(SV(name), &T::name); }
 
+namespace slib {
+
+namespace reflect {
+
+struct Array {
+	static ObjRef getRef(ObjRef const& array, size_t index);
+};
+
+} // namespace reflect
+
+} // namespace slib
+
 #endif // H_SLIB_REFLECTION_H

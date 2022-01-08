@@ -107,7 +107,7 @@ public:
  *
  * <p>Note that fail-fast behavior cannot be guaranteed as it is, generally
  * speaking, impossible to make any hard guarantees in the presence of
- * unsynchronized concurrent modification.  Fail-fast operations
+ * unsynchronized concurrent modification. Fail-fast operations
  * throw ConcurrentModificationException on a best-effort basis.
  * Therefore, it would be wrong to write a program that depended on this
  * exception for its correctness: <i>ConcurrentModificationException

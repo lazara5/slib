@@ -663,7 +663,7 @@ public:
 	template <class T>
 	SPtr<T> toObject(SPtr<Config> cfg) {
 		SPtr<T> obj = newS<T>();
-		map(cfg->getRoot(), nullptr, ObjRef(obj.get(), classOf<T>::_class()));
+		map(cfg->getRoot(), nullptr, ObjRef(obj.get(), RefType::INSTANCE, classOf<T>::_class()));
 		return obj;
 	}
 };

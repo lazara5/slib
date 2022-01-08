@@ -29,6 +29,12 @@ public:
 	ClassCastException(const char *where, StringView const& c1, StringView const& c2);
 };
 
+class InstantiationException : public Exception {
+public:
+	InstantiationException(const char *where, const char *msg)
+	: Exception(where, "ClassCastException", msg) {}
+};
+
 template <typename T, typename = void>
 struct hasTypeInfo : std::false_type{};
 
@@ -68,7 +74,7 @@ struct hierarchy<C, Cs... > {
 	typedef typename cat<typelist<C>, typename C::__classInherits, typename hierarchy<Cs...>::types>::type types;
 };
 
-//Template class that holds the declaration of the id.
+// Template class that holds the declaration of the type id
 template<typename T>
 struct typeIdMarker {
 	static const T* const id;
@@ -155,43 +161,89 @@ class Array;
 
 class Class;
 
+enum class RefType : uint8_t {
+	INSTANCE,
+	SPTR,
+	UPTR
+};
+
+typedef void (*ObjRefDeleter)(void *ref, RefType refType);
+
+class ObjRef {
+public:
+	void *_ref;
+	RefType _refType;
+	Class const& _class;
+private:
+	ObjRefDeleter _deleter;
+public:
+	ObjRef(void *ref, RefType refType, Class const& objClass,
+		   ObjRefDeleter deleter = nullptr)
+	: _ref(ref)
+	, _refType(refType)
+	, _class(objClass)
+	, _deleter(deleter) {}
+
+	ObjRef(ObjRef&& other)
+	: _ref(other._ref)
+	, _refType(other._refType)
+	, _class(other._class)
+	, _deleter (other._deleter) {
+		other._ref = nullptr;
+	}
+
+	ObjRef& operator =(ObjRef const&) = delete;
+
+	~ObjRef() {
+		if (_deleter && _ref) {
+			_deleter(_ref, _refType);
+		}
+	}
+};
+
 typedef Class const& (*GetClassRef)();
+typedef ObjRef (*NewInstance)(RefType refType);
 
 class Class {
 protected:
 	const StringView _name;						///< Class name
-	const size_t _hDepth;						///< Class hierarchy depth
 	const TypeData *_typeStack;					///< Class hierarchy
 	const GetReflectionInfo _reflectionInfo;	///< Reflection info
-	bool _isPrimitive;
-	bool _isArray;
-	GetClassRef _getArrayComponentClass;
+	GetClassRef _getArrayComponentClass;		///< Component class getter for array types
+	NewInstance _newInstance;
+	const size_t _hDepth : 16;					///< Class hierarchy depth
+	bool _isPrimitive : 1;
+	bool _isArray : 1;
 public:
-	bool _hasTypeInfo;
+	bool _hasTypeInfo : 1;
 protected:
 	SPtr<Field> _getDeclaredField(StringView const& name) const;
 public:
 	constexpr Class(StringView const& name, size_t hDepth,
 					const TypeData* typeStack, const GetReflectionInfo reflectionInfo,
-					bool isPrimitive, bool isArray, GetClassRef getArrayComponentClass, bool hasTypeInfo)
+					bool isPrimitive, bool isArray,
+					GetClassRef getArrayComponentClass, NewInstance newInstance,
+					bool hasTypeInfo)
 	: _name(name)
-	, _hDepth(hDepth)
 	, _typeStack(typeStack)
 	, _reflectionInfo(reflectionInfo)
+	, _getArrayComponentClass(getArrayComponentClass)
+	, _newInstance(newInstance)
+	, _hDepth(hDepth)
 	, _isPrimitive(isPrimitive)
 	, _isArray(isArray)
-	, _getArrayComponentClass(getArrayComponentClass)
 	, _hasTypeInfo(hasTypeInfo) {}
 
-	constexpr Class(Class const& clazz)
-	: _name(clazz._name)
-	, _hDepth(clazz._hDepth)
-	, _typeStack(clazz._typeStack)
-	, _reflectionInfo(clazz._reflectionInfo)
-	, _isPrimitive(clazz._isPrimitive)
-	, _isArray(clazz._isArray)
-	, _getArrayComponentClass(clazz._getArrayComponentClass)
-	, _hasTypeInfo(clazz._hasTypeInfo) {}
+	constexpr Class(Class const& other)
+	: _name(other._name)
+	, _typeStack(other._typeStack)
+	, _reflectionInfo(other._reflectionInfo)
+	, _getArrayComponentClass(other._getArrayComponentClass)
+	, _newInstance(other._newInstance)
+	, _hDepth(other._hDepth)
+	, _isPrimitive(other._isPrimitive)
+	, _isArray(other._isArray)
+	, _hasTypeInfo(other._hasTypeInfo) {}
 
 	Class& operator=(Class const&) = delete;
 
@@ -228,6 +280,10 @@ public:
 
 	constexpr Class const& getComponentClass() const {
 		return _getArrayComponentClass();
+	}
+
+	ObjRef newInstance(RefType refType = RefType::INSTANCE) const {
+		return _newInstance(refType);
 	}
 
 	bool isAssignableFrom(Class const& cls) const {
@@ -276,7 +332,6 @@ public:
 	}
 };
 
-
 template <typename T>
 constexpr StringView _className(std::false_type) {
 	return "<unknown>"_SV;
@@ -286,12 +341,6 @@ template <typename T>
 constexpr StringView _className(std::true_type) {
 	return T::__className;
 }
-
-/*template <>
-constexpr StringView _className<int64_t>(std::false_type) {
-	return "int64_t"_SV;
-}
-*/
 
 template <typename T, typename = void>
 struct hasReflectionInfo : std::false_type{};
@@ -309,18 +358,67 @@ constexpr GetReflectionInfo _getReflectionInfo(std::true_type) {
 	return T::__getReflectionInfo;
 }
 
+template <typename T, typename = void>
+struct isDefaultConstructible : std::false_type{};
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-value"
+template <typename T>
+struct isDefaultConstructible<T, decltype(T(), void())> : std::true_type {};
+#pragma GCC diagnostic pop
+
 template <typename T>
 struct classOf {
 	static Class const& getArrayComponentClass() {
 		THROW(IllegalStateException, "Not an array");
 	}
 
+	static ObjRef noNewInstance(RefType) {
+		THROW(InstantiationException, "No default constructor available");
+	}
+
+	static void deleter(void *ref, RefType refType) {
+		switch (refType) {
+			case RefType::INSTANCE:
+				delete (T*)ref;
+				break;
+			case RefType::SPTR:
+				delete (SPtr<T>*)ref;
+				break;
+			case RefType::UPTR:
+				delete (UPtr<T>*)ref;
+				break;
+		}
+	}
+
+	static ObjRef newInstance(RefType refType) {
+		switch (refType) {
+			case RefType::INSTANCE:
+				return ObjRef(new T(), refType, classOf<T>::_class(), deleter);
+			case RefType::SPTR:
+				return ObjRef(new std::shared_ptr<T>(newS<T>()),
+							  refType, classOf<T>::_class(), deleter);
+			case RefType::UPTR:
+				return ObjRef(new std::unique_ptr<T>(new T()), refType, classOf<T>::_class(), deleter);
+		}
+		return ObjRef(nullptr, refType, classOf<T>::_class());
+	}
+
+	static constexpr NewInstance _getNewInstance(std::false_type) {
+		return noNewInstance;
+	}
+
+	static constexpr NewInstance _getNewInstance(std::true_type) {
+		return newInstance;
+	}
+
 	static Class const& _class() {
 		static constexpr auto _typeData {_typeDesc<T>(hasTypeInfo<T>{})};
 		static constexpr GetReflectionInfo _reflectionInfo = _getReflectionInfo<T>(hasReflectionInfo<T>{});
+		static constexpr NewInstance _newInstance = _getNewInstance(isDefaultConstructible<T>{});
 		static constexpr Class _class{_className<T>(hasTypeInfo<T>{}),
 									  _typeDescSize<T>(hasTypeInfo<T>{}), _typeData.data(), _reflectionInfo,
-									  false, false, &getArrayComponentClass, toBool(hasTypeInfo<T>{})};
+									  false, false, &getArrayComponentClass, _newInstance, toBool(hasTypeInfo<T>{})};
 
 		return _class;
 	}
@@ -337,7 +435,7 @@ struct classOf<Array<E, p>> {
 		static constexpr GetReflectionInfo _reflectionInfo = _getReflectionInfo<Array<E, p>>(hasReflectionInfo<Array<E, p>>{});
 		static constexpr Class _class{_className<Array<E, p>>(hasTypeInfo<Array<E, p>>{}),
 									  _typeDescSize<Array<E, p>>(hasTypeInfo<Array<E, p>>{}), _typeData.data(), _reflectionInfo,
-									  false, true, &getArrayComponentClass, toBool(hasTypeInfo<Array<E, p>>{})};
+									  false, true, &getArrayComponentClass, nullptr, toBool(hasTypeInfo<Array<E, p>>{})};
 
 		return _class;
 	}
@@ -349,9 +447,13 @@ struct classOf<TYPE> { \
 	static Class const& getArrayComponentClass() { \
 		THROW(IllegalStateException, "Not an array"); \
 	} \
+	static ObjRef newInstance(RefType) { \
+		THROW(InstantiationException, "");\
+	} \
 	static Class const& _class() { \
 		static constexpr auto _typeData {_primitiveTypeDesc<TYPE>()}; \
-		static constexpr Class _class{NAME ## _SV, 1, _typeData.data(), nullptr, true, false, &getArrayComponentClass, false}; \
+		static constexpr Class _class{NAME ## _SV, 1, _typeData.data(), nullptr, true, false, \
+			&getArrayComponentClass, &newInstance, false}; \
 		return _class; \
 	} \
 }
@@ -360,6 +462,10 @@ PRIMITIVECLASSOF(int64_t, "long");
 PRIMITIVECLASSOF(uint64_t, "ulong");
 PRIMITIVECLASSOF(int32_t, "int");
 PRIMITIVECLASSOF(uint32_t, "uint");
+PRIMITIVECLASSOF(int16_t, "short");
+PRIMITIVECLASSOF(uint16_t, "ushort");
+PRIMITIVECLASSOF(float, "float");
+PRIMITIVECLASSOF(double, "double");
 PRIMITIVECLASSOF(bool, "boolean");
 
 /*template <class D, class V>
@@ -509,16 +615,6 @@ class Void : virtual public TypedClass {
 public:
 	BASE_TYPE_INFO(Void, CLASS(Void));
 };
-
-struct ObjRef {
-	void *_ref;
-	Class const& _class;
-
-	ObjRef(void *ref, Class const& objClass)
-	: _ref(ref)
-	, _class(objClass) {}
-};
-
 
 } // namespace slib
 

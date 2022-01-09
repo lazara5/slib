@@ -29,6 +29,18 @@ ObjRef Array::getRef(ObjRef const& array, size_t index) {
 		THROW(IllegalArgumentException);
 }
 
+void Array::resize(IArray& array, size_t newSize) {
+	array.resize(newSize);
+}
+
+void Array::resize(ObjRef const& array, size_t newSize) {
+	if (!array._class.isArray())
+		THROW(IllegalArgumentException);
+
+	IArray *arrayInstance = (IArray *)array.getInstanceRef();
+	arrayInstance->resize(newSize);
+}
+
 } // namespace reflect
 
 } // namespace slib

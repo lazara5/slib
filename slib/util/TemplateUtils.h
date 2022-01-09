@@ -138,6 +138,8 @@ constexpr bool toBool(std::false_type) {
 	return false;
 }
 
+template <class T> struct TypeTag { using type = T; };
+
 } // namespace slib
 
 #endif // H_SLIB_UTIL_TEMPLATEUTILS_H

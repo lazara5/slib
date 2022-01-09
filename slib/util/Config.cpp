@@ -322,6 +322,10 @@ void ConfigLoader::map(SPtr<Object> cfgObj, Field *field, ObjRef const& obj) {
 		Class const& fieldType = field->getType();
 		if (fieldType.isArray()) {
 			auto array = Class::cast<ArrayList<Object>>(cfgObj.get());
+
+			ObjRef arrayRef = field->getRef(obj);
+			reflect::Array::resize(arrayRef, array->size());
+
 			auto i = array->constIterator();
 		} else
 			THROW(IllegalArgumentException, "Object field is not an array");

@@ -23,6 +23,8 @@ public:
 	TYPE_INFO(IArray, CLASS(IArray), INHERITS(Object));
 public:
 	virtual size_t length() const = 0;
+protected:
+	virtual void resize(size_t newSize) = 0;
 };
 
 template <class T, bool p = std::is_arithmetic<T>::value>
@@ -54,8 +56,9 @@ public:
 		return _data.data();
 	}
 
-	void resize(size_t new_size) {
-		_data.resize(new_size);
+protected:
+	void resize(size_t newSize) override {
+		_data.resize(newSize);
 	}
 };
 
@@ -75,6 +78,11 @@ public:
 
 	SPtr<T>& operator [](size_t i) {
 		return _data[i];
+	}
+
+protected:
+	void resize(size_t newSize) override {
+		_data.resize(newSize);
 	}
 };
 

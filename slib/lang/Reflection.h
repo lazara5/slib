@@ -62,6 +62,8 @@ namespace reflect {
 
 struct Array {
 	static ObjRef getRef(ObjRef const& array, size_t index);
+	static void resize(IArray& array, size_t newSize);
+	static void resize(ObjRef const& array, size_t newSize);
 };
 
 } // namespace reflect

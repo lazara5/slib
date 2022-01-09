@@ -10,6 +10,7 @@
 #include "slib/util/StringUtils.h"
 #include "slib/lang/Array.h"
 #include "slib/io/FileInputStream.h"
+#include "slib/lang/Reflection.h"
 
 #include <string>
 
@@ -109,7 +110,7 @@ public:
 		FileInputStream in(fileName);
 		ssize_t read = in.read(data->data(), size);
 		if (read >= 0)
-			data->resize(read);
+			reflect::Array::resize(*data, read);
 		return data;
 	}
 };

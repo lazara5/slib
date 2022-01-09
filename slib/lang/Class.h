@@ -168,6 +168,27 @@ enum class RefType : uint8_t {
 };
 
 typedef void (*ObjRefDeleter)(void *ref, RefType refType);
+typedef void *(*GetInstanceRef)(void *ref, RefType refType);
+
+namespace internal {
+template <typename T>
+void *getInstanceRef(void *ref, RefType refType) {
+	if (!ref)
+		return nullptr;
+
+	switch (refType) {
+		case RefType::INSTANCE:
+			return ref;
+		case RefType::SPTR:
+			return ((SPtr<T> *)ref)->get();
+		case RefType::UPTR:
+			return ((UPtr<T> *)ref)->get();
+			break;
+	}
+
+	return nullptr;
+}
+} // namespace internal
 
 class ObjRef {
 public:
@@ -188,7 +209,7 @@ public:
 	: _ref(other._ref)
 	, _refType(other._refType)
 	, _class(other._class)
-	, _deleter (other._deleter) {
+	, _deleter(other._deleter) {
 		other._ref = nullptr;
 	}
 
@@ -199,12 +220,15 @@ public:
 			_deleter(_ref, _refType);
 		}
 	}
+
+	void *getInstanceRef() const;
 };
 
 typedef Class const& (*GetClassRef)();
 typedef ObjRef (*NewInstance)(RefType refType);
 
 class Class {
+friend class ObjRef;
 protected:
 	const StringView _name;						///< Class name
 	const TypeData *_typeStack;					///< Class hierarchy
@@ -218,11 +242,15 @@ public:
 	bool _hasTypeInfo : 1;
 protected:
 	SPtr<Field> _getDeclaredField(StringView const& name) const;
+protected:
+	// ObjRef helpers
+	GetInstanceRef _objRefGetInstance;
 public:
 	constexpr Class(StringView const& name, size_t hDepth,
 					const TypeData* typeStack, const GetReflectionInfo reflectionInfo,
 					bool isPrimitive, bool isArray,
 					GetClassRef getArrayComponentClass, NewInstance newInstance,
+					GetInstanceRef objRefGetInstance,
 					bool hasTypeInfo)
 	: _name(name)
 	, _typeStack(typeStack)
@@ -232,7 +260,8 @@ public:
 	, _hDepth(hDepth)
 	, _isPrimitive(isPrimitive)
 	, _isArray(isArray)
-	, _hasTypeInfo(hasTypeInfo) {}
+	, _hasTypeInfo(hasTypeInfo)
+	, _objRefGetInstance(objRefGetInstance) {}
 
 	constexpr Class(Class const& other)
 	: _name(other._name)
@@ -243,7 +272,8 @@ public:
 	, _hDepth(other._hDepth)
 	, _isPrimitive(other._isPrimitive)
 	, _isArray(other._isArray)
-	, _hasTypeInfo(other._hasTypeInfo) {}
+	, _hasTypeInfo(other._hasTypeInfo)
+	, _objRefGetInstance(other._objRefGetInstance) {}
 
 	Class& operator=(Class const&) = delete;
 
@@ -418,7 +448,9 @@ struct classOf {
 		static constexpr NewInstance _newInstance = _getNewInstance(isDefaultConstructible<T>{});
 		static constexpr Class _class{_className<T>(hasTypeInfo<T>{}),
 									  _typeDescSize<T>(hasTypeInfo<T>{}), _typeData.data(), _reflectionInfo,
-									  false, false, &getArrayComponentClass, _newInstance, toBool(hasTypeInfo<T>{})};
+									  false, false, &getArrayComponentClass, _newInstance,
+									  &internal::getInstanceRef<T>,
+									  toBool(hasTypeInfo<T>{})};
 
 		return _class;
 	}
@@ -435,7 +467,9 @@ struct classOf<Array<E, p>> {
 		static constexpr GetReflectionInfo _reflectionInfo = _getReflectionInfo<Array<E, p>>(hasReflectionInfo<Array<E, p>>{});
 		static constexpr Class _class{_className<Array<E, p>>(hasTypeInfo<Array<E, p>>{}),
 									  _typeDescSize<Array<E, p>>(hasTypeInfo<Array<E, p>>{}), _typeData.data(), _reflectionInfo,
-									  false, true, &getArrayComponentClass, nullptr, toBool(hasTypeInfo<Array<E, p>>{})};
+									  false, true, &getArrayComponentClass, nullptr,
+									  &internal::getInstanceRef<Array<E, p>>,
+									  toBool(hasTypeInfo<Array<E, p>>{})};
 
 		return _class;
 	}
@@ -453,7 +487,7 @@ struct classOf<TYPE> { \
 	static Class const& _class() { \
 		static constexpr auto _typeData {_primitiveTypeDesc<TYPE>()}; \
 		static constexpr Class _class{NAME ## _SV, 1, _typeData.data(), nullptr, true, false, \
-			&getArrayComponentClass, &newInstance, false}; \
+			&getArrayComponentClass, &newInstance, &internal::getInstanceRef<TYPE>, false}; \
 		return _class; \
 	} \
 }

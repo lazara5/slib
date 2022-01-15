@@ -5,6 +5,7 @@
 
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
+#include <rapidjson/error/en.h>
 
 using namespace slib;
 using namespace rapidjson;
@@ -146,6 +147,11 @@ int main(int argc, char **argv) {
 	spec.ParseStream(input);
 	fclose(fp);
 
+	if (spec.HasParseError()) {
+		fprintf(stderr, "Parse error: %s\n", GetParseError_En(spec.GetParseError()));
+		return 1;
+	}
+
 	StringBuilder className = spec["className"].GetString();
 	Value const& classDef = spec["def"];
 
@@ -170,4 +176,6 @@ int main(int argc, char **argv) {
 	fwrite(ctx._body.c_str(), ctx._body.length(), 1, cfp);
 
 	fclose(cfp);
+
+	return 0;
 }

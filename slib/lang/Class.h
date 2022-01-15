@@ -169,6 +169,7 @@ enum class RefType : uint8_t {
 
 typedef void (*ObjRefDeleter)(void *ref, RefType refType);
 typedef void *(*GetInstanceRef)(void *ref, RefType refType);
+typedef void (*SetInstance)(void *src, RefType srcType, void *dst, RefType dstType);
 
 namespace internal {
 template <typename T>
@@ -188,6 +189,40 @@ void *getInstanceRef(void *ref, RefType refType) {
 
 	return nullptr;
 }
+
+template <typename T>
+void _setInstance(void *src, RefType srcType, void *dst, RefType dstType, std::true_type) {
+	switch (srcType) {
+		case RefType::INSTANCE:
+			switch (dstType) {
+				case RefType::INSTANCE:
+					*(T *)dst = *(T *)src;
+					break;
+				case RefType::SPTR:
+				case RefType::UPTR:
+					break;
+			}
+		case RefType::SPTR:
+		case RefType::UPTR:
+			break;
+	}
+}
+
+template <typename T>
+void _setInstance(void *src, RefType srcType, void *dst, RefType dstType, std::false_type) {
+	switch (srcType) {
+		case RefType::INSTANCE:
+		case RefType::SPTR:
+		case RefType::UPTR:
+			break;
+	}
+}
+
+template <typename T>
+void setInstance(void *src, RefType srcType, void *dst, RefType dstType) {
+	_setInstance<T>(src, srcType, dst, dstType, std::is_assignable<T&, T>{});
+}
+
 } // namespace internal
 
 class ObjRef {
@@ -222,6 +257,7 @@ public:
 	}
 
 	void *getInstanceRef() const;
+	void setRef(ObjRef const& other);
 };
 
 typedef Class const& (*GetClassRef)();
@@ -245,12 +281,13 @@ protected:
 protected:
 	// ObjRef helpers
 	GetInstanceRef _objRefGetInstance;
+	SetInstance _objRefSetInstance;
 public:
 	constexpr Class(StringView const& name, size_t hDepth,
 					const TypeData* typeStack, const GetReflectionInfo reflectionInfo,
 					bool isPrimitive, bool isArray,
 					GetClassRef getArrayComponentClass, NewInstance newInstance,
-					GetInstanceRef objRefGetInstance,
+					GetInstanceRef objRefGetInstance, SetInstance objRefSetInstance,
 					bool hasTypeInfo)
 	: _name(name)
 	, _typeStack(typeStack)
@@ -261,7 +298,8 @@ public:
 	, _isPrimitive(isPrimitive)
 	, _isArray(isArray)
 	, _hasTypeInfo(hasTypeInfo)
-	, _objRefGetInstance(objRefGetInstance) {}
+	, _objRefGetInstance(objRefGetInstance)
+	, _objRefSetInstance(objRefSetInstance) {}
 
 	constexpr Class(Class const& other)
 	: _name(other._name)
@@ -273,7 +311,8 @@ public:
 	, _isPrimitive(other._isPrimitive)
 	, _isArray(other._isArray)
 	, _hasTypeInfo(other._hasTypeInfo)
-	, _objRefGetInstance(other._objRefGetInstance) {}
+	, _objRefGetInstance(other._objRefGetInstance)
+	, _objRefSetInstance(other._objRefSetInstance){}
 
 	Class& operator=(Class const&) = delete;
 
@@ -449,7 +488,7 @@ struct classOf {
 		static constexpr Class _class{_className<T>(hasTypeInfo<T>{}),
 									  _typeDescSize<T>(hasTypeInfo<T>{}), _typeData.data(), _reflectionInfo,
 									  false, false, &getArrayComponentClass, _newInstance,
-									  &internal::getInstanceRef<T>,
+									  &internal::getInstanceRef<T>, &internal::setInstance<T>,
 									  toBool(hasTypeInfo<T>{})};
 
 		return _class;
@@ -468,7 +507,7 @@ struct classOf<Array<E, p>> {
 		static constexpr Class _class{_className<Array<E, p>>(hasTypeInfo<Array<E, p>>{}),
 									  _typeDescSize<Array<E, p>>(hasTypeInfo<Array<E, p>>{}), _typeData.data(), _reflectionInfo,
 									  false, true, &getArrayComponentClass, nullptr,
-									  &internal::getInstanceRef<Array<E, p>>,
+									  &internal::getInstanceRef<Array<E, p>>, &internal::setInstance<Array<E, p>>,
 									  toBool(hasTypeInfo<Array<E, p>>{})};
 
 		return _class;
@@ -487,7 +526,8 @@ struct classOf<TYPE> { \
 	static Class const& _class() { \
 		static constexpr auto _typeData {_primitiveTypeDesc<TYPE>()}; \
 		static constexpr Class _class{NAME ## _SV, 1, _typeData.data(), nullptr, true, false, \
-			&getArrayComponentClass, &newInstance, &internal::getInstanceRef<TYPE>, false}; \
+			&getArrayComponentClass, &newInstance, \
+			&internal::getInstanceRef<TYPE>, &internal::setInstance<TYPE>, false}; \
 		return _class; \
 	} \
 }

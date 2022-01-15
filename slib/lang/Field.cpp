@@ -29,7 +29,7 @@ static int64_t fieldGetInt64(FieldValue const& val) {
 
 } // namespace internal
 
-void *Field::autoBox(void *src, Class const& srcType, internal::FieldValue &dst, Class const& dstType) {
+void *Field::autoBox(const void *src, Class const& srcType, internal::FieldValue &dst, Class const& dstType) {
 	if (dstType.isAssignableFrom(srcType)) {
 		if (srcType._hasTypeInfo) {
 			TypedClass *tVal = (TypedClass *)src;
@@ -47,15 +47,15 @@ void *Field::autoBox(void *src, Class const& srcType, internal::FieldValue &dst,
 		if (classOf<Number>::_class().isAssignableFrom(srcType)) {
 			if (classOf<Long>::_class().isAssignableFrom(srcType)) {
 				fieldValue._type = internal::FieldValType::P_INT64;
-				fieldValue._val = (static_cast<Long *>(src))->longValue();
+				fieldValue._val = (static_cast<const Long *>(src))->longValue();
 			}
 		} else if (classOf<Boolean>::_class().isAssignableFrom(srcType)) {
 			fieldValue._type = internal::FieldValType::P_BOOL;
-			fieldValue._val = (static_cast<Boolean *>(src))->booleanValue();
+			fieldValue._val = (static_cast<const Boolean *>(src))->booleanValue();
 		} else if (srcType.isPrimitive()) {
 			if (classOf<int64_t>::_class().isAssignableFrom(srcType)) {
 				fieldValue._type = internal::FieldValType::P_INT64;
-				fieldValue._val = *(static_cast<int64_t *>(src));
+				fieldValue._val = *(static_cast<const int64_t *>(src));
 			}
 		}
 

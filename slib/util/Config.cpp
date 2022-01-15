@@ -300,7 +300,22 @@ SPtr<ConfigLoader::StringPair> ConfigLoader::searchConfigDir() {
 	return nullptr;
 }
 
-void ConfigLoader::map(SPtr<Object> cfgObj, Field *field, ObjRef const& obj) {
+static void mapObjToRef(SPtr<Object> &obj, ObjRef &ref) {
+	Class const& objClass = Field::valueClass<Object>(&obj, RefType::SPTR);
+	bool sameType = (objClass == ref._class);
+	internal::FieldValue tmpVal;
+
+	if (!sameType) {
+		void *castVal = Field::autoBox(obj.get(), objClass, tmpVal, ref._class);
+		ObjRef castRef(castVal, RefType::INSTANCE, objClass);
+		ref.setRef(castRef);
+	} else {
+		ObjRef objRef(&obj, RefType::SPTR, objClass);
+		ref.setRef(objRef);
+	}
+}
+
+void ConfigLoader::map(SPtr<Object> cfgObj, Field *field, ObjRef &obj) {
 	if (instanceof<Map<IString, Object>>(cfgObj)) {
 		auto map = Class::cast<Map<IString, Object>>(cfgObj.get());
 		auto i = map->constIterator();
@@ -326,13 +341,26 @@ void ConfigLoader::map(SPtr<Object> cfgObj, Field *field, ObjRef const& obj) {
 			ObjRef arrayRef = field->getRef(obj);
 			reflect::Array::resize(arrayRef, array->size());
 
-			auto i = array->constIterator();
+			size_t i = 0;
+			auto iter = array->constIterator();
+			while (iter->hasNext()) {
+				SPtr<Object> cfgElem = iter->next();
+				if (!reflect::Array::hasIndex(arrayRef, i)) {
+					reflect::Array::setRef(arrayRef, i,
+										   arrayRef._class.getComponentClass().newInstance(RefType::SPTR));
+				}
+				ObjRef arrayElemRef = reflect::Array::getRef(arrayRef, i);
+
+				this->map(cfgElem, nullptr, arrayElemRef);
+				i++;
+			}
 		} else
 			THROW(IllegalArgumentException, "Object field is not an array");
 	} else {
-		if (!field)
-			THROW(IllegalArgumentException);
-		field->set(obj, cfgObj);
+		if (field)
+			field->set(obj, cfgObj);
+		else
+			mapObjToRef(cfgObj, obj);
 	}
 }
 
@@ -444,8 +472,6 @@ void Config::shutdown() {
 	Log::shutdown();
 }
 
-void Config::registerPropertySink(String const& name, ConfigProcessor::PropertySink const& sink) {
-	_cfgProc.registerSink(name, sink);
 }*/
 
 } // namespace

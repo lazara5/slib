@@ -16,6 +16,8 @@ public:
 	SPtr<Object> obj;
 	UPtr<String> ustr;
 	SPtr<int> sint;
+
+	X& operator =(X const&) = delete;
 public:
 	REFLECT(X) {
 		FIELD(i64);
@@ -79,10 +81,10 @@ TEST(ReflectionTests, BasicTests)
 	UPtr<Array<Field>> fields = cls.getDeclaredFields();
 
 	SPtr<Y> y = newS<Y>();
-	ObjRef const& yref = ObjRef(y.get(), RefType::INSTANCE, classOf<Y>::_class());
+	ObjRef yref(y.get(), RefType::INSTANCE, classOf<Y>::_class());
 	Class ycls = classOf<Y>::_class();
 	f = ycls.getDeclaredField("z");
-	ObjRef const& ref = f->getRef(yref);
+	ObjRef ref = f->getRef(yref);
 	Class zcls = classOf<Z>::_class();
 	SPtr<Field> f1 = zcls.getDeclaredField("m1");
 	f1->set(ref, (int64_t)42);

@@ -27,6 +27,17 @@ ObjRef Array::getRef(ObjRef const& array, size_t index) {
 		THROW(NullPointerException);
 	if (!array._class.isArray())
 		THROW(IllegalArgumentException);
+	IArray *arrayInstance = (IArray *)array.getInstanceRef();
+	return arrayInstance->getRef(index);
+}
+
+void Array::setRef(ObjRef& array, size_t index, ObjRef const& value) {
+	if (!array._ref)
+		THROW(NullPointerException);
+	if (!array._class.isArray())
+		THROW(IllegalArgumentException);
+	IArray *arrayInstance = (IArray *)array.getInstanceRef();
+	arrayInstance->setRef(index, value);
 }
 
 void Array::resize(IArray& array, size_t newSize) {
@@ -39,6 +50,14 @@ void Array::resize(ObjRef const& array, size_t newSize) {
 
 	IArray *arrayInstance = (IArray *)array.getInstanceRef();
 	arrayInstance->resize(newSize);
+}
+
+bool Array::hasIndex(ObjRef const& array, size_t index) {
+	if (!array._class.isArray())
+		THROW(IllegalArgumentException);
+
+	IArray *arrayInstance = (IArray *)array.getInstanceRef();
+	return arrayInstance->hasIndex(index);
 }
 
 } // namespace reflect

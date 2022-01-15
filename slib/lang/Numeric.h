@@ -754,7 +754,7 @@ public:
 		return equals(other);
 	}
 
-	bool booleanValue() {
+	bool booleanValue() const {
 		return _value;
 	}
 

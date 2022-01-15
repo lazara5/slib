@@ -24,6 +24,10 @@ void *ObjRef::getInstanceRef() const {
 	return _class._objRefGetInstance(_ref, _refType);
 }
 
+void ObjRef::setRef(ObjRef const& other) {
+	return _class._objRefSetInstance(other._ref, other._refType, _ref, _refType);
+}
+
 ClassCastException::ClassCastException(const char *where, const StringView &c1, const StringView &c2)
 :Exception(where, "ClassCastException", fmt::format("Cannot cast from {} to {}", c1, c2).c_str()) {}
 

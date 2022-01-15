@@ -582,7 +582,7 @@ protected:
 
 	void validate();
 
-	void map(SPtr<Object> cfgObj, Field *field, ObjRef const& obj);
+	void map(SPtr<Object> cfgObj, Field *field, ObjRef &obj);
 
 	SPtr<Map<IString, Object> > internalLoad(UPtr<Array<uint8_t>> const& contents, bool quick);
 public:
@@ -663,7 +663,8 @@ public:
 	template <class T>
 	SPtr<T> toObject(SPtr<Config> cfg) {
 		SPtr<T> obj = newS<T>();
-		map(cfg->getRoot(), nullptr, ObjRef(obj.get(), RefType::INSTANCE, classOf<T>::_class()));
+		ObjRef objRef(obj.get(), RefType::INSTANCE, classOf<T>::_class());
+		map(cfg->getRoot(), nullptr, objRef);
 		return obj;
 	}
 };

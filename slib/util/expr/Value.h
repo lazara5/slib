@@ -71,7 +71,7 @@ public:
 	}
 
 	static UPtr<Value> of(bool value) {
-		return newU<Value>(nullptr, newS<Long>(value));
+		return newU<Value>(nullptr, newS<Boolean>(value));
 	}
 
 	static UPtr<Value> normalize(UPtr<Value> && val) {
